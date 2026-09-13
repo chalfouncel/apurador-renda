@@ -41,7 +41,7 @@
       background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%);
       border-bottom: 3px solid var(--accent);
       color: #fff;
-      padding: 14px 16px;
+      padding: 16px;
     }
 
     .section-banner {
@@ -77,30 +77,36 @@
     }
 
     .app-header-logo {
-      height: 40px;
+      height: 80px;
       width: auto;
-      max-width: 130px;
+      max-width: 200px;
       object-fit: contain;
       display: block;
-      border-radius: 4px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
   </style>
 </head>
 <body class="min-h-screen pb-16">
 
-  <!-- Header Principal com Logomarca M&IC (.jpg) -->
+  <!-- Header Principal com Logo Centralizada, Dobro do Tamanho e Textos Alinhados -->
   <header class="main-header shadow-md sticky top-0 z-30">
-    <div class="mx-auto flex items-center justify-between w-full" style="max-width: 650px;">
-      <div class="flex items-center space-x-3.5">
-        <img src="logo.png" alt="M&IC Corretores" class="app-header-logo">
-        <div class="text-left border-l border-amber-500/30 pl-3">
-          <h1 class="font-bold text-xs leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
-          <p class="text-[9px] uppercase tracking-wider" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
-        </div>
-      </div>
-      <button onclick="toggleConfig()" class="text-[10px] px-2.5 py-1.5 rounded font-semibold tracking-wider uppercase border flex items-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500">
+    <div class="mx-auto flex flex-col items-center text-center w-full relative" style="max-width: 650px;">
+      
+      <!-- Botão de Configuração alinhado à direita no topo -->
+      <button onclick="toggleConfig()" class="absolute right-0 top-0 text-[10px] px-2.5 py-1.5 rounded font-semibold tracking-wider uppercase border flex items-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500">
         ⚙️ Configurar Chaves
       </button>
+
+      <!-- Logo Centralizada com o dobro do tamanho -->
+      <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mb-2.5">
+      
+      <!-- Textos alinhados e centralizados com o restante do app -->
+      <div class="w-full">
+        <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
+        <p class="text-[9px] uppercase tracking-wider mt-0.5" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
+      </div>
+
     </div>
   </header>
 
@@ -492,7 +498,7 @@
           canvas.width = img.width; canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/jpeg'));
+          resolve(canvas.toDataURL('image/png'));
         };
         img.onerror = () => resolve(null);
         img.src = url;
@@ -503,10 +509,10 @@
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
 
-      // Carrega e desenha a logo no PDF buscando de logo.jpg
-      const logoBase64 = await carregarImagemBase64('logo.jpg');
+      // Carrega e desenha a logo no PDF buscando de logo.png
+      const logoBase64 = await carregarImagemBase64('logo.png');
       if (logoBase64) {
-        try { doc.addImage(logoBase64, 'JPEG', 11, 6, 26, 13); } catch(e) {}
+        try { doc.addImage(logoBase64, 'PNG', 11, 6, 26, 13); } catch(e) {}
       }
 
       doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
@@ -519,10 +525,10 @@
       doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 40, 19);
       doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
 
-      // Carrega e desenha a marca d'água pericial centralizada no PDF buscando de marca-dagua.jpg
+      // Carrega e desenha a marca d'água pericial centralizada no PDF buscando de marca-dagua.png
       const watermarkBase64 = await carregarImagemBase64('marca-dagua.png');
       if (watermarkBase64) {
-        try { doc.addImage(watermarkBase64, 'JPEG', 35, 78, 140, 140, '', 'FAST', -12); } catch(e) {}
+        try { doc.addImage(watermarkBase64, 'PNG', 35, 78, 140, 140, '', 'FAST', -12); } catch(e) {}
       }
 
       doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
