@@ -64,8 +64,12 @@
         <h2 class="font-bold text-xs tracking-wider uppercase">2. Documento do Cliente (CNH / Certidão)</h2>
         <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
       </div>
-      <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
-      <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg mt-3 shadow-sm">Ler Foto/Doc</button>
+      
+      <!-- Linha única com o seletor de arquivo e o botão "Ler Foto/Doc" -->
+      <div class="flex items-center gap-2">
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+        <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
+      </div>
       
       <div class="space-y-2.5 pt-3 mt-3 border-t" style="border-color: var(--border);">
         <div><label class="block text-[11px] font-bold uppercase mb-1">Nome do Cliente (Titular)</label><input type="text" id="titularName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 font-semibold" /></div>
@@ -189,7 +193,6 @@
 
     function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-    // Função para carregar imagem convertendo fundo preto em transparente e ajustando opacidade
     function carregarLogoTransparente(url, opacidade = 1.0) {
       return new Promise((resolve) => {
         const img = new Image();
@@ -204,11 +207,9 @@
           const data = imgData.data;
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2];
-            // Remove o fundo escuro/preto
             if (r < 35 && g < 35 && b < 35) {
               data[i+3] = 0; 
             } else if (opacidade < 1.0) {
-              // Aplica redução na opacidade dos pixels visíveis (diminui transparência/intensidade em 50%)
               data[i+3] = Math.round(data[i+3] * opacidade);
             }
           }
@@ -224,7 +225,6 @@
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
 
-      // 1. Marca d'água centralizada com fundo transparente e opacidade reduzida em 50% (opacidade 0.5)
       const watermarkBase64 = await carregarLogoTransparente('marca-dagua.png', 0.5);
       if (watermarkBase64) {
         try { 
@@ -232,11 +232,9 @@
         } catch(e) {}
       }
 
-      // Cabeçalho escuro do laudo
       doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
       doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
       
-      // 2. Logo harmônica e proporcional no topo antes do texto
       const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
       if (logoBase64) {
         try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
