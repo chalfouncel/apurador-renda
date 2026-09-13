@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Apurador de Renda IA — M&IC</title>
+  <title>Apurador de Renda IA</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- jsPDF & AutoTable -->
@@ -42,12 +42,6 @@
       border-bottom: 3px solid var(--accent);
       color: #fff;
       padding: 16px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
     }
 
     .section-banner {
@@ -82,71 +76,21 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* ESTILOS DE LOGOMARCA E MARCA D'ÁGUA SOLICITADOS */
-    .laudo-watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-12deg);
-      width: 140mm;
-      height: auto;
-      opacity: 0.05;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .laudo-content-layer {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-    }
-
-    .table-header-grid {
-      width: 100%;
-      table-layout: fixed;
-      border-collapse: collapse;
-      border-bottom: 2.5px solid #c59b27;
-      margin-bottom: 6px;
-      padding-bottom: 4px;
-    }
-    .table-header-grid td {
-      vertical-align: middle;
-      padding: 2px 0;
-    }
-    .thg-logo {
-      width: 52px;
-      text-align: left;
-    }
-    .thg-logo img {
-      max-height: 40px;
-      max-width: 48px;
-      object-fit: contain;
-      display: block;
-    }
-
-    .login-logo {
-      max-height: 48px;
-      width: auto;
-      margin-bottom: 10px;
-      border-radius: 4px;
-    }
-
     .app-header-logo {
-      max-height: 52px;
+      max-height: 44px;
       width: auto;
       object-fit: contain;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border-radius: 4px;
     }
   </style>
 </head>
 <body class="min-h-screen pb-16">
 
-  <!-- Header Principal com Logomarca e Centralizado -->
+  <!-- Header Principal com Logomarca -->
   <header class="main-header shadow-md sticky top-0 z-30">
-    <div class="mx-auto px-4 py-3.5 flex items-center justify-between w-full" style="max-width: 650px;">
+    <div class="mx-auto px-4 flex items-center justify-between w-full" style="max-width: 650px;">
       <div class="flex items-center space-x-3">
-        <img src="/logo.png" alt="M&IC Corretores" class="app-header-logo flex-shrink-0">
+        <img src="logo.png" alt="M&IC Corretores" class="app-header-logo flex-shrink-0">
         <div class="text-left">
           <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
           <p class="text-[10px] uppercase tracking-wider" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
@@ -523,101 +467,4 @@
           if (textosExtratosGeral.length > 50) { parts.push({ text: "TEXTOS COMPLEMENTARES:\n" + textosExtratosGeral }); }
           imagensExtratos.forEach(img => parts.push({ inline_data: { mime_type: "image/jpeg", data: img } }));
           const respGemini = await chamarGeminiVisao(parts);
-          json = JSON.parse(respGemini.replace(/```json/g, '').replace(/```/g, '').trim());
-        }
-
-        window.ultimoResultado = json;
-        consolidadoMeses = json.apuracao_mensal || [];
-        document.getElementById('resultadoBox').classList.remove('hidden');
-      } catch (err) { alert("Erro na apuração: " + err.message); } finally {
-        hideStatus(); btn.disabled = false; btn.classList.remove('opacity-50');
-      }
-    }
-
-    function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-
-    function gerarDocumentoPDF() {
-      const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
-
-      doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
-      doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
-      
-      doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(212, 175, 55);
-      doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 11, 12);
-      
-      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
-      doc.text("Auditoria Óptica e Visão Computacional de Entradas Informais", 11, 19);
-      doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
-
-      // Marca D'água Pericial Centralizada
-      doc.setFontSize(36); doc.setFont("helvetica", "bold"); doc.setTextColor(230, 230, 230);
-      doc.text("LAUDO AUDITADO", 105, 148, { align: "center", angle: -12 });
-
-      doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
-      doc.text("1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO", 16, 38);
-
-      doc.setDrawColor(224, 224, 224); doc.setFillColor(255, 255, 255); doc.rect(11, 40, 188, 17, 'FD');
-      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(26, 26, 26);
-      doc.text(`Titular da Conta: ${titular}`, 15, 45);
-      doc.text(`Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`, 15, 50);
-      doc.text(`Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`, 15, 55);
-
-      doc.setFillColor(18, 19, 21); doc.rect(11, 62, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 62, 2, 7, 'F');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
-      doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
-
-      doc.autoTable({
-        startY: 70, head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
-        body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
-        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
-        bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
-        columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
-        margin: { left: 11, right: 11 }, tableWidth: 188
-      });
-
-      let currentY = doc.lastAutoTable.finalY + 5;
-      doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
-      doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
-      doc.text(`MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`, 16, currentY + 13);
-      doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
-      doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
-      doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
-
-      return { doc, titular };
-    }
-
-    function resetarParaNovaAnalise() {
-      document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
-      document.getElementById('titularName').value = ''; document.getElementById('paiName').value = '';
-      document.getElementById('maeName').value = ''; document.getElementById('conjugeName').value = '';
-      document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
-      window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function baixarPDFLocal() {
-      if (!window.ultimoResultado) return;
-      const { doc, titular } = gerarDocumentoPDF();
-      doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`);
-    }
-
-    async function gerarECompartilharPDF() {
-      if (!window.ultimoResultado) return;
-      const { doc, titular } = gerarDocumentoPDF();
-      const pdfBlob = doc.output('blob');
-      const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
-
-      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        try {
-          await navigator.share({ title: 'Laudo de Apuração de Renda', text: `Laudo de apuração pericial de renda de ${titular}.`, files: [pdfFile] });
-        } catch (shareErr) {
-          if (shareErr.name !== 'AbortError') { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
-        }
-      } else { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
-    }
-  </script>
-</body>
-</html>
+          json = JSON.parse(respGemini.replace(/```json/g, '').replace(/
