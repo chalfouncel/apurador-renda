@@ -218,8 +218,13 @@
       doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 40, 19);
       doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
 
+      // Marca d'água centralizada e em pé (sem rotação)
       const watermarkBase64 = await carregarImagemBase64('marca-dagua.png');
-      if (watermarkBase64) { try { doc.addImage(watermarkBase64, 'JPEG', 35, 78, 140, 140, '', 'FAST', -12); } catch(e) {} }
+      if (watermarkBase64) {
+        try { 
+          doc.addImage(watermarkBase64, 'PNG', 55, 100, 100, 100, '', 'FAST', 0); 
+        } catch(e) {}
+      }
 
       doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
       doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
