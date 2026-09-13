@@ -20,14 +20,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Nenhuma chave de API configurada nas Environment Variables da Vercel." });
   }
 
-  let detalheErro = "";
+  let errosLogs = [];
 
-  try {
-    // 1. Tenta Gemini com modelos vigentes
-    if (GEMINI_API_KEY) {
-      const modelosGemini = ["gemini-1.5-flash", "gemini-1.5-pro"];
-      
-      for (const mod of modelosGemini) {
+  // 1. Tenta varrer os modelos do Gemini disponíveis
+  if (GEMINI_API_KEY) {
+    const modelosGemini = ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+
+    for (const mod of modelosGemini) {
+      try {
         const parts = [{ text: prompt }];
         if (texts) parts.push({ text: "TEXTO DO DOCUMENTO:\n" + texts });
         if (images && Array.isArray(images)) {
@@ -51,16 +51,20 @@ export default async function handler(req, res) {
             return res.status(200).json(JSON.parse(cleanJson));
           }
         } else {
-          detalheErro += ` Gemini (${mod}): ${JSON.stringify(geminiData.error?.message || geminiRes.statusText)}`;
+          errosLogs.push(`Gemini [${mod}]: ${geminiData.error?.message || 'Erro desconhecido'}`);
         }
+      } catch (e) {
+        errosLogs.push(`Gemini [${mod}] Exceção: ${e.message}`);
       }
     }
+  }
 
-    // 2. Fallback para Groq com modelos vigentes (`llama-3.1-70b-versatile` ou `llama-3.1-8b-instant`)
-    if (GROQ_API_KEY) {
-      const modelosGroq = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant"];
+  // 2. Se o Gemini falhou, varre os modelos da Groq disponíveis
+  if (GROQ_API_KEY) {
+    const modelosGroq = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"];
 
-      for (const mod of modelosGroq) {
+    for (const mod of modelosGroq) {
+      try {
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -83,14 +87,14 @@ export default async function handler(req, res) {
         if (groqRes.ok) {
           return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
         } else {
-          detalheErro += ` Groq (${mod}): ${JSON.stringify(groqData.error?.message || groqRes.statusText)}`;
+          errosLogs.push(`Groq [${mod}]: ${groqData.error?.message || 'Erro desconhecido'}`);
         }
+      } catch (e) {
+        errosLogs.push(`Groq [${mod}] Exceção: ${e.message}`);
       }
     }
-
-    return res.status(500).json({ error: `Erro nas IAs:${detalheErro}` });
-
-  } catch (err) {
-    return res.status(500).json({ error: `Exceção: ${err.message}` });
   }
+
+  // Se todos falharem, retorna os detalhes para diagnóstico
+  return res.status(500).json({ error: "Todas as tentativas de IA falharam. Detalhes:\n" + errosLogs.join(" | ") });
 }
