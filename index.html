@@ -61,11 +61,10 @@
     <!-- PASSO 2: Documento -->
     <div class="card-box p-4">
       <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
-        <h2 class="font-bold text-xs tracking-wider uppercase">2. Documento do Cliente (CNH / Certidão)</h2>
+        <h2 class="font-bold text-xs tracking-wider uppercase">2. Documento do Cliente (CNH / Certidão / RG)</h2>
         <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
       </div>
       
-      <!-- Linha única com o seletor de arquivo e o botão "Ler Foto/Doc" -->
       <div class="flex items-center gap-2">
         <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
         <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
@@ -129,15 +128,25 @@
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
-      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+
+      for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const txt = await page.getTextContent();
-        texto += txt.items.map(it => it.str).join(" ") + "\n";
-        const viewport = page.getViewport({ scale: 1.0 });
-        const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        imagens.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+        const pageStr = txt.items.map(it => it.str).join(" ");
+        texto += `--- PÁGINA ${i} ---\n` + pageStr + "\n";
       }
+
+      // Se o PDF for digital e tiver texto suficiente, não converte em imagens pesadas (economiza tráfego e não estoura payload)
+      if (texto.trim().length < 200) {
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.0 });
+          const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
+        }
+      }
+
       return { texto: texto.trim(), imagens };
     }
 
@@ -159,7 +168,7 @@
       try {
         const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON com as chaves exatas: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const prompt = `Analise este documento de identificação (CNH, RG ou Certidão). Titular do extrato sugerido: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
         
         const json = await chamarApiServidor({ prompt, texts: resPdf.texto, images: resPdf.imagens });
         if (json.titular) document.getElementById('titularName').value = json.titular;
@@ -173,16 +182,40 @@
       const files = document.getElementById('extratosInput').files;
       if (!files.length) { alert("Adicione os extratos."); return; }
       dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
-      showStatus("Processando extratos...");
+      showStatus("Auditando todos os meses do extrato...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
             const res = await extrairDadosCompletosPDF(file);
-            textoGeral += res.texto; res.imagens.forEach(img => imagens.push(img));
-          } else { imagens.push(await otimizarFotoBase64(file)); }
+            textoGeral += res.texto + "\n";
+            res.imagens.forEach(img => imagens.push(img));
+          } else { 
+            imagens.push(await otimizarFotoBase64(file)); 
+          }
         }
-        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne EXCLUSIVAMENTE um JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
+
+        const prompt = `Você é um auditor financeiro e contábil pericial.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, 06/2026, 07/2026, 08/2026, etc.).
+Regras de Exclusão (Descarte):
+- Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
+- Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
+- Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
+- Considere apenas ENTRADAS (Pix recebidos, vendas em cartão crédito/débito líquidas, depósitos e transferências de terceiros válidas como renda).
+
+Retorne ESTRITAMENTE o JSON no formato:
+{
+  "resumo_geral": {
+    "total_entradas_consideradas": 0.00,
+    "total_entradas_descartadas": 0.00,
+    "quantidade_meses": 0,
+    "renda_media_mensal": 0.00
+  },
+  "apuracao_mensal": [
+    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 },
+    { "mes_ano": "04/2026", "somatorio_entradas": 0.00 }
+  ]
+}`;
         
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
