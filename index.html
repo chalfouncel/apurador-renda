@@ -136,7 +136,6 @@
         texto += `--- PÁGINA ${i} ---\n` + pageStr + "\n";
       }
 
-      // Se o PDF for digital e tiver texto suficiente, não converte em imagens pesadas (economiza tráfego e não estoura payload)
       if (texto.trim().length < 200) {
         for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
           const page = await pdf.getPage(i);
@@ -250,35 +249,32 @@ Retorne ESTRITAMENTE o JSON no formato:
           resolve(canvas.toDataURL('image/png'));
         };
         img.onerror = () => resolve(null);
-        img.src = url;
+        img.src = encodeURI(url);
       });
     }
 
     async function gerarDocumentoPDF() {
-      const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const { jsPDF } = window.jspdf; 
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
 
-      const watermarkBase64 = await carregarLogoTransparente('marca-dagua.png', 0.5);
-      if (watermarkBase64) {
-        try { 
-          doc.addImage(watermarkBase64, 'PNG', 55, 100, 100, 100, '', 'FAST', 0); 
-        } catch(e) {}
-      }
-
-      doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
-      doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
-      
+      const watermarkBase64 = await carregarLogoTransparente('Marca dagua nova.png', 0.25);
       const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
-      if (logoBase64) {
-        try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
-      }
 
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
-      doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
-      
-      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
-      doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 36, 17.5);
-      doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+      const desenharCabecalho = () => {
+        doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
+        doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+        if (logoBase64) {
+          try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
+        }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
+        doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
+        doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
+        doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 36, 17.5);
+        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+      };
+
+      desenharCabecalho();
 
       doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
       doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
@@ -295,15 +291,28 @@ Retorne ESTRITAMENTE o JSON no formato:
       doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
 
       doc.autoTable({
-        startY: 70, head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
+        startY: 70, 
+        head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
         body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
         headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
         bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
         columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
-        margin: { left: 11, right: 11 }, tableWidth: 188
+        margin: { left: 11, right: 11 }, 
+        tableWidth: 188,
+        didDrawPage: function() {
+          if (doc.internal.getNumberOfPages() > 1) {
+            desenharCabecalho();
+          }
+        }
       });
 
       let currentY = doc.lastAutoTable.finalY + 5;
+      if (currentY > 265) {
+        doc.addPage();
+        desenharCabecalho();
+        currentY = 35;
+      }
+
       doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
       doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
       doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
@@ -311,6 +320,16 @@ Retorne ESTRITAMENTE o JSON no formato:
       doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
       doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
       doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
+
+      const totalPaginas = doc.internal.getNumberOfPages();
+      if (watermarkBase64) {
+        for (let p = 1; p <= totalPaginas; p++) {
+          doc.setPage(p);
+          try {
+            doc.addImage(watermarkBase64, 'PNG', 50, 93.5, 110, 110, '', 'FAST', 0);
+          } catch(e) {}
+        }
+      }
 
       return { doc, titular };
     }
