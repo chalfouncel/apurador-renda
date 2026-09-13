@@ -22,9 +22,9 @@ export default async function handler(req, res) {
 
   let errosLogs = [];
 
-  // 1. Tenta varrer os modelos do Gemini disponíveis
+  // 1. Varrimento automático da família Gemini atualizada (3.8, 3.7, 3.6, 3.5)
   if (GEMINI_API_KEY) {
-    const modelosGemini = ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+    const modelosGemini = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
 
     for (const mod of modelosGemini) {
       try {
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
             return res.status(200).json(JSON.parse(cleanJson));
           }
         } else {
-          errosLogs.push(`Gemini [${mod}]: ${geminiData.error?.message || 'Erro desconhecido'}`);
+          errosLogs.push(`Gemini [${mod}]: ${geminiData.error?.message || 'Erro'}`);
         }
       } catch (e) {
         errosLogs.push(`Gemini [${mod}] Exceção: ${e.message}`);
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. Se o Gemini falhou, varre os modelos da Groq disponíveis
+  // 2. Varrimento automático dos modelos da Groq atuais
   if (GROQ_API_KEY) {
     const modelosGroq = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"];
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
         if (groqRes.ok) {
           return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
         } else {
-          errosLogs.push(`Groq [${mod}]: ${groqData.error?.message || 'Erro desconhecido'}`);
+          errosLogs.push(`Groq [${mod}]: ${groqData.error?.message || 'Erro'}`);
         }
       } catch (e) {
         errosLogs.push(`Groq [${mod}] Exceção: ${e.message}`);
@@ -95,6 +95,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // Se todos falharem, retorna os detalhes para diagnóstico
   return res.status(500).json({ error: "Todas as tentativas de IA falharam. Detalhes:\n" + errosLogs.join(" | ") });
 }
