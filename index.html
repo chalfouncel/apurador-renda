@@ -1,1582 +1,512 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Vistoria Fácil Pro — M&IC</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Apurador de Renda IA</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- PDF.js para processamento local -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  </script>
+  <style>
+    :root {
+      --primary: #121315;
+      --secondary: #1a1c20;
+      --accent: #c59b27;
+      --gold: #d4af37;
+      --gold-light: #dfba48;
+      --silver: #cfd4dc;
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --border: #e0e0e0;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #e67e22;
+    }
 
-<style>
-  :root {
-    --primary: #121315;
-    --secondary: #1a1c20;
-    --accent: #c59b27;
-    --gold: #d4af37;
-    --gold-light: #dfba48;
-    --silver: #cfd4dc;
-    --highlight: #c59b27;
-    --success: #28a745;
-    --danger: #dc3545;
-    --warning: #e67e22;
-    --bg: #f4f5f7;
-    --card: #ffffff;
-    --text: #1a1a1a;
-    --border: #e0e0e0;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding-bottom: 20px; }
-  
-  header { 
-    background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%); 
-    border-bottom: 3px solid #c59b27; 
-    color: #fff; 
-    padding: 16px; 
-    text-align: center; 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .app-header-logo {
-    max-height: 52px;
-    width: auto;
-    object-fit: contain;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-  }
-  header h1 { font-size: 1.22rem; font-weight: 800; color: #d4af37; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-  header p { font-size: 0.76rem; opacity: 0.85; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
 
-  .user-bar { display: none; justify-content: space-between; align-items: center; background: #20242a; color: #cfd4dc; padding: 6px 16px; font-size: 0.78rem; border-bottom: 1px solid #333; }
-  .user-bar span { color: #d4af37; font-weight: bold; }
-  .user-bar .time-chip { background: #121315; border: 1px solid #c59b27; color: #dfba48; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; margin-left: 8px; }
-  .btn-logout-link { background: none; border: none; color: #ff6b6b; cursor: pointer; text-decoration: underline; font-size: 0.78rem; }
+    .main-header {
+      background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%);
+      border-bottom: 3px solid var(--accent);
+    }
 
-  .container { max-width: 650px; margin: 16px auto; padding: 0 16px; }
-  .card { background: var(--card); border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--border); }
-  .card h2 { font-size: 1.05rem; color: var(--secondary); margin-bottom: 12px; border-bottom: 2px solid #eef2f5; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-  
-  .step { display: none; }
-  .step.active { display: block; animation: fadeIn 0.25s ease-in-out; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .section-banner {
+      background: linear-gradient(90deg, #121315, #24272c);
+      border-left: 4px solid var(--accent);
+      color: var(--gold-light);
+    }
 
-  label { display: block; font-size: 0.84rem; font-weight: 700; color: #343a40; margin-bottom: 4px; margin-top: 12px; }
-  input[type="text"], input[type="date"], input[type="password"], input[type="email"], textarea, select {
-    width: 100%; padding: 12px; border: 1.5px solid #ced4da; border-radius: 8px; font-size: 0.95rem; background: #fff; color: #212529; font-weight: 500;
-  }
-  input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus { border-color: #007bff; outline: none; }
-  .field-ok { background-color: #e8f5e9 !important; border-color: #28a745 !important; }
-  input[type="file"] { display: none; }
+    .btn-gold {
+      background: linear-gradient(135deg, #c59b27, #dfba48);
+      color: #121315;
+      border: 1px solid #b88d1e;
+      font-weight: 700;
+    }
+    .btn-gold:hover { filter: brightness(1.05); }
+    .btn-gold:active { filter: brightness(0.95); }
 
-  .file-dropzone {
-    border: 2px dashed #c59b27; border-radius: 12px; padding: 24px 16px; text-align: center; background: #faf8f2; cursor: pointer; display: block;
-  }
-  .file-dropzone svg { width: 38px; height: 38px; fill: #c59b27; margin-bottom: 6px; }
+    .card-box {
+      background-color: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
 
-  .status-tag { display: inline-block; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; margin-top: 8px; }
-  .tag-ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .loader-gold {
+      border-top-color: var(--gold);
+      animation: spinner 0.8s linear infinite;
+    }
 
-  .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .checkbox-card {
-    background: #f8f9fa; border: 1.5px solid #dee2e6; border-radius: 8px; padding: 12px 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 500;
-  }
-  .checkbox-card input { transform: scale(1.2); }
-  .checkbox-card.checked { background: #e8f4fd; border-color: #007bff; color: #007bff; font-weight: 700; }
-  .checkbox-card.special-room { border-color: #c59b27; background: #fdfbf7; }
-
-  .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 14px 16px; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; gap: 8px; margin-top: 14px; text-decoration: none; }
-  .btn-primary { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; font-weight: 700; border: 1px solid #b88d1e; text-shadow: 0 0 1px rgba(255,255,255,0.4); }
-  .btn-camera { background: #28a745; color: #fff; }
-  .btn-next { background: #203a43; color: #fff; }
-  .btn-share { background: #17a2b8; color: #fff; }
-  .btn-download { background: #28a745; color: #fff; }
-  .btn-maintenance { background: #34495e; color: #fff; font-size: 0.82rem; padding: 10px; margin-top: 14px; border: 1px dashed #c59b27; }
-  .btn-not-available { background: #e2e8f0; color: #475569; border: 1.5px dashed #94a3b8; font-size: 0.88rem; padding: 10px; margin-top: 8px; font-weight: 600; }
-  .btn-not-available.active { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
-
-  .photo-gallery { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .photo-card { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #ced4da; height: 90px; background: #000; }
-  .photo-card img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-delete-btn {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    background: rgba(220, 53, 69, 0.9);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 11px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  }
-  .photo-counter { font-size: 0.85rem; font-weight: 700; text-align: center; margin-top: 10px; }
-
-  .badge { background: #007bff; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; }
-  .badge-special { background: #c59b27; }
-  .room-header { background: #eef2f5; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #007bff; }
-  
-  .loader-box { display: none; text-align: center; padding: 16px 10px; background: #fdfdfd; border-radius: 8px; border: 1px solid #e9ecef; margin-top: 14px; }
-  .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 34px; height: 34px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-  .app-copyright {
-    text-align: center;
-    font-size: 0.75rem;
-    color: #6c757d;
-    padding: 16px 8px 4px 8px;
-    line-height: 1.4;
-  }
-  .app-copyright strong {
-    color: #343a40;
-  }
-
-  /* MODAL DE AUTENTICAÇÃO E BARREIRA */
-  #auth-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(4px);
-    z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;
-  }
-  .auth-box {
-    background: #ffffff; border-radius: 14px; padding: 26px 22px; width: 100%; max-width: 380px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; text-align: center;
-  }
-  .auth-box .login-logo {
-    max-height: 48px;
-    width: auto;
-    margin-bottom: 10px;
-    border-radius: 4px;
-  }
-  .auth-box h2 { font-size: 1.25rem; color: #0f172a; margin-bottom: 6px; }
-  .auth-box p { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; }
-  .auth-box input { margin-bottom: 10px; font-size: 0.9rem; padding: 10px 12px; }
-  .auth-status-msg { font-size: 0.78rem; text-align: center; margin-top: 10px; min-height: 18px; font-weight: 600; }
-  .auth-status-err { color: #dc2626; }
-  .auth-status-ok { color: #16a34a; }
-
-  #sub-barrier-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.96); z-index: 9998; align-items: center; justify-content: center; padding: 16px;
-  }
-  .barrier-box {
-    background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px 22px; width: 100%; max-width: 420px;
-    color: #f8fafc; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-  }
-  .barrier-box h3 { color: #d4af37; font-size: 1.3rem; margin-bottom: 10px; }
-  .barrier-box p { color: #cbd5e1; font-size: 0.88rem; line-height: 1.45; margin-bottom: 20px; }
-
-  /* DIAGRAMAÇÃO A4 */
-  #pdfTemplateWrapper { display: none; }
-  
-  .laudo-page {
-    width: 210mm;
-    height: 296mm;
-    max-height: 296mm;
-    background: #fff;
-    color: #111;
-    font-family: Arial, Helvetica, sans-serif;
-    padding: 8mm 11mm 8mm 11mm;
-    margin: 0 auto;
-    box-sizing: border-box;
-    page-break-after: always;
-    page-break-inside: avoid;
-    position: relative;
-    overflow: hidden;
-  }
-  .laudo-page:last-child { page-break-after: auto; }
-
-  .laudo-watermark {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-12deg);
-    width: 140mm;
-    height: auto;
-    opacity: 0.05;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .laudo-content-layer {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-  }
-
-  /* CABEÇALHO PERICIAL TABULAR */
-  .table-header-grid {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    border-bottom: 2.5px solid #c59b27;
-    margin-bottom: 6px;
-    padding-bottom: 4px;
-  }
-  .table-header-grid td {
-    vertical-align: middle;
-    padding: 2px 0;
-  }
-  .thg-logo {
-    width: 52px;
-    text-align: left;
-  }
-  .thg-logo img {
-    max-height: 40px;
-    max-width: 48px;
-    object-fit: contain;
-    display: block;
-  }
-  .thg-title {
-    padding-left: 8px !important;
-    text-align: left;
-  }
-  .thg-title .laudo-main-title {
-    font-size: 10.5pt;
-    font-weight: bold;
-    color: #121315;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    line-height: 1.15;
-  }
-  .thg-title .laudo-sub-title {
-    font-size: 6.4pt;
-    color: #555;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-top: 2px;
-    line-height: 1.2;
-    white-space: normal;
-  }
-  .thg-meta {
-    width: 175px;
-    text-align: right;
-    font-size: 6.2pt;
-    color: #222;
-    line-height: 1.35;
-    white-space: normal;
-    word-break: break-all;
-  }
-  .thg-meta strong {
-    color: #121315;
-  }
-
-  .table-cadastral { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 7.2pt; background: rgba(255,255,255,0.9); }
-  .table-cadastral td { border: 1px solid #c0c0c0; padding: 3px 5px; }
-  .table-cadastral .cad-lbl { background: #faf6ec; font-weight: bold; width: 19%; color: #8a6a12; border-color: #d8ceb8; }
-  .table-cadastral .cad-val { width: 31%; color: #111; }
-
-  .room-banner { background: linear-gradient(90deg, #121315, #24272c); color: #dfba48; border-left: 4px solid #c59b27; font-size: 8.6pt; font-weight: bold; padding: 4px 8px; text-transform: uppercase; margin-top: 5px; margin-bottom: 4px; border-radius: 2px; }
-  .room-intro-text { font-size: 7pt; color: #333; margin-bottom: 5px; font-style: italic; line-height: 1.2; }
-
-  .table-inspection { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 6.8pt; background: rgba(255,255,255,0.9); }
-  .table-inspection th { background: #fbf8f0; border: 1px solid #d4cbb5; padding: 3px 4px; text-align: left; font-weight: bold; color: #73570e; }
-  .table-inspection td { border: 1px solid #ccc; padding: 3px 4px; vertical-align: top; line-height: 1.2; }
-  .classif-bom { font-weight: bold; color: #006622; }
-  .classif-atencao { font-weight: bold; color: #c0392b; }
-  .classif-avaria { font-weight: bold; color: #b30000; background: #fdf2f2; }
-
-  .grid-fotos-report { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; align-items: start; }
-  .foto-report-card { border: 1px solid #c0c0c0; background: #fafafa; padding: 3.5px; border-radius: 2px; text-align: left; break-inside: avoid; }
-  .foto-report-card img { width: 100%; height: 145px; object-fit: contain; object-position: center; display: block; border-radius: 1px; background: #f2f2f2; }
-  .foto-tag-title { font-size: 6.8pt; font-weight: bold; color: #0f2027; margin-top: 2.5px; display: flex; justify-content: space-between; align-items: center; }
-  .foto-badge-num { background: #faf4e3; color: #8a6a12; border: 1px solid #dfba48; padding: 1px 4px; border-radius: 2px; font-size: 6.2pt; font-weight: bold; }
-  .foto-tag-desc { font-size: 6pt; color: #444; margin-top: 1.5px; line-height: 1.15; }
-
-  /* SUBGRUPOS COMPACTOS DA PÁGINA TÉCNICA */
-  .special-subgroup-card {
-    border: 1px solid #dcd7ca;
-    background: rgba(253, 252, 249, 0.95);
-    border-radius: 4px;
-    padding: 6px 8px;
-    margin-bottom: 8px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .special-subgroup-header {
-    background: #faf6ec;
-    border-left: 3.5px solid #c59b27;
-    color: #73570e;
-    font-size: 7.4pt;
-    font-weight: bold;
-    padding: 2.5px 6px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .special-subgroup-content {
-    flex: 1;
-  }
-  .special-subgroup-photo {
-    width: 135px;
-    height: 92px;
-    border: 1px solid #ced4da;
-    background: #f8f9fa;
-    border-radius: 3px;
-    overflow: hidden;
-    flex-shrink: 0;
-    position: relative;
-  }
-  .special-subgroup-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .page-footer-line { position: absolute; bottom: 5mm; left: 11mm; right: 11mm; display: flex; flex-direction: column; gap: 2px; border-top: 1px solid #ddd; padding-top: 3px; background: #fff; }
-  .page-footer-meta { display: flex; justify-content: space-between; font-size: 6.5pt; color: #777; }
-  .page-footer-copy { text-align: center; font-size: 5.8pt; color: #888; letter-spacing: 0.2px; }
-
-  .box-ressalvas { background: #fdfcf9; border: 1px solid #dcd7ca; border-left: 4px solid #c59b27; padding: 8px 10px; font-size: 7.5pt; margin-top: 6px; line-height: 1.45; }
-  .box-ressalvas ul { padding-left: 14px; }
-  .box-ressalvas li { margin-bottom: 4px; text-align: justify; }
-
-  .termo-concordancia-box { font-size: 7.5pt; text-align: justify; line-height: 1.45; margin-top: 14px; color: #222; background: #f9fbfc; padding: 10px 12px; border: 1px solid #e1e4e8; border-radius: 4px; }
-  .laudo-copyright-notice { font-size: 6.8pt; color: #555; text-align: center; margin-top: 14px; padding: 6px 8px; background: #f8f9fa; border: 1px dashed #ced4da; border-radius: 4px; }
-
-  .vistoria-tipo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
-  .vistoria-tipo-card { position:relative; border:1.5px solid #ced4da; border-radius:10px; padding:12px; cursor:pointer; background:#f8f9fa; text-align:center; }
-  .vistoria-tipo-card input { position:absolute; opacity:0; pointer-events:none; }
-  .vistoria-tipo-card strong { display:block; font-size:.92rem; }
-  .vistoria-tipo-card span { display:block; font-size:.72rem; color:#6c757d; margin-top:3px; }
-  .vistoria-tipo-card:has(input:checked) { border-color:#c59b27; background:#fff8df; box-shadow:0 0 0 1px #c59b27 inset; }
-</style>
+    @keyframes spinner {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-screen pb-16">
 
-<!-- BARRA DE USUÁRIO AUTENTICADO -->
-<div id="user-bar" class="user-bar">
-  <div>Conectado como: <span id="user-display-email"></span> <span id="user-expires-badge" class="time-chip"></span></div>
-  <button class="btn-logout-link" onclick="handleSignOut()">Sair</button>
-</div>
+  <!-- Header Principal Centralizado e do tamanho do conteúdo -->
+  <header class="main-header text-white shadow-md sticky top-0 z-30">
+    <div class="mx-auto px-4 py-3.5 flex items-center justify-between" style="max-width: 650px;">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg shadow flex-shrink-0" style="background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315;">
+          R$
+        </div>
+        <div>
+          <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURADOR DE RENDA IA</h1>
+        </div>
+      </div>
+      <button onclick="toggleConfig()" class="text-[10px] px-2.5 py-1 rounded font-semibold tracking-wider uppercase border flex items-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500">
+        ⚙️ Configurar Chaves
+      </button>
+    </div>
+  </header>
 
-<!-- OVERLAY DE LOGIN / CADASTRO -->
-<div id="auth-overlay">
-  <div class="auth-box">
-    <img src="/logo.png" alt="M&IC Corretores" class="login-logo">
-    <h2>Vistoria Fácil Pro</h2>
-    <p>Acesse com seu e-mail e senha para prosseguir</p>
+  <!-- Contêiner Central Mobile -->
+  <main class="mx-auto p-4 space-y-4" style="max-width: 650px;">
 
-    <input type="email" id="auth-email" placeholder="E-mail profissional">
-    <input type="password" id="auth-password" placeholder="Sua senha ou código">
+    <!-- Painel Oculto de Configuração de Chaves -->
+    <div id="configPanel" class="hidden card-box p-4 border border-amber-500/50 bg-amber-50/30 space-y-3">
+      <h3 class="font-bold text-xs uppercase tracking-wider text-amber-800">Chaves de API (Salvas localmente no seu aparelho)</h3>
+      <div>
+        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Chave Groq API</label>
+        <input type="password" id="inputGroqKey" placeholder="gsk_..." class="w-full text-xs border rounded-lg px-3 py-2 bg-white" />
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Chave Gemini API</label>
+        <input type="password" id="inputGeminiKey" placeholder="AQ..." class="w-full text-xs border rounded-lg px-3 py-2 bg-white" />
+      </div>
+      <button onclick="salvarChaves()" class="w-full bg-slate-900 text-white font-bold py-2 rounded-lg text-xs">Salvar Chaves no Aparelho</button>
+    </div>
 
-    <button class="btn btn-primary" style="margin-top:6px;" onclick="handleLogin()">Entrar</button>
-    <button class="btn btn-next" style="margin-top:8px;" onclick="handleSignUp()">Criar Nova Conta</button>
+    <!-- Alerta de Processamento -->
+    <div id="statusAlert" class="hidden text-xs p-3.5 rounded-xl shadow-lg border flex items-center gap-3" style="background-color: var(--secondary); border-color: var(--accent); color: var(--silver);">
+      <div class="loader-gold rounded-full border-2 border-t-2 border-slate-600 h-4 w-4 flex-shrink-0"></div>
+      <span id="statusAlertTxt" class="font-medium tracking-wide">Processando imagens...</span>
+    </div>
 
-    <button class="btn btn-maintenance" onclick="requestMaintenanceOTP()">🛠️ Acesso Manutenção (Solicitar Código)</button>
-
-    <div id="auth-msg" class="auth-status-msg"></div>
-  </div>
-</div>
-
-<!-- BARREIRA DE BLOQUEIO POR FALTA DE ACESSO AVULSO ATIVO -->
-<div id="sub-barrier-overlay">
-  <div class="barrier-box">
-    <h3>Acesso Expirado ou Inativo</h3>
-    <p>Para emitir seu laudo pericial com inteligência artificial, libere seu <strong>acesso avulso de 2 horas</strong> por apenas <strong>R$ 5,00</strong>.</p>
-    <a href="https://www.asaas.com/c/uv6kefogcnoxdvkp" target="_blank" class="btn btn-primary" style="text-decoration:none;">Liberar Acesso (2 Horas - R$ 5,00)</a>
-    <button class="btn-logout-link" style="display:block; margin: 16px auto 0 auto;" onclick="handleSignOut()">Desconectar</button>
-  </div>
-</div>
-
-<header>
-  <img src="/logo.png" alt="M&IC Corretores" class="app-header-logo">
-  <div>
-    <h1>VISTORIA DE LOCAÇÃO COM IA</h1>
-    <p>Auditoria Fotográfica Pericial & Emissão de Laudo Técnico A4 | M&IC Corretores de Imóveis</p>
-  </div>
-</header>
-
-<div class="container">
-
-  <!-- ETAPA 1: CONTRATO -->
-  <div id="step-contract" class="step active">
-    <div class="card">
-      <h2>1. Contrato de Locação</h2>
-      <p style="font-size:0.82rem; color:#6c757d; margin-bottom:12px;">Selecione o arquivo do contrato assinado (Clicksign):</p>
-      
-      <label for="contractFile" class="file-dropzone">
-        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-        <div><strong>Toque para selecionar o Contrato (.PDF)</strong></div>
-        <span id="fileNameNotice" style="font-size:0.75rem; color:#888;">Arquivo assinado Clicksign</span>
-      </label>
-      <input type="file" id="contractFile" accept="application/pdf">
-
-      <div id="parseLoader" class="loader-box">
-        <div class="spinner"></div>
-        <div id="parseLoaderMsg" style="font-size:0.85rem; font-weight:600; color:#007bff;">Fazendo leitura direta do contrato...</div>
+    <!-- PASSO 1: Extratos Bancários (Origem Primária do Titular) -->
+    <div class="card-box p-4">
+      <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
+        <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          1. Extratos Bancários (Fotos ou Documentos)
+        </h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider text-white" style="background-color: var(--success);">Obrigatório</span>
       </div>
 
-      <div id="statusNoticeArea" style="margin-top:8px;"></div>
+      <p class="text-[11px] mb-3 leading-relaxed" style="color: #666;">Selecione fotos de extratos impressos, digitalizações ou arquivos PDF. A IA identifica o titular da conta automaticamente.</p>
 
-      <div style="margin-top:14px;">
-        <label>Locador(a):</label>
-        <input type="text" id="locador" placeholder="Nome do(a) Locador(a)">
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer" />
+      <div id="fileCounter" class="mt-2 text-[11px] font-medium" style="color: #888;">Nenhum arquivo selecionado.</div>
+    </div>
 
-        <label>Locatário(a):</label>
-        <input type="text" id="locatario" placeholder="Nome do(a) Locatário(a)">
+    <!-- PASSO 2: Documento do Cliente (Cruzamento via Certidão / CNH) -->
+    <div class="card-box p-4">
+      <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
+        <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          2. Documento do Cliente (Foto CNH / RG / Certidão de Casamento)
+        </h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
+      </div>
+      
+      <p class="text-[11px] mb-3 leading-relaxed" style="color: #666;">Anexe a foto da CNH, RG ou Certidão de Casamento. Em Certidão de Casamento, a IA cruza o nome do titular do extrato para identificar cônjuge e pais.</p>
 
-        <label>Endereço do Imóvel:</label>
-        <input type="text" id="imovel" placeholder="Endereço do Imóvel">
+      <div class="flex gap-2 mb-3">
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer" />
+        <button type="button" id="btnLerDoc" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">
+          Ler Foto/Doc
+        </button>
+      </div>
 
-        <label>Tipo de Vistoria:</label>
-        <div class="vistoria-tipo-grid">
-          <label class="vistoria-tipo-card">
-            <input type="radio" name="tipoVistoria" id="tipoEntrada" value="Entrada" checked>
-            <strong>🟢 VISTORIA DE ENTRADA</strong>
-            <span>Condições iniciais de ocupação</span>
-          </label>
-          <label class="vistoria-tipo-card">
-            <input type="radio" name="tipoVistoria" id="tipoSaida" value="Saída">
-            <strong>🔴 VISTORIA DE SAÍDA</strong>
-            <span>Condições na devolução do imóvel</span>
-          </label>
+      <!-- Campos de Conferência e Exclusão -->
+      <div class="space-y-2.5 pt-3 border-t" style="border-color: var(--border);">
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Cliente (Titular do Extrato)</label>
+          <input type="text" id="titularName" placeholder="Ex: Nome do titular" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none font-semibold text-slate-900" style="border-color: var(--border);" />
         </div>
-
-        <label>Número do Contrato / Clicksign ID:</label>
-        <input type="text" id="numContrato" placeholder="ID / Hash Clicksign">
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label>Data Início:</label>
-            <input type="date" id="dataInicio">
+            <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Pai</label>
+            <input type="text" id="paiName" placeholder="Ex: Nome do pai" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800" style="border-color: var(--border);" />
           </div>
           <div>
-            <label>Data Término:</label>
-            <input type="date" id="dataTermino">
+            <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome da Mãe</label>
+            <input type="text" id="maeName" placeholder="Ex: Nome da mãe" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800" style="border-color: var(--border);" />
           </div>
         </div>
-
-        <label>Data da Vistoria:</label>
-        <input type="date" id="dataVistoria">
-
-        <input type="hidden" id="emailContestacao" value="">
-        <input type="hidden" id="prazoContestacao" value="">
-        <input type="hidden" id="marcoContestacao" value="">
-        <textarea id="textoContestacao" hidden></textarea>
-        <textarea id="clausulaContestacaoOriginal" hidden></textarea>
-      </div>
-
-      <button class="btn btn-primary" onclick="goToStepRooms()">Prosseguir para Ambientes ➔</button>
-    </div>
-  </div>
-
-  <!-- ETAPA 2: AMBIENTES (CÔMODOS PRIMEIRO, ITENS TÉCNICOS DEPOIS) -->
-  <div id="step-rooms" class="step">
-    <div class="card">
-      <h2>2. Seleção de Ambientes e Itens Técnicos</h2>
-      <p style="font-size:0.82rem; color:#6c757d;">Marque os cômodos e itens presentes no imóvel:</p>
-
-      <div style="font-size:0.78rem; font-weight:bold; color:#555; margin-top:10px; text-transform:uppercase;">Cômodos do Imóvel:</div>
-      <div class="checkbox-grid" id="roomsGrid">
-        <label class="checkbox-card"><input type="checkbox" value="Sala" checked> Sala</label>
-        <label class="checkbox-card"><input type="checkbox" value="Cozinha" checked> Cozinha</label>
-        <label class="checkbox-card"><input type="checkbox" value="Área de Serviço" checked> Área de Serviço</label>
-        <label class="checkbox-card"><input type="checkbox" value="Banheiro" checked> Banheiro</label>
-        <label class="checkbox-card"><input type="checkbox" value="Suíte"> Suíte</label>
-        <label class="checkbox-card"><input type="checkbox" value="Quarto 1" checked> Quarto 1</label>
-        <label class="checkbox-card"><input type="checkbox" value="Quarto 2" checked> Quarto 2</label>
-        <label class="checkbox-card"><input type="checkbox" value="Quarto 3"> Quarto 3</label>
-        <label class="checkbox-card"><input type="checkbox" value="Quarto 4"> Quarto 4</label>
-        <label class="checkbox-card"><input type="checkbox" value="Dependência de Empregada"> Dependência</label>
-        <label class="checkbox-card"><input type="checkbox" value="Varanda"> Varanda</label>
-      </div>
-
-      <div style="font-size:0.78rem; font-weight:bold; color:#c59b27; margin-top:16px; text-transform:uppercase;">Itens Técnicos Especiais:</div>
-      <div class="checkbox-grid" id="specialRoomsGrid">
-        <label class="checkbox-card special-room"><input type="checkbox" value="Relógio de luz" checked> ⚡ Relógio de luz</label>
-        <label class="checkbox-card special-room"><input type="checkbox" value="Medidor de Gás" checked> 🔥 Medidor de Gás</label>
-        <label class="checkbox-card special-room"><input type="checkbox" value="Chaves" checked> 🔑 Chaves do Imóvel</label>
-      </div>
-
-      <button class="btn btn-primary" onclick="startPhotoStep()">Iniciar Registro Fotográfico ➔</button>
-    </div>
-  </div>
-
-  <!-- ETAPA 3: REGISTRO FOTOGRÁFICO POR CÔMODO / ITEM -->
-  <div id="step-photos" class="step">
-    <div class="card">
-      <div class="room-header">
-        <span class="badge" id="roomBadge">Ambiente 1 de 5</span>
-        <h3 id="currentRoomTitle" style="margin-top:4px; font-size:1.15rem; color:#0f2027;">Sala</h3>
-      </div>
-
-      <label for="cameraInput" class="btn btn-camera" id="btnCaptureArea">
-        <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-        Tirar Foto / Anexar Imagem
-      </label>
-      <input type="file" id="cameraInput" accept="image/*" capture="environment">
-
-      <button type="button" id="btnToggleUnavailable" class="btn btn-not-available" style="display:none;" onclick="toggleRoomUnavailable()">
-        Marcar como: "Não possui / Não disponível no imóvel"
-      </button>
-
-      <div class="photo-counter" id="photoCountNotice">0 fotos</div>
-      <div class="photo-gallery" id="roomPhotoGallery"></div>
-
-      <button id="btnNextRoom" class="btn btn-next" style="display:none;" onclick="handleNextRoom()">Passar para o próximo Item/Cômodo ➔</button>
-      <button id="btnFinish" class="btn btn-primary" style="display:none;" onclick="startGeminiAuditAndPdf()">Gerar Laudo Pericial com IA Gemini ★</button>
-
-      <div id="aiLoader" class="loader-box">
-        <div class="spinner"></div>
-        <div id="aiLoaderText" style="font-size:0.85rem; font-weight:600; color:#007bff;">O Gemini está analisando os detalhes técnicos...</div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Cônjuge (Para Exclusão)</label>
+          <input type="text" id="conjugeName" placeholder="Ex: Nome da esposa/esposo" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800 font-semibold" style="border-color: var(--border);" />
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ETAPA 4: LAUDO PRONTO & COMPARTILHAMENTO -->
-  <div id="step-final" class="step">
-    <div class="card" style="text-align:center;">
-      <h2 style="justify-content:center; color:#28a745;">✓ Laudo Pericial Gerado com Sucesso!</h2>
-      <p style="font-size:0.85rem; color:#555; margin:10px 0;">O Laudo de Vistoria foi auditado pela IA e diagramado no padrão pericial A4 sem páginas em branco.</p>
+    <!-- Botão Primário CTA Ouro -->
+    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+      <span id="txtBtnApura">Executar Apuração Visual via IA</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </button>
+
+    <!-- Card 3: Sucesso e Ações do Laudo PDF (Sem tabelas na tela) -->
+    <div id="resultadoBox" class="hidden space-y-3 pt-1">
       
-      <button id="btnShareNative" class="btn btn-share" onclick="sharePdfNative()">
-        <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-        Compartilhar Laudo PDF (WhatsApp / Drive / Gmail)
+      <!-- Box Confirmação Ouro / Grafite -->
+      <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
+        <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center shadow-md" style="background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315;">
+          <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3 class="font-bold text-sm tracking-wider uppercase" style="color: var(--primary);">Apuração Concluída com Sucesso</h3>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 com a tabela consolidada Mês/Ano foi gerado e está pronto para envio.</p>
+      </div>
+
+      <!-- Botões de Exportação do PDF -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          <span>Compartilhar</span>
+        </button>
+
+        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider border" style="background-color: var(--secondary); border-color: var(--border);">
+          <svg class="w-4 h-4" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Baixar PDF</span>
+        </button>
+      </div>
+
+      <!-- Botão Nova Análise -->
+      <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition border flex items-center justify-center gap-2" style="background-color: #ffffff; color: var(--secondary); border-color: var(--border);">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>Nova Análise</span>
       </button>
 
-      <button class="btn btn-download" onclick="downloadPdfDirect()">
-        Baixar Arquivo PDF Novamente
-      </button>
-
-      <button class="btn btn-next" style="margin-top:20px; background:#6c757d;" onclick="location.reload()">
-        Iniciar Nova Vistoria
-      </button>
     </div>
-  </div>
 
-  <div class="app-copyright">
-    © Desenvolvido por <strong>M&IC Corretores de Imóveis</strong>. Todos os direitos reservados.<br>
-    O uso deste aplicativo necessita de autorização prévia e expressa.
-  </div>
+  </main>
 
-</div>
+  <script>
+    function getGroqKey() { return localStorage.getItem('groq_key') || ""; }
+    function getGeminiKey() { return localStorage.getItem('gemini_key') || ""; }
 
-<!-- CONTAINER DE RENDERIZAÇÃO DO PDF PERICIAL -->
-<div id="pdfTemplateWrapper"></div>
-
-<script>
-  const SUPABASE_URL = 'https://hxwxxrxbgrmlhmtmszcp.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_qGU-Xmh2FNapx_bWu8VAAw_zMA1gHvf';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  let currentVistoriadorEmail = "Não identificado";
-
-  const authOverlay = document.getElementById('auth-overlay');
-  const subBarrierOverlay = document.getElementById('sub-barrier-overlay');
-  const userBar = document.getElementById('user-bar');
-  const userDisplayEmail = document.getElementById('user-display-email');
-  const userExpiresBadge = document.getElementById('user-expires-badge');
-  const authMsg = document.getElementById('auth-msg');
-
-  async function checkUserSubscription(user) {
-    if (!user) {
-      authOverlay.style.display = 'flex';
-      subBarrierOverlay.style.display = 'none';
-      userBar.style.display = 'none';
-      currentVistoriadorEmail = "Não identificado";
-      return;
+    function toggleConfig() {
+      const p = document.getElementById('configPanel');
+      p.classList.toggle('hidden');
+      document.getElementById('inputGroqKey').value = getGroqKey();
+      document.getElementById('inputGeminiKey').value = getGeminiKey();
     }
 
-    currentVistoriadorEmail = user.email;
-    authOverlay.style.display = 'none';
-    userBar.style.display = 'flex';
-    userDisplayEmail.innerText = user.email;
-
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status, subscription_expires_at, role')
-      .eq('id', user.id)
-      .single();
-
-    if (data && data.role === 'admin') {
-      subBarrierOverlay.style.display = 'none';
-      if (userExpiresBadge) userExpiresBadge.innerText = 'Acesso VIP';
-      return;
+    function salvarChaves() {
+      localStorage.setItem('groq_key', document.getElementById('inputGroqKey').value.trim());
+      localStorage.setItem('gemini_key', document.getElementById('inputGeminiKey').value.trim());
+      alert("Chaves salvas com sucesso neste dispositivo!");
+      toggleConfig();
     }
 
-    const agora = new Date();
-    const expiresAt = data?.subscription_expires_at ? new Date(data.subscription_expires_at) : null;
-    const isAtivoValido = data && data.subscription_status === 'ativo' && expiresAt && agora < expiresAt;
+    const MODELOS_VISAO = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"];
+    let transacoesAnalisadas = [], consolidadoMeses = [], dadosCliente = {};
 
-    if (data && data.role === 'manutencao') {
-      if (isAtivoValido) {
-        subBarrierOverlay.style.display = 'none';
-        const horaFormatada = expiresAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        if (userExpiresBadge) userExpiresBadge.innerText = 'Manutenção até ' + horaFormatada;
-      } else {
-        subBarrierOverlay.style.display = 'flex';
-        if (userExpiresBadge) userExpiresBadge.innerText = 'Manutenção Expirada';
+    function showStatus(msg) {
+      document.getElementById('statusAlert').classList.remove('hidden');
+      document.getElementById('statusAlertTxt').innerText = msg;
+    }
+    function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
+
+    document.getElementById('extratosInput').addEventListener('change', async function(e) {
+      const count = e.target.files.length;
+      document.getElementById('fileCounter').innerText = count > 0 ? `${count} arquivo(s) selecionado(s)` : 'Nenhum arquivo selecionado.';
+
+      if (e.target.files && e.target.files[0]) {
+        try {
+          const file = e.target.files[0];
+          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            const resPdf = await extrairDadosCompletosPDF(file);
+            if (resPdf.texto) {
+              const linhas = resPdf.texto.split('\n').map(l => l.trim()).filter(Boolean);
+              for (let l of linhas.slice(0, 20)) {
+                const mNome = l.match(/^([A-ZÀ-Ú ]{8,50})(?:\s+\d{3}\.\d{3}\.\d{3}-\d{2}|\s+CPF)/i);
+                if (mNome && !document.getElementById('titularName').value) {
+                  document.getElementById('titularName').value = mNome[1].trim();
+                  break;
+                }
+              }
+            }
+          }
+        } catch (err) { console.warn("Extração de titular do extrato:", err); }
       }
-      return;
-    }
-
-    if (error || !isAtivoValido) {
-      subBarrierOverlay.style.display = 'flex';
-      if (userExpiresBadge) userExpiresBadge.innerText = 'Acesso Bloqueado';
-    } else {
-      subBarrierOverlay.style.display = 'none';
-      const horaFormatada = expiresAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      if (userExpiresBadge) userExpiresBadge.innerText = 'Válido até ' + horaFormatada;
-    }
-  }
-
-  async function handleLogin() {
-    authMsg.className = 'auth-status-msg';
-    authMsg.innerText = 'Entrando...';
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-
-    if (!email || !password) {
-      authMsg.className = 'auth-status-msg auth-status-err';
-      authMsg.innerText = 'Preencha e-mail e senha.';
-      return;
-    }
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      authMsg.className = 'auth-status-msg auth-status-err';
-      authMsg.innerText = 'Erro: ' + error.message;
-    } else {
-      authMsg.innerText = '';
-      checkUserSubscription(data.user);
-    }
-  }
-
-  async function handleSignUp() {
-    authMsg.className = 'auth-status-msg';
-    authMsg.innerText = 'Criando sua conta...';
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-
-    if (!email || !password) {
-      authMsg.className = 'auth-status-msg auth-status-err';
-      authMsg.innerText = 'Preencha e-mail e senha.';
-      return;
-    }
-
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) {
-      authMsg.className = 'auth-status-msg auth-status-err';
-      authMsg.innerText = 'Erro: ' + error.message;
-    } else {
-      authMsg.className = 'auth-status-msg auth-status-ok';
-      authMsg.innerText = 'Conta criada com sucesso!';
-      checkUserSubscription(data.user);
-    }
-  }
-
-  async function requestMaintenanceOTP() {
-    authMsg.className = 'auth-status-msg';
-    authMsg.innerText = 'Gerando código e enviando por e-mail...';
-    
-    document.getElementById('auth-email').value = 'manutencao@vistoriafacil.com';
-    document.getElementById('auth-password').value = '';
-
-    try {
-      const res = await fetch('/api/manutencao-otp', { method: 'POST' });
-      const json = await res.json();
-
-      if (res.ok && json.success) {
-        authMsg.className = 'auth-status-msg auth-status-ok';
-        authMsg.innerText = '✓ Código enviado! Confira seu e-mail e digite a senha.';
-      } else {
-        authMsg.className = 'auth-status-msg auth-status-err';
-        authMsg.innerText = 'Erro: ' + (json.error || 'Falha ao solicitar código');
-      }
-    } catch (err) {
-      authMsg.className = 'auth-status-msg auth-status-err';
-      authMsg.innerText = 'Erro de conexão: ' + err.message;
-    }
-  }
-
-  async function handleSignOut() {
-    await supabaseClient.auth.signOut();
-    window.location.reload();
-  }
-
-  supabaseClient.auth.getSession().then(({ data: { session } }) => {
-    checkUserSubscription(session?.user || null);
-  });
-
-  window.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('dataVistoria').valueAsDate = new Date();
-  });
-
-  document.querySelectorAll('.checkbox-card input').forEach(function(input) {
-    input.addEventListener('change', function() {
-      this.parentElement.classList.toggle('checked', this.checked);
     });
-    if(input.checked) input.parentElement.classList.add('checked');
-  });
 
-  function decodeAddressOnly(text) {
-    if (!text) return "";
-    var s = text;
-    s = s.replace(/PraÁa/g, "Praça")
-         .replace(/praÁa/g, "praça")
-         .replace(/HÈlder/g, "Hélder")
-         .replace(/hÈlder/g, "hélder")
-         .replace(/c‚mara/g, "câmara")
-         .replace(/C‚mara/g, "Câmara")
-         .replace(/n∫/g, "nº")
-         .replace(/N∫/g, "Nº")
-         .replace(/n\s*∫/g, "nº")
-         .replace(/∫/g, "º")
-         .replace(/™/g, "ª")
-         .replace(/‚/g, "â")
-         .replace(/È/g, "é")
-         .replace(/Á(?=[a-z])/g, "ç");
+    document.getElementById('docInput').addEventListener('change', function() { lerDocumentoCliente(); });
 
-    try { s = s.normalize('NFC'); } catch(e) {}
-    return s.replace(/\s+/g, ' ').trim();
-  }
+    function otimizarFotoBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1500; let width = img.width, height = img.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+              else { width = Math.round((width * maxDim) / height); height = maxDim; }
+            }
+            const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+          };
+          img.onerror = reject; img.src = e.target.result;
+        };
+        reader.onerror = reject; reader.readAsDataURL(file);
+      });
+    }
 
-  function isValidPersonName(str) {
-    if (!str) return false;
-    var s = str.trim();
-    var sNorm = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    async function extrairDadosCompletosPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const imagens = []; let texto = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const txtContent = await page.getTextContent();
+        texto += txtContent.items.map(it => it.str).join(" ") + "\n";
+        const viewport = page.getViewport({ scale: 1.3 });
+        const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+      }
+      return { texto: texto.trim(), imagens };
+    }
 
-    var monthRegex = /\b(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/i;
-    if (monthRegex.test(sNorm) && /\d/.test(s)) return false;
-    if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(s)) return false;
-    if (/^\d{1,2}\s+[a-z]{3,9}\s+\d{2,4}/i.test(sNorm)) return false;
+    function parseCNHLocalRegex(texto) {
+      if (!texto) return {};
+      const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+      const dados = {};
+      const termosIgnorar = ['MINISTERIO', 'MINISTÉRIO', 'SECRETARIA', 'SENATRAN', 'CARTEIRA', 'NACIONAL', 'HABILITAÇÃO', 'HABILITACAO', 'DRIVER', 'LICENSE', 'PERMISO', 'CONDUCCIÓN', 'RIO DE JANEIRO', 'BRASILEIRO', 'SERPRO', 'DETRAN', 'ASSINADOR', 'VALIDA', 'TERRITORIO', 'FEDERATIVA', 'DE JANEIRO', 'SOBRENOME', 'OPGEMISOOR', 'DOCUMENTO', 'ASSINADO', 'MEDIDA', 'PROVISORIA', 'VALIDADE', 'CONFORMIDADE', 'PROGRAMA', 'QR-CODE'];
 
-    if (s.indexOf('@') !== -1) return false;
-    if (sNorm.indexOf("cpf") !== -1 || sNorm.indexOf("cnpj") !== -1 || sNorm.indexOf("rg") !== -1) return false;
-    if (sNorm.indexOf("hash") !== -1 || sNorm.indexOf("ip:") !== -1 || sNorm.indexOf("token") !== -1) return false;
-    if (sNorm.indexOf("assinou") !== -1 || sNorm.indexOf("autenticado") !== -1 || sNorm.indexOf("clicksign") !== -1) return false;
-    if (/^\d+$/.test(s.replace(/[\.\-\s\/]/g, ''))) return false;
-
-    if (!/[A-Za-zÀ-Úà-ú]{3,}/.test(s)) return false;
-    return true;
-  }
-
-  function cleanName(raw) {
-    if (!raw) return "";
-    var s = raw.trim();
-    s = s.replace(/^(?:Nome|Signat[aá]rio|Sr\.|Sra\.)\s*[:\-–]?\s*/i, '');
-    s = s.replace(/\s+CPF.*$/i, '');
-    s = s.replace(/\s+assinou.*$/i, '');
-    var parts = s.split(',');
-    return parts[0].trim();
-  }
-
-  function cleanSearch(text) {
-    if (!text) return "";
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  }
-
-  var contractInput = document.getElementById('contractFile');
-  contractInput.addEventListener('change', async function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-
-    document.getElementById('fileNameNotice').innerText = file.name;
-    var loader = document.getElementById('parseLoader');
-    var statusArea = document.getElementById('statusNoticeArea');
-    loader.style.display = 'block';
-    statusArea.innerHTML = '';
-
-    try {
-      var arrayBuffer = await file.arrayBuffer();
-      var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
-      var allRawLines = [];
-      var page1RawLines = [];
-
-      for (var p = 1; p <= pdf.numPages; p++) {
-        var page = await pdf.getPage(p);
-        var textContent = await page.getTextContent();
-        
-        for (var i = 0; i < textContent.items.length; i++) {
-          var str = textContent.items[i].str;
-          if (str && str.trim().length > 0) {
-            allRawLines.push(str.trim());
-            if (p === 1) page1RawLines.push(str.trim());
+      for (let i = linhas.length - 1; i >= 0; i--) {
+        const l = linhas[i];
+        if (l.includes('<<')) {
+          const partes = l.split('<<');
+          if (partes.length >= 2 && !/\d/.test(partes[0])) {
+            const p1 = partes[0].replace(/</g, '').trim();
+            const p2 = partes[1].replace(/</g, ' ').replace(/\s+/g, ' ').trim();
+            const nomeCompleto = `${p1} ${p2}`.trim();
+            if (nomeCompleto.length > 5 && !nomeCompleto.includes('BRA')) { dados.titular = nomeCompleto; break; }
           }
         }
       }
 
-      runContractExtractionV16(allRawLines, page1RawLines);
-      statusArea.innerHTML = '<span class="status-tag tag-ok">✓ Contrato lido e dados cadastrais carregados.</span>';
-
-    } catch (err) {
-      console.error(err);
-      statusArea.innerHTML = '<span class="status-tag" style="background:#fff3cd; color:#856404;">Erro ao processar PDF: ' + err.message + '</span>';
-    } finally {
-      loader.style.display = 'none';
-    }
-  });
-
-  function runContractExtractionV16(allLines, page1Lines) {
-    var page1Text = page1Lines.join(" ");
-    var locadorEncontrado = "";
-    var mLoc1 = page1Text.match(/LOCADOR(?:A)?\s*\(?\s*A\s*\)?\s*[:\-–]?\s*([^,;\n]+)/i);
-    if (mLoc1 && isValidPersonName(mLoc1[1])) locadorEncontrado = cleanName(mLoc1[1]);
-    if (!locadorEncontrado) {
-      for (var i = 0; i < allLines.length; i++) {
-        if (cleanSearch(allLines[i]).indexOf("assinou como locador") !== -1) {
-          locadorEncontrado = findTrueSignerAbove(allLines, i);
-          if (locadorEncontrado) break;
+      if (!dados.titular) {
+        for (let i = 0; i < linhas.length; i++) {
+          const u = linhas[i].toUpperCase();
+          if (u.includes('HABILITAÇÃO') || u.includes('SOBRENOME')) {
+            for (let j = i + 1; j < Math.min(i + 4, linhas.length); j++) {
+              const cand = linhas[j];
+              if (/^[A-ZÀ-Ú ]{6,50}$/i.test(cand) && !/\d/.test(cand)) {
+                if (!termosIgnorar.some(t => cand.toUpperCase().includes(t))) { dados.titular = cand; break; }
+              }
+            }
+            if (dados.titular) break;
+          }
         }
       }
-    }
-    if (locadorEncontrado) {
-      document.getElementById('locador').value = locadorEncontrado;
-      highlightField('locador');
-    }
 
-    var locatarioEncontrado = "";
-    var mLocat1 = page1Text.match(/LOCAT[AÁ]RIO(?:A)?\s*\(?\s*A\s*\)?\s*[:\-–]?\s*([^,;\n]+)/i);
-    if (mLocat1 && isValidPersonName(mLocat1[1])) locatarioEncontrado = cleanName(mLocat1[1]);
-    if (!locatarioEncontrado) {
-      for (var j = 0; j < allLines.length; j++) {
-        if (cleanSearch(allLines[j]).indexOf("assinou como locatario") !== -1) {
-          locatarioEncontrado = findTrueSignerAbove(allLines, j);
-          if (locatarioEncontrado) break;
+      const nomesFil = [];
+      for (let l of linhas) {
+        const u = l.toUpperCase();
+        if (/^[A-ZÀ-Ú ]{8,60}$/i.test(l) && l.split(/\s+/).length >= 3) {
+          if (!termosIgnorar.some(t => u.includes(t)) && l !== dados.titular) { nomesFil.push(l); }
         }
       }
-    }
-    if (locatarioEncontrado) {
-      document.getElementById('locatario').value = locatarioEncontrado;
-      highlightField('locatario');
-    }
 
-    var addressRaw = extractAddressAfterSituado(page1Text);
-    if (addressRaw) {
-      document.getElementById('imovel').value = decodeAddressOnly(addressRaw);
-      highlightField('imovel');
+      if (nomesFil.length >= 2) { dados.pai = nomesFil[0]; dados.mae = nomesFil[1]; }
+      else if (nomesFil.length === 1) { dados.mae = nomesFil[0]; }
+      return dados;
     }
 
-    for (var k = 0; k < allLines.length; k++) {
-      var mUuid = allLines[k].match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
-      if (mUuid) {
-        document.getElementById('numContrato').value = mUuid[1];
-        highlightField('numContrato');
-        break;
-      }
-    }
-
-    var dateMatches = page1Text.match(/\b\d{2}\/\d{2}\/\d{4}\b/g);
-    if (dateMatches && dateMatches.length >= 2) {
-      var toIso = function(d) { return d.split('/').reverse().join('-'); };
-      document.getElementById('dataInicio').value = toIso(dateMatches[0]);
-      document.getElementById('dataTermino').value = toIso(dateMatches[1]);
-    }
-  }
-
-  function findTrueSignerAbove(lines, index) {
-    for (var j = index - 1; j >= Math.max(0, index - 8); j--) {
-      var candidate = lines[j].trim();
-      if (isValidPersonName(candidate)) return cleanName(candidate);
-    }
-    return "";
-  }
-
-  function extractAddressAfterSituado(text) {
-    if (!text) return "";
-    var normText = cleanSearch(text);
-    var indexSituado = normText.indexOf("situado");
-
-    if (indexSituado !== -1) {
-      var afterSituado = text.substring(indexSituado + 7).trim();
-      afterSituado = afterSituado.replace(/^(?:na|no|à|a|em|:)\s+/i, '').trim();
-      var addressCandidate = afterSituado.split(/[;\.\r\n]/)[0].trim();
-      addressCandidate = addressCandidate.replace(/(?:,?\s*destinado\s+exclusivamente|para\s+fins\s+residenciais|conforme).*/i, '').trim();
-      if (addressCandidate.length > 5) return addressCandidate;
-    }
-
-    var indexImovel = normText.indexOf("imovel:");
-    if (indexImovel !== -1) {
-      var afterImov = text.substring(indexImovel + 7).trim();
-      var addr = afterImov.split(/[;\.\r\n]/)[0].trim();
-      return addr.replace(/(?:destinado|para\s+fins).*/i, '').trim();
-    }
-    return "";
-  }
-
-  function highlightField(id) {
-    var el = document.getElementById(id);
-    if (el) {
-      el.classList.add('field-ok');
-      setTimeout(function() { el.classList.remove('field-ok'); }, 3000);
-    }
-  }
-
-  function goToStepRooms() {
-    document.getElementById('step-contract').classList.remove('active');
-    document.getElementById('step-rooms').classList.add('active');
-    window.scrollTo(0, 0);
-  }
-
-  var selectedRooms = [];
-  var currentRoomIndex = 0;
-  var roomsData = {};
-
-  function isSpecialItem(roomName) {
-    var r = cleanSearch(roomName);
-    return (r.indexOf("luz") !== -1 || r.indexOf("gas") !== -1 || r.indexOf("chaves") !== -1);
-  }
-
-  function getMinPhotosForRoom(roomName) {
-    return isSpecialItem(roomName) ? 1 : 3;
-  }
-
-  function getRoomPrefix(roomName) {
-    var r = cleanSearch(roomName);
-    if (r.indexOf("relogio") !== -1 || r.indexOf("luz") !== -1) return "LUZ";
-    if (r.indexOf("gas") !== -1) return "GAS";
-    if (r.indexOf("chaves") !== -1) return "CHV";
-    if (r.indexOf("sala") !== -1) return "S";
-    if (r.indexOf("banheiro") !== -1) return "B";
-    if (r.indexOf("suite") !== -1) return "ST";
-    if (r.indexOf("quarto 1") !== -1) return "Q1_";
-    if (r.indexOf("quarto 2") !== -1) return "Q2_";
-    if (r.indexOf("quarto 3") !== -1) return "Q3_";
-    if (r.indexOf("quarto 4") !== -1) return "Q4_";
-    if (r.indexOf("cozinha") !== -1) return "C";
-    if (r.indexOf("servico") !== -1 || r.indexOf("área") !== -1) return "AS_";
-    if (r.indexOf("varanda") !== -1) return "V";
-    if (r.indexOf("dependencia") !== -1) return "DEP_";
-    return r.substring(0, 3).toUpperCase() + "_";
-  }
-
-  function startPhotoStep() {
-    var normalCheckboxes = document.querySelectorAll('#roomsGrid input[type="checkbox"]:checked');
-    var specialCheckboxes = document.querySelectorAll('#specialRoomsGrid input[type="checkbox"]:checked');
-    
-    var normalList = Array.from(normalCheckboxes).map(function(c) { return c.value; });
-    var specialList = Array.from(specialCheckboxes).map(function(c) { return c.value; });
-    
-    // Cômodos normais primeiro, itens especiais no final
-    selectedRooms = normalList.concat(specialList);
-    
-    if (selectedRooms.length === 0) {
-      alert("Selecione ao menos 1 item ou cômodo.");
-      return;
-    }
-
-    currentRoomIndex = 0;
-    roomsData = {};
-    selectedRooms.forEach(function(r) { 
-      roomsData[r] = { photos: [], aiAnalysis: null, unavailable: false }; 
-    });
-
-    document.getElementById('step-rooms').classList.remove('active');
-    document.getElementById('step-photos').classList.add('active');
-    renderCurrentRoom();
-  }
-
-  function renderCurrentRoom() {
-    var room = selectedRooms[currentRoomIndex];
-    var isSpecial = isSpecialItem(room);
-    var badgeEl = document.getElementById('roomBadge');
-    
-    badgeEl.innerText = (isSpecial ? "Item Técnico " : "Cômodo ") + (currentRoomIndex + 1) + " de " + selectedRooms.length;
-    badgeEl.className = isSpecial ? "badge badge-special" : "badge";
-    document.getElementById('currentRoomTitle').innerText = room;
-
-    var btnUnavail = document.getElementById('btnToggleUnavailable');
-    if (isSpecial) {
-      btnUnavail.style.display = 'block';
-      if (roomsData[room].unavailable) {
-        btnUnavail.classList.add('active');
-        btnUnavail.innerText = '✓ Marcado como: Não possui / Não disponível (Toque para desmarcar)';
-      } else {
-        btnUnavail.classList.remove('active');
-        btnUnavail.innerText = 'Marcar como: "Não possui / Não disponível no imóvel"';
-      }
-    } else {
-      btnUnavail.style.display = 'none';
-    }
-
-    updatePhotosUI();
-    window.scrollTo(0, 0);
-  }
-
-  function toggleRoomUnavailable() {
-    var room = selectedRooms[currentRoomIndex];
-    roomsData[room].unavailable = !roomsData[room].unavailable;
-    if (roomsData[room].unavailable) {
-      roomsData[room].photos = [];
-    }
-    renderCurrentRoom();
-  }
-
-  function removePhoto(photoIndex) {
-    var room = selectedRooms[currentRoomIndex];
-    roomsData[room].photos.splice(photoIndex, 1);
-    updatePhotosUI();
-  }
-
-  function updatePhotosUI() {
-    var room = selectedRooms[currentRoomIndex];
-    var data = roomsData[room];
-    var photos = data.photos;
-    var gallery = document.getElementById('roomPhotoGallery');
-    var countNotice = document.getElementById('photoCountNotice');
-    var captureArea = document.getElementById('btnCaptureArea');
-    var minPhotos = getMinPhotosForRoom(room);
-
-    gallery.innerHTML = '';
-
-    if (data.unavailable) {
-      captureArea.style.display = 'none';
-      countNotice.innerText = '⚠️ Item marcado como NÃO POSSUI / NÃO DISPONÍVEL no imóvel.';
-      countNotice.style.color = 'var(--warning)';
-    } else {
-      captureArea.style.display = 'inline-flex';
-      photos.forEach(function(src, idx) {
-        var card = document.createElement('div');
-        card.className = 'photo-card';
-        card.innerHTML = `
-          <img src="${src}">
-          <span style="position:absolute;bottom:2px;right:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;">#${idx+1}</span>
-          <button type="button" class="photo-delete-btn" onclick="removePhoto(${idx})" title="Excluir foto">🗑️</button>
-        `;
-        gallery.appendChild(card);
+    async function chamarGroqAPI(promptTexto) {
+      const key = getGroqKey();
+      if (!key) throw new Error("Chave Groq não configurada. Clique em '⚙️ Configurar Chaves'.");
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "system", content: "Retorne estritamente um JSON válido." }, { role: "user", content: promptTexto }],
+          response_format: { type: "json_object" }, temperature: 0.1
+        })
       });
-
-      countNotice.innerText = photos.length + " foto(s) tirada(s) " + (photos.length < minPhotos ? "(mínimo " + minPhotos + " foto)" : "✓ Mínimo atingido");
-      countNotice.style.color = photos.length >= minPhotos ? 'var(--success)' : '#6c757d';
+      if (!res.ok) throw new Error("Erro na API Groq");
+      return (await res.json()).choices[0].message.content;
     }
 
-    var isLastRoom = (currentRoomIndex === selectedRooms.length - 1);
-    var btnNext = document.getElementById('btnNextRoom');
-    var btnFinish = document.getElementById('btnFinish');
-
-    var isReady = data.unavailable || (photos.length >= minPhotos);
-
-    if (isReady) {
-      if (isLastRoom) {
-        btnNext.style.display = 'none';
-        btnFinish.style.display = 'flex';
-      } else {
-        btnNext.style.display = 'flex';
-        btnFinish.style.display = 'none';
-      }
-    } else {
-      btnNext.style.display = 'none';
-      btnFinish.style.display = 'none';
-    }
-  }
-
-  var cameraInput = document.getElementById('cameraInput');
-  cameraInput.addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-
-    var reader = new FileReader();
-    reader.onload = function(event) {
-      var img = new Image();
-      img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var MAX_WIDTH = 1200;
-        var scaleSize = MAX_WIDTH / img.width;
-        canvas.width = (img.width > MAX_WIDTH) ? MAX_WIDTH : img.width;
-        canvas.height = (img.width > MAX_WIDTH) ? img.height * scaleSize : img.height;
-
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-        var room = selectedRooms[currentRoomIndex];
-        roomsData[room].unavailable = false;
-        roomsData[room].photos.push(dataUrl);
-        updatePhotosUI();
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-    cameraInput.value = '';
-  });
-
-  function handleNextRoom() {
-    if (currentRoomIndex < selectedRooms.length - 1) {
-      currentRoomIndex++;
-      renderCurrentRoom();
-    }
-  }
-
-  async function callGeminiPericialIndividual(roomName, photosDataUrls) {
-    var response = await fetch('/api/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        roomName: roomName, 
-        photosDataUrls: photosDataUrls,
-        isMeterReading: (cleanSearch(roomName).indexOf("luz") !== -1 || cleanSearch(roomName).indexOf("gas") !== -1)
-      })
-    });
-
-    if (!response.ok) {
-      var errData = await response.json().catch(function(){ return {}; });
-      throw new Error(errData.error || ('Erro no servidor HTTP ' + response.status));
-    }
-
-    var result = await response.json();
-    return normalizeRoomResult(result, roomName, photosDataUrls.length);
-  }
-
-  function normalizeRoomResult(obj, roomName, photoCount) {
-    obj = obj || {};
-    var fs = Array.isArray(obj.fotos) ? obj.fotos : [];
-    var fotos = [];
-    for (var i = 0; i < photoCount; i++) {
-      var f = fs[i] || {};
-      fotos.push({
-        titulo: String(f.titulo || ('Registro ' + (i + 1) + ' — ' + roomName)).trim(),
-        descricao: String(f.descricao || 'Registro fotográfico técnico do item.').trim(),
-        avaria: f.avaria === true
-      });
-    }
-    var els = Array.isArray(obj.elementos) ? obj.elementos : [];
-    return {
-      introducao: String(obj.introducao || ('Auditoria técnica do item/ambiente ' + roomName + '.')).trim(),
-      elementos: els.length ? els : [{ elemento: roomName, descricao: 'Constatações limitadas ao registro fotográfico.', funcionamento: 'Em conformidade visual', classificacao: 'BOM' }],
-      fotos: fotos,
-      ressalvas: String(obj.ressalvas || 'Registros consolidados conforme visualizado no momento da inspeção.').trim()
-    };
-  }
-
-  async function startGeminiAuditAndPdf() {
-    var btnFinish = document.getElementById('btnFinish');
-    var aiLoader = document.getElementById('aiLoader');
-    var aiText = document.getElementById('aiLoaderText');
-
-    if (!selectedRooms || !selectedRooms.length) {
-      alert('Nenhum item ou ambiente foi selecionado.');
-      return;
-    }
-
-    var invalidItems = selectedRooms.filter(function(room) {
-      var rData = roomsData[room];
-      if (rData.unavailable) return false;
-      var min = getMinPhotosForRoom(room);
-      return (!rData.photos || rData.photos.length < min);
-    });
-
-    if (invalidItems.length) {
-      alert('Os seguintes itens precisam ter o mínimo de fotos ou serem marcados como "Não possui":\n\n' + invalidItems.join('\n'));
-      return;
-    }
-
-    btnFinish.disabled = true;
-    btnFinish.style.opacity = '0.65';
-    aiLoader.style.display = 'block';
-
-    try {
-      for (var i = 0; i < selectedRooms.length; i++) {
-        var room = selectedRooms[i];
-        var rData = roomsData[room];
-
-        if (rData.unavailable) {
-          rData.aiAnalysis = {
-            introducao: 'O item ' + room + ' foi formalmente declarado como INEXISTENTE ou NÃO DISPONÍVEL para conferência no momento da vistoria.',
-            elementos: [{ elemento: room, descricao: 'Não disponível / Inexistente no imóvel inspecionado.', funcionamento: 'Não aplicável', classificacao: 'NÃO POSSUI' }],
-            fotos: [],
-            ressalvas: 'Locador e Locatário declaram ciência da inexistência ou indisponibilidade de acesso ao ' + room + ' nesta vistoria.'
-          };
-          continue;
-        }
-
-        var photos = rData.photos;
-        if (aiText) aiText.innerText = 'Gemini analisando ' + room + ' (' + (i + 1) + '/' + selectedRooms.length + ')...';
-        rData.aiAnalysis = await callGeminiPericialIndividual(room, photos);
-      }
-
-      if (aiText) aiText.innerText = 'Análises concluídas. Gerando o PDF pericial...';
-      await renderAndGeneratePdf();
-
-    } catch (e) {
-      console.error('Falha na geração do laudo:', e);
-      alert('Ocorreu uma falha na análise pela IA:\n' + (e.message || String(e)));
-    } finally {
-      btnFinish.disabled = false;
-      btnFinish.style.opacity = '1';
-      aiLoader.style.display = 'none';
-    }
-  }
-
-  var generatedPdfBlob = null;
-  var generatedPdfFileName = "Laudo_Vistoria.pdf";
-
-  function escapeHtml(value) {
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  async function renderAndGeneratePdf() {
-    var locador = document.getElementById('locador').value.trim() || 'Não informado';
-    var locatario = document.getElementById('locatario').value.trim() || 'Não informado';
-    var numContrato = document.getElementById('numContrato').value.trim() || 'Não informado';
-    var imovel = document.getElementById('imovel').value.trim() || 'Não informado';
-    var dInicio = document.getElementById('dataInicio').value ? document.getElementById('dataInicio').value.split('-').reverse().join('/') : '';
-    var dTermino = document.getElementById('dataTermino').value ? document.getElementById('dataTermino').value.split('-').reverse().join('/') : '';
-    var dVistoria = document.getElementById('dataVistoria').value ? document.getElementById('dataVistoria').value.split('-').reverse().join('/') : '';
-    var tipoVistoria = (document.querySelector('input[name="tipoVistoria"]:checked') || {}).value || 'Entrada';
-
-    var wrapper = document.getElementById('pdfTemplateWrapper');
-    wrapper.style.display = 'block';
-    wrapper.innerHTML = '';
-
-    // Separação rígida de cômodos normais vs itens técnicos especiais
-    var normalRooms = selectedRooms.filter(function(r) { return !isSpecialItem(r); });
-    var specialRooms = selectedRooms.filter(function(r) { return isSpecialItem(r); });
-
-    // Cálculo exato: total de cômodos + 1 página agrupada de itens técnicos + 1 página de encerramento
-    var totalPages = normalRooms.length + (specialRooms.length > 0 ? 1 : 0) + 1;
-    var pageNum = 1;
-
-    // 1. PÁGINAS DOS CÔMODOS NORMAIS (1 página por cômodo)
-    normalRooms.forEach(function(roomName, idx) {
-      var data = roomsData[roomName];
-      var ai = data.aiAnalysis;
-      var prefix = getRoomPrefix(roomName);
-
-      var page = document.createElement('div');
-      page.className = 'laudo-page';
-      
-      var pageHtml = 
-        '<img class="laudo-watermark" src="/marca-dagua.png" alt="Marca d água">' +
-        '<div class="laudo-content-layer">' +
-          '<table class="table-header-grid">' +
-            '<tr>' +
-              '<td class="thg-logo"><img src="/logo.png" alt="M&IC"></td>' +
-              '<td class="thg-title">' +
-                '<div class="laudo-main-title">VISTORIA DE ' + tipoVistoria.toUpperCase() + '<br>LAUDO DE VISTORIA DE LOCAÇÃO</div>' +
-                '<div class="laudo-sub-title">' + imovel + '</div>' +
-              '</td>' +
-              '<td class="thg-meta">' +
-                '<div><strong>Clicksign:</strong> ' + numContrato + '</div>' +
-                '<div><strong>Vistoria:</strong> ' + tipoVistoria.toUpperCase() + ' &nbsp;|&nbsp; <strong>Data:</strong> ' + dVistoria + '</div>' +
-              '</td>' +
-            '</tr>' +
-          '</table>' +
-
-          '<table class="table-cadastral">' +
-            '<tr>' +
-              '<td class="cad-lbl">Locador/Proprietário:</td>' +
-              '<td class="cad-val"><strong>' + locador + '</strong></td>' +
-              '<td class="cad-lbl">Locatário(a):</td>' +
-              '<td class="cad-val"><strong>' + locatario + '</strong></td>' +
-            '</tr>' +
-            '<tr>' +
-              '<td class="cad-lbl">Imóvel:</td>' +
-              '<td class="cad-val">' + imovel + '</td>' +
-              '<td class="cad-lbl">Vistoriador Responsável:</td>' +
-              '<td class="cad-val"><strong>' + currentVistoriadorEmail + '</strong></td>' +
-            '</tr>' +
-            '<tr>' +
-              '<td class="cad-lbl">Tipo / Data da Vistoria:</td>' +
-              '<td class="cad-val"><strong>' + tipoVistoria.toUpperCase() + '</strong> — ' + dVistoria + '</td>' +
-              '<td class="cad-lbl">Vigência Contrato:</td>' +
-              '<td class="cad-val">' + dInicio + ' a ' + dTermino + '</td>' +
-            '</tr>' +
-          '</table>' +
-
-          '<div class="room-banner">AMBIENTE ' + (idx + 1) + ': ' + roomName.toUpperCase() + '</div>' +
-          '<div class="room-intro-text">' + ai.introducao + '</div>' +
-
-          '<table class="table-inspection">' +
-            '<thead>' +
-              '<tr>' +
-                '<th style="width:22%;">ELEMENTO</th>' +
-                '<th style="width:48%;">DESCRIÇÃO E ESTADO DE CONSERVAÇÃO</th>' +
-                '<th style="width:15%;">FUNCIONAMENTO</th>' +
-                '<th style="width:15%;">CLASSIFICAÇÃO</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>';
-
-      for (var eIdx = 0; eIdx < ai.elementos.length; eIdx++) {
-        var el = ai.elementos[eIdx];
-        var cClass = 'classif-bom';
-        var cUpper = el.classificacao.toUpperCase();
-        if (cUpper.indexOf('AVARIA') !== -1 || cUpper.indexOf('QUEBRADO') !== -1) cClass = 'classif-avaria';
-        else if (cUpper.indexOf('ATENÇÃO') !== -1 || cUpper.indexOf('PENDENTE') !== -1 || cUpper.indexOf('REGULAR') !== -1) cClass = 'classif-atencao';
-
-        pageHtml += 
-          '<tr>' +
-            '<td><strong>' + el.elemento + '</strong></td>' +
-            '<td>' + el.descricao + '</td>' +
-            '<td>' + el.funcionamento + '</td>' +
-            '<td class="' + cClass + '">' + el.classificacao + '</td>' +
-          '</tr>';
-      }
-
-      pageHtml += 
-            '</tbody>' +
-          '</table>' +
-
-          '<div class="grid-fotos-report">';
-
-      for (var fIdx = 0; fIdx < data.photos.length; fIdx++) {
-        var numFoto = (fIdx + 1) < 10 ? '0' + (fIdx + 1) : (fIdx + 1);
-        var tagCode = 'FOTO ' + prefix + numFoto;
-        var fData = (ai.fotos && ai.fotos[fIdx]) ? ai.fotos[fIdx] : { titulo: 'Registro do Ambiente', descricao: 'Vista técnica do elemento vistoriado.', avaria: false };
-
-        if (fData.avaria) {
-          tagCode += ' - ATENÇÃO';
-        }
-
-        pageHtml += 
-          '<div class="foto-report-card">' +
-            '<img src="' + data.photos[fIdx] + '">' +
-            '<div class="foto-tag-title">' +
-              '<span>' + fData.titulo + '</span>' +
-              '<span class="foto-badge-num">' + tagCode + '</span>' +
-            '</div>' +
-            '<div class="foto-tag-desc">' + fData.descricao + '</div>' +
-          '</div>';
-      }
-
-      pageHtml += 
-          '</div>' +
-
-          '<div class="page-footer-line">' +
-            '<div class="page-footer-meta">' +
-              '<span>Laudo de Vistoria de Locação | Residencial</span>' +
-              '<span>Página ' + pageNum + ' de ' + totalPages + '</span>' +
-              '<span>Data de Vistoria: ' + dVistoria + '</span>' +
-            '</div>' +
-            '<div class="page-footer-copy">' +
-              'Desenvolvido por M&IC Corretores de Imóveis. Todos os direitos reservados. Uso exclusivo mediante autorização.[cite: 1]' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-
-      page.innerHTML = pageHtml;
-      wrapper.appendChild(page);
-      pageNum++;
-    });
-
-    // 2. PÁGINA ÚNICA CONSOLIDADA COM TODOS OS ITENS TÉCNICOS ESPECIAIS JUNTOS
-    if (specialRooms.length > 0) {
-      var specialPage = document.createElement('div');
-      specialPage.className = 'laudo-page';
-
-      var specialHtml = 
-        '<img class="laudo-watermark" src="/marca-dagua.png" alt="Marca d água">' +
-        '<div class="laudo-content-layer">' +
-          '<table class="table-header-grid">' +
-            '<tr>' +
-              '<td class="thg-logo"><img src="/logo.png" alt="M&IC"></td>' +
-              '<td class="thg-title">' +
-                '<div class="laudo-main-title">VISTORIA DE ' + tipoVistoria.toUpperCase() + '<br>ITENS TÉCNICOS ESPECIAIS & MEDIDORES</div>' +
-                '<div class="laudo-sub-title">' + imovel + '</div>' +
-              '</td>' +
-              '<td class="thg-meta">' +
-                '<div><strong>Clicksign:</strong> ' + numContrato + '</div>' +
-                '<div><strong>Vistoria:</strong> ' + tipoVistoria.toUpperCase() + ' &nbsp;|&nbsp; <strong>Data:</strong> ' + dVistoria + '</div>' +
-              '</td>' +
-            '</tr>' +
-          '</table>' +
-
-          '<div class="room-banner" style="margin-bottom:8px;">4. REGISTRO TÉCNICO CONSOLIDADO: RELÓGIO DE LUZ, GÁS E CHAVES</div>';
-
-      specialRooms.forEach(function(sName) {
-        var sData = roomsData[sName];
-        var sAi = sData.aiAnalysis;
-        var sPrefix = getRoomPrefix(sName);
-        var elMain = (sAi.elementos && sAi.elementos[0]) ? sAi.elementos[0] : { elemento: sName, descricao: 'Item vistoriado.', funcionamento: 'Em ordem', classificacao: 'BOM' };
-        var photoSrc = (sData.photos && sData.photos[0]) ? sData.photos[0] : null;
-
-        specialHtml += 
-          '<div class="special-subgroup-card">' +
-            '<div class="special-subgroup-content">' +
-              '<div class="special-subgroup-header">' + sName.toUpperCase() + (sData.unavailable ? ' — NÃO POSSUI / INDISPONÍVEL' : '') + '</div>' +
-              '<table class="table-inspection" style="margin-bottom:0;">' +
-                '<thead>' +
-                  '<tr>' +
-                    '<th style="width:25%;">ITEM</th>' +
-                    '<th style="width:50%;">LEITURA / NÚMERO / ESPECIFICAÇÃO</th>' +
-                    '<th style="width:25%;">STATUS</th>' +
-                  '</tr>' +
-                '</thead>' +
-                '<tbody>' +
-                  '<tr>' +
-                    '<td><strong>' + sName + '</strong></td>' +
-                    '<td>' + elMain.descricao + '</td>' +
-                    '<td><span class="' + (sData.unavailable ? 'classif-atencao' : 'classif-bom') + '">' + elMain.classificacao + '</span></td>' +
-                  '</tr>' +
-                '</tbody>' +
-              '</table>' +
-            '</div>';
-
-        if (photoSrc) {
-          specialHtml += 
-            '<div class="special-subgroup-photo">' +
-              '<img src="' + photoSrc + '">' +
-              '<span style="position:absolute;bottom:2px;right:3px;background:rgba(0,0,0,0.75);color:#dfba48;font-size:6pt;padding:1px 3px;border-radius:2px;font-weight:bold;">' + sPrefix + '</span>' +
-            '</div>';
-        } else {
-          specialHtml += 
-            '<div class="special-subgroup-photo" style="display:flex;align-items:center;justify-content:center;font-size:6.2pt;color:#888;text-align:center;padding:4px;line-height:1.2;">' +
-              'Sem foto anexada<br>(Não disponível)' +
-            '</div>';
-        }
-
-        specialHtml += '</div>';
-      });
-
-      specialHtml += 
-          '<div class="page-footer-line">' +
-            '<div class="page-footer-meta">' +
-              '<span>Laudo de Vistoria de Locação | Residencial</span>' +
-              '<span>Página ' + pageNum + ' de ' + totalPages + '</span>' +
-              '<span>Data de Vistoria: ' + dVistoria + '</span>' +
-            '</div>' +
-            '<div class="page-footer-copy">' +
-              'Desenvolvido por M&IC Corretores de Imóveis. Todos os direitos reservados. Uso exclusivo mediante autorização.[cite: 1]' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-
-      specialPage.innerHTML = specialHtml;
-      wrapper.appendChild(specialPage);
-      pageNum++;
-    }
-
-    // 3. PÁGINA FINAL DE OBSERVAÇÕES, CONTESTAÇÃO E ENCERRAMENTO
-    var finalPage = document.createElement('div');
-    finalPage.className = 'laudo-page';
-
-    var finalHtml = 
-      '<img class="laudo-watermark" src="/marca-dagua.png" alt="Marca d água">' +
-      '<div class="laudo-content-layer">' +
-        '<table class="table-header-grid">' +
-          '<tr>' +
-            '<td class="thg-logo"><img src="/logo.png" alt="M&IC"></td>' +
-            '<td class="thg-title">' +
-              '<div class="laudo-main-title">VISTORIA DE ' + tipoVistoria.toUpperCase() + '<br>OBSERVAÇÕES E RESSALVAS CONSOLIDADAS</div>' +
-              '<div class="laudo-sub-title">' + imovel + '</div>' +
-            '</td>' +
-            '<td class="thg-meta">' +
-              '<div><strong>Clicksign:</strong> ' + numContrato + '</div>' +
-              '<div><strong>Data Vistoria:</strong> ' + dVistoria + '</div>' +
-            '</td>' +
-          '</tr>' +
-        '</table>' +
-
-        '<div class="room-banner">5. OBSERVAÇÕES E RESSALVAS TÉCNICAS CONSOLIDADAS</div>' +
-        '<div style="font-size:7.4pt; font-weight:bold; color:#444; margin-top:3px; margin-bottom:3px;">' +
-          'APONTAMENTOS TÉCNICOS REGISTRADOS PARA SALVAGUARDA DE LOCADOR E LOCATÁRIO:' +
-        '</div>' +
-
-        '<div class="box-ressalvas">' +
-          '<ul>';
-
-    selectedRooms.forEach(function(rName) {
-      var res = roomsData[rName].aiAnalysis.ressalvas;
-      finalHtml += '<li><strong>' + rName.toUpperCase() + ':</strong> ' + res + '</li>';
-    });
-
-    finalHtml += 
-            '<li style="margin-top:8px;"><strong>PRAZO E REGRAS EXPRESSAS DE CONTESTAÇÃO DA VISTORIA:</strong><br>' +
-            '<div style="margin-top:4px; padding:7px 9px; border-left:3px solid #c59b27; background:#faf8f2; text-align:justify;">' +
-            'Fica expressamente fixado o prazo decadencial de <strong>15 (quinze) dias corridos</strong>, contados formalmente a partir da <strong>entrega definitiva das chaves</strong> ao LOCATÁRIO, para que este possa apontar formalmente e por escrito à administração/locador quaisquer divergências, inconformidades ou vícios ocultos não perceptíveis nesta vistoria pericial. Findo esse prazo sem impugnação formal expressa, presumir-se-á aceito o imóvel nas exatas condições descritas e fotografadas neste laudo pericial.' +
-            '</div>' +
-            '</li>' +
-          '</ul>' +
-        '</div>' +
-
-        '<div class="room-banner" style="margin-top:16px;">6. TERMO DE CONCORDÂNCIA E ENCERRAMENTO</div>' +
-        '<div class="termo-concordancia-box">' +
-          '<p style="margin-bottom:6px;">' +
-            'Por estarem as partes cientes e de pleno acordo com as constatações técnicas, tabelas periciais de elementos, leituras de medidores e o acervo fotográfico constante neste laudo para os ambientes e itens <strong>' + selectedRooms.join(', ').toUpperCase() + '</strong>, o presente documento, referente à VISTORIA DE ' + tipoVistoria.toUpperCase() + ', passa a fazer parte integrante e indissociável do Contrato de Locação formalizado eletronicamente via Clicksign para todos os efeitos de direito.' +
-          '</p>' +
-          '<p style="margin-bottom:6px;">' +
-            'E, por estarem, assim, justos e contratados, assinam fisicamente ou de forma digital, por meio de assinatura eletrônica que atende aos requisitos da Lei nº 14.063/2020, a qual regulamenta e reconhece a validade jurídica das assinaturas eletrônicas[cite: 1].' +
-          '</p>' +
-          '<p style="color:#555; font-size:7.1pt;">' +
-            'Documento validado eletronicamente com integridade jurídica vinculada ao identificador Clicksign nº <strong>' + numContrato + '</strong>[cite: 1], inspecionado pelo vistoriador <strong>' + currentVistoriadorEmail + '</strong>, dispensando assinaturas físicas manuscritas adicionais[cite: 1].' +
-          '</p>' +
-        '</div>' +
-
-        '<div class="laudo-copyright-notice">' +
-          '© Documento e metodologia técnica desenvolvidos por <strong>M&IC Corretores de Imóveis</strong>. Todos os direitos reservados.[cite: 1]<br>' +
-          'A reprodução, distribuição ou utilização deste modelo e sistema necessita de autorização prévia e expressa.[cite: 1]' +
-        '</div>' +
-
-        '<div class="page-footer-line">' +
-          '<div class="page-footer-meta">' +
-            '<span>Laudo de Vistoria de Locação | Residencial</span>' +
-            '<span>Página ' + pageNum + ' de ' + totalPages + '</span>' +
-            '<span>Data de Vistoria: ' + dVistoria + '</span>' +
-          '</div>' +
-          '<div class="page-footer-copy">' +
-            'Desenvolvido por M&IC Corretores de Imóveis. Todos os direitos reservados. Uso exclusivo mediante autorização.[cite: 1]' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-
-    finalPage.innerHTML = finalHtml;
-    wrapper.appendChild(finalPage);
-
-    var safeName = locatario.replace(/[^a-zA-Z0-9]/g, '_');
-    var opt = {
-      margin: 0,
-      filename: 'Laudo_Vistoria_' + safeName + '.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 3, useCORS: true, scrollY: 0, imageTimeout: 0 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    generatedPdfFileName = opt.filename;
-    generatedPdfBlob = await html2pdf().set(opt).from(wrapper).outputPdf('blob');
-    wrapper.style.display = 'none';
-
-    document.getElementById('step-photos').classList.remove('active');
-    document.getElementById('step-final').classList.add('active');
-    window.scrollTo(0, 0);
-
-    sharePdfNative();
-  }
-
-  async function sharePdfNative() {
-    if (!generatedPdfBlob) return;
-    var file = new File([generatedPdfBlob], generatedPdfFileName, { type: "application/pdf" });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'Laudo de Vistoria de Locação',
-          text: 'Segue o laudo técnico pericial de vistoria gerado com IA e acervo fotográfico integrado.'
+    async function chamarGeminiVisao(parts) {
+      const key = getGeminiKey();
+      if (!key) throw new Error("Chave Gemini não configurada. Clique em '⚙️ Configurar Chaves'.");
+      for (let m of MODELOS_VISAO) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts }] })
         });
-      } catch (e) {
-        if (e.name !== 'AbortError') downloadPdfDirect();
+        if (res.ok) return (await res.json()).candidates[0].content.parts[0].text;
       }
-    } else {
-      downloadPdfDirect();
+      throw new Error("Erro nas chamadas Gemini");
     }
-  }
 
-  function downloadPdfDirect() {
-    if (!generatedPdfBlob) return;
-    var url = URL.createObjectURL(generatedPdfBlob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = generatedPdfFileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-</script>
+    async function lerDocumentoCliente() {
+      const file = document.getElementById('docInput').files[0];
+      if (!file) { alert("Selecione o documento."); return; }
+      showStatus("Lendo documento...");
+      try {
+        const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
+        if (resPdf.texto.length > 20) {
+          const local = parseCNHLocalRegex(resPdf.texto);
+          if (local.titular) document.getElementById('titularName').value = local.titular;
+          if (local.pai) document.getElementById('paiName').value = local.pai;
+          if (local.mae) document.getElementById('maeName').value = local.mae;
+          if (local.titular && local.pai && local.mae) { hideStatus(); return; }
+        }
+        const titularExtrato = document.getElementById('titularName').value.trim();
+        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const resp = await chamarGeminiVisao([{ text: prompt }, ...resPdf.imagens.map(img => ({ inline_data: { mime_type: "image/jpeg", data: img } }))]);
+        const json = JSON.parse(resp.replace(/```json/g, '').replace(/```/g, '').trim());
+        if (json.titular) document.getElementById('titularName').value = json.titular;
+        if (json.pai) document.getElementById('paiName').value = json.pai;
+        if (json.mae) document.getElementById('maeName').value = json.mae;
+        if (json.conjuge) document.getElementById('conjugeName').value = json.conjuge;
+      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
+    }
 
+    async function executarApuracaoRenda() {
+      const files = document.getElementById('extratosInput').files;
+      if (!files.length) { alert("Adicione os extratos."); return; }
+      dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
+      showStatus("Processando extratos...");
+      try {
+        let imagens = [], textoGeral = "";
+        for (let file of Array.from(files)) {
+          if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+            const res = await extrairDadosCompletosPDF(file);
+            textoGeral += res.texto; res.imagens.forEach(img => imagens.push(img));
+          } else { imagens.push(await otimizarFotoBase64(file)); }
+        }
+        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
+        
+        let json = null;
+        try {
+          const respGroq = await chamarGroqAPI(prompt + "\n\nTEXTO:\n" + textoGeral);
+          json = JSON.parse(respGroq);
+        } catch(e) {
+          const respGemini = await chamarGeminiVisao([{ text: prompt }, ...imagens.map(img => ({ inline_data: { mime_type: "image/jpeg", data: img } }))]);
+          json = JSON.parse(respGemini.replace(/```json/g, '').replace(/```/g, '').trim());
+        }
+        window.ultimoResultado = json;
+        consolidadoMeses = json.apuracao_mensal || [];
+        document.getElementById('resultadoBox').classList.remove('hidden');
+      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
+    }
+
+    function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+    function gerarDocumentoPDF() {
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Titular";
+      doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
+      doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(212, 175, 55);
+      doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 11, 12);
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
+      doc.text("Auditoria Óptica e Visão Computacional de Entradas Informais", 11, 19);
+      doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+
+      doc.setFontSize(36); doc.setTextColor(230, 230, 230);
+      doc.text("LAUDO AUDITADO", 105, 148, { align: "center", angle: -12 });
+
+      doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO", 16, 38);
+
+      doc.setDrawColor(224, 224, 224); doc.setFillColor(255, 255, 255); doc.rect(11, 40, 188, 17, 'FD');
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(26, 26, 26);
+      doc.text(`Titular da Conta: ${titular}`, 15, 45);
+      doc.text(`Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`, 15, 50);
+      doc.text(`Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`, 15, 55);
+
+      doc.setFillColor(18, 19, 21); doc.rect(11, 62, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 62, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
+
+      doc.autoTable({
+        startY: 70, head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
+        body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
+        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 7.2 }, columnStyles: { 1: { halign: 'right', textColor: [40, 167, 69] } },
+        margin: { left: 11, right: 11 }, tableWidth: 188
+      });
+
+      let currentY = doc.lastAutoTable.finalY + 5;
+      doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
+      doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
+      doc.text(`MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`, 16, currentY + 13);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
+      doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
+      doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
+
+      return { doc, titular };
+    }
+
+    function resetarParaNovaAnalise() {
+      document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
+      ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
+      window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function baixarPDFLocal() {
+      if (!window.ultimoResultado) return;
+      const { doc, titular } = gerarDocumentoPDF();
+      doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`);
+    }
+
+    async function gerarECompartilharPDF() {
+      if (!window.ultimoResultado) return;
+      const { doc, titular } = gerarDocumentoPDF();
+      const file = new File([doc.output('blob')], `Laudo_Renda_${titular}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Laudo de Apuração de Renda', files: [file] }).catch(() => {});
+      } else { doc.save(`Laudo_Renda_${titular}.pdf`); }
+    }
+  </script>
 </body>
 </html>
