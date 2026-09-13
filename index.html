@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Apurador de Renda IA</title>
+  <title>Apurador de Renda IA — M&IC</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- jsPDF & AutoTable -->
@@ -40,6 +40,14 @@
     .main-header {
       background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%);
       border-bottom: 3px solid var(--accent);
+      color: #fff;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .section-banner {
@@ -73,19 +81,75 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* ESTILOS DE LOGOMARCA E MARCA D'ÁGUA SOLICITADOS */
+    .laudo-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      width: 140mm;
+      height: auto;
+      opacity: 0.05;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .laudo-content-layer {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+    }
+
+    .table-header-grid {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      border-bottom: 2.5px solid #c59b27;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+    }
+    .table-header-grid td {
+      vertical-align: middle;
+      padding: 2px 0;
+    }
+    .thg-logo {
+      width: 52px;
+      text-align: left;
+    }
+    .thg-logo img {
+      max-height: 40px;
+      max-width: 48px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .login-logo {
+      max-height: 48px;
+      width: auto;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .app-header-logo {
+      max-height: 52px;
+      width: auto;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
   </style>
 </head>
 <body class="min-h-screen pb-16">
 
-  <!-- Header Principal Centralizado e do tamanho do conteúdo -->
-  <header class="main-header text-white shadow-md sticky top-0 z-30">
-    <div class="mx-auto px-4 py-3.5 flex items-center justify-between" style="max-width: 650px;">
+  <!-- Header Principal com Logomarca e Centralizado -->
+  <header class="main-header shadow-md sticky top-0 z-30">
+    <div class="mx-auto px-4 py-3.5 flex items-center justify-between w-full" style="max-width: 650px;">
       <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg shadow flex-shrink-0" style="background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315;">
-          R$
-        </div>
-        <div>
-          <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURADOR DE RENDA IA</h1>
+        <img src="/logo.png" alt="M&IC Corretores" class="app-header-logo flex-shrink-0">
+        <div class="text-left">
+          <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
+          <p class="text-[10px] uppercase tracking-wider" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
         </div>
       </div>
       <button onclick="toggleConfig()" class="text-[10px] px-2.5 py-1 rounded font-semibold tracking-wider uppercase border flex items-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500">
@@ -117,7 +181,7 @@
       <span id="statusAlertTxt" class="font-medium tracking-wide">Processando imagens...</span>
     </div>
 
-    <!-- PASSO 1: Extratos Bancários (Origem Primária do Titular) -->
+    <!-- PASSO 1: Extratos Bancários -->
     <div class="card-box p-4">
       <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
         <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
@@ -133,7 +197,7 @@
       <div id="fileCounter" class="mt-2 text-[11px] font-medium" style="color: #888;">Nenhum arquivo selecionado.</div>
     </div>
 
-    <!-- PASSO 2: Documento do Cliente (Cruzamento via Certidão / CNH) -->
+    <!-- PASSO 2: Documento do Cliente -->
     <div class="card-box p-4">
       <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
         <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
@@ -181,7 +245,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
     </button>
 
-    <!-- Card 3: Sucesso e Ações do Laudo PDF (Sem tabelas na tela) -->
+    <!-- Card 3: Sucesso e Ações do Laudo PDF -->
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
       
       <!-- Box Confirmação Ouro / Grafite -->
@@ -282,11 +346,14 @@
             }
             const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            resolve(dataUrl.split(',')[1]);
           };
-          img.onerror = reject; img.src = e.target.result;
+          img.onerror = reject;
+          img.src = e.target.result;
         };
-        reader.onerror = reject; reader.readAsDataURL(file);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
     }
 
@@ -300,7 +367,8 @@
         texto += txtContent.items.map(it => it.str).join(" ") + "\n";
         const viewport = page.getViewport({ scale: 1.3 });
         const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
         imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
       }
       return { texto: texto.trim(), imagens };
@@ -361,7 +429,7 @@
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          messages: [{ role: "system", content: "Retorne estritamente um JSON válido." }, { role: "user", content: promptTexto }],
+          messages: [{ role: "system", content: "Você é um auditor financeiro e contábil rigoroso especializado em apuração de renda bancária. Retorne estritamente um JSON válido sem nenhum comentário adicional." }, { role: "user", content: promptTexto }],
           response_format: { type: "json_object" }, temperature: 0.1
         })
       });
@@ -384,8 +452,8 @@
 
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
-      if (!file) { alert("Selecione o documento."); return; }
-      showStatus("Lendo documento...");
+      if (!file) { alert("Por favor, selecione ou tire uma foto do documento."); return; }
+      showStatus("Otimizando foto do documento...");
       try {
         const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
         if (resPdf.texto.length > 20) {
@@ -395,60 +463,95 @@
           if (local.mae) document.getElementById('maeName').value = local.mae;
           if (local.titular && local.pai && local.mae) { hideStatus(); return; }
         }
+        showStatus("Cruzando dados do documento via IA...");
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
-        const resp = await chamarGeminiVisao([{ text: prompt }, ...resPdf.imagens.map(img => ({ inline_data: { mime_type: "image/jpeg", data: img } }))]);
-        const json = JSON.parse(resp.replace(/```json/g, '').replace(/```/g, '').trim());
+        const promptVisaoDoc = `Você é um perito documental e contábil. Analise esta CNH, RG ou CERTIDÃO DE CASAMENTO. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const parts = [{ text: promptVisaoDoc }];
+        if (resPdf.texto.length > 20) { parts.push({ text: "TEXTO COMPLEMENTAR:\n" + resPdf.texto }); }
+        resPdf.imagens.forEach(img => parts.push({ inline_data: { mime_type: "image/jpeg", data: img } }));
+        const resposta = await chamarGeminiVisao(parts);
+        const json = JSON.parse(resposta.replace(/```json/g, '').replace(/```/g, '').trim());
         if (json.titular) document.getElementById('titularName').value = json.titular;
         if (json.pai) document.getElementById('paiName').value = json.pai;
         if (json.mae) document.getElementById('maeName').value = json.mae;
         if (json.conjuge) document.getElementById('conjugeName').value = json.conjuge;
-      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
+      } catch (err) { alert("Erro ao ler documento: " + err.message); } finally { hideStatus(); }
     }
 
     async function executarApuracaoRenda() {
-      const files = document.getElementById('extratosInput').files;
-      if (!files.length) { alert("Adicione os extratos."); return; }
-      dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
-      showStatus("Processando extratos...");
+      const extratosInput = document.getElementById('extratosInput');
+      if (!extratosInput.files || extratosInput.files.length === 0) { alert("Por favor, adicione os extratos bancários."); return; }
+      const titular = document.getElementById('titularName').value.trim();
+      const pai = document.getElementById('paiName').value.trim();
+      const mae = document.getElementById('maeName').value.trim();
+      const conjuge = document.getElementById('conjugeName').value.trim();
+      dadosCliente = { titular, pai, mae, conjuge };
+
+      showStatus("Preparando imagens dos extratos...");
+      const btn = document.getElementById('btnProcessar');
+      btn.disabled = true; btn.classList.add('opacity-50');
+
       try {
-        let imagens = [], textoGeral = "";
-        for (let file of Array.from(files)) {
-          if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await extrairDadosCompletosPDF(file);
-            textoGeral += res.texto; res.imagens.forEach(img => imagens.push(img));
-          } else { imagens.push(await otimizarFotoBase64(file)); }
+        const imagensExtratos = [];
+        let textosExtratosGeral = "";
+        for (let file of Array.from(extratosInput.files)) {
+          showStatus(`Processando: ${file.name}...`);
+          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            const resPdf = await extrairDadosCompletosPDF(file);
+            textosExtratosGeral += `\n--- ARQUIVO: ${file.name} ---\n` + resPdf.texto;
+            resPdf.imagens.forEach(img => imagensExtratos.push(img));
+          } else {
+            const imgBase64 = await otimizarFotoBase64(file);
+            imagensExtratos.push(imgBase64);
+          }
         }
-        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
+
+        const promptAuditoria = `Você é um auditor contábil especialista em apuração de renda bancária. Analise entradas e créditos. Titular: "${titular}", Pai: "${pai}", Mãe: "${mae}", Cônjuge: "${conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
         
         let json = null;
-        try {
-          const respGroq = await chamarGroqAPI(prompt + "\n\nTEXTO:\n" + textoGeral);
-          json = JSON.parse(respGroq);
-        } catch(e) {
-          const respGemini = await chamarGeminiVisao([{ text: prompt }, ...imagens.map(img => ({ inline_data: { mime_type: "image/jpeg", data: img } }))]);
+        if (textosExtratosGeral.length > 50) {
+          try {
+            showStatus("⚡ Apurando via Groq...");
+            const respGroq = await chamarGroqAPI(promptAuditoria + "\n\nTEXTOS DOS EXTRATOS:\n" + textosExtratosGeral);
+            json = JSON.parse(respGroq);
+          } catch (groqErr) { console.warn("Groq falhou, usando Gemini:", groqErr); }
+        }
+
+        if (!json) {
+          showStatus("Auditando imagens via Gemini Visão...");
+          const parts = [{ text: promptAuditoria }];
+          if (textosExtratosGeral.length > 50) { parts.push({ text: "TEXTOS COMPLEMENTARES:\n" + textosExtratosGeral }); }
+          imagensExtratos.forEach(img => parts.push({ inline_data: { mime_type: "image/jpeg", data: img } }));
+          const respGemini = await chamarGeminiVisao(parts);
           json = JSON.parse(respGemini.replace(/```json/g, '').replace(/```/g, '').trim());
         }
+
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
         document.getElementById('resultadoBox').classList.remove('hidden');
-      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
+      } catch (err) { alert("Erro na apuração: " + err.message); } finally {
+        hideStatus(); btn.disabled = false; btn.classList.remove('opacity-50');
+      }
     }
 
     function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
     function gerarDocumentoPDF() {
-      const { jsPDF } = window.jspdf; const doc = new jsPDF();
-      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Titular";
+      const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
+
       doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
       doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+      
       doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(212, 175, 55);
       doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 11, 12);
+      
       doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
       doc.text("Auditoria Óptica e Visão Computacional de Entradas Informais", 11, 19);
       doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
 
-      doc.setFontSize(36); doc.setTextColor(230, 230, 230);
+      // Marca D'água Pericial Centralizada
+      doc.setFontSize(36); doc.setFont("helvetica", "bold"); doc.setTextColor(230, 230, 230);
       doc.text("LAUDO AUDITADO", 105, 148, { align: "center", angle: -12 });
 
       doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
@@ -468,8 +571,9 @@
       doc.autoTable({
         startY: 70, head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
         body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
-        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 7.2 }, columnStyles: { 1: { halign: 'right', textColor: [40, 167, 69] } },
+        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
+        bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
         margin: { left: 11, right: 11 }, tableWidth: 188
       });
 
@@ -487,7 +591,8 @@
 
     function resetarParaNovaAnalise() {
       document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
-      ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('titularName').value = ''; document.getElementById('paiName').value = '';
+      document.getElementById('maeName').value = ''; document.getElementById('conjugeName').value = '';
       document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
       window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -502,10 +607,16 @@
     async function gerarECompartilharPDF() {
       if (!window.ultimoResultado) return;
       const { doc, titular } = gerarDocumentoPDF();
-      const file = new File([doc.output('blob')], `Laudo_Renda_${titular}.pdf`, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: 'Laudo de Apuração de Renda', files: [file] }).catch(() => {});
-      } else { doc.save(`Laudo_Renda_${titular}.pdf`); }
+      const pdfBlob = doc.output('blob');
+      const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({ title: 'Laudo de Apuração de Renda', text: `Laudo de apuração pericial de renda de ${titular}.`, files: [pdfFile] });
+        } catch (shareErr) {
+          if (shareErr.name !== 'AbortError') { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
+        }
+      } else { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
     }
   </script>
 </body>
