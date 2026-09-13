@@ -1,12 +1,11 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,GET');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
@@ -20,7 +19,7 @@ export default async function handler(req, res) {
   try {
     let jsonResult = null;
 
-    // Tenta Gemini primeiro
+    // Tenta Gemini primeiro (ideal para imagens de documentos)
     if (GEMINI_API_KEY) {
       const parts = [{ text: prompt }];
       if (texts) parts.push({ text: "TEXTO:\n" + texts });
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Se falhou ou não tem Gemini, tenta Groq com texto
+    // Fallback para Groq se necessário
     if (!jsonResult && GROQ_API_KEY && texts) {
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -72,12 +71,12 @@ export default async function handler(req, res) {
     }
 
     if (!jsonResult) {
-      return res.status(500).json({ error: "Falha ao processar com as IAs configuradas." });
+      return res.status(500).json({ error: "Falha ao processar com as IAs configuradas nas variáveis da Vercel." });
     }
 
     return res.status(200).json(jsonResult);
 
-  } corr (err) {
+  } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
