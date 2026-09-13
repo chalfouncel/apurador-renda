@@ -189,8 +189,8 @@
 
     function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-    // Função para carregar imagem convertendo fundo preto em transparente no Canvas
-    function carregarLogoTransparente(url) {
+    // Função para carregar imagem convertendo fundo preto em transparente e ajustando opacidade
+    function carregarLogoTransparente(url, opacidade = 1.0) {
       return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
@@ -204,9 +204,12 @@
           const data = imgData.data;
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2];
-            // Se o pixel for escuro/preto, torna-o transparente
+            // Remove o fundo escuro/preto
             if (r < 35 && g < 35 && b < 35) {
               data[i+3] = 0; 
+            } else if (opacidade < 1.0) {
+              // Aplica redução na opacidade dos pixels visíveis (diminui transparência/intensidade em 50%)
+              data[i+3] = Math.round(data[i+3] * opacidade);
             }
           }
           ctx.putImageData(imgData, 0, 0);
@@ -221,8 +224,8 @@
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
 
-      // 1. Processa a marca d'água removendo o fundo preto (transparente) e desenha centralizada
-      const watermarkBase64 = await carregarLogoTransparente('marca-dagua.png');
+      // 1. Marca d'água centralizada com fundo transparente e opacidade reduzida em 50% (opacidade 0.5)
+      const watermarkBase64 = await carregarLogoTransparente('marca-dagua.png', 0.5);
       if (watermarkBase64) {
         try { 
           doc.addImage(watermarkBase64, 'PNG', 55, 100, 100, 100, '', 'FAST', 0); 
@@ -233,8 +236,8 @@
       doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
       doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
       
-      // 2. Adiciona a logo de forma harmônica e proporcional antes do título
-      const logoBase64 = await carregarLogoTransparente('logo.png');
+      // 2. Logo harmônica e proporcional no topo antes do texto
+      const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
       if (logoBase64) {
         try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
       }
