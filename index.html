@@ -4,92 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Apurador de Renda IA — M&IC</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- jsPDF & AutoTable -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <!-- PDF.js para processamento local -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
   </script>
   <style>
     :root {
-      --primary: #121315;
-      --secondary: #1a1c20;
-      --accent: #c59b27;
-      --gold: #d4af37;
-      --gold-light: #dfba48;
-      --silver: #cfd4dc;
-      --bg: #f4f5f7;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --border: #e0e0e0;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #e67e22;
+      --primary: #121315; --secondary: #1a1c20; --accent: #c59b27;
+      --gold: #d4af37; --gold-light: #dfba48; --silver: #cfd4dc;
+      --bg: #f4f5f7; --card: #ffffff; --text: #1a1a1a; --border: #e0e0e0;
+      --success: #28a745; --danger: #dc3545; --warning: #e67e22;
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-    }
-
-    .main-header {
-      background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%);
-      border-bottom: 3px solid var(--accent);
-      color: #fff;
-      padding: 16px;
-    }
-
-    .section-banner {
-      background: linear-gradient(90deg, #121315, #24272c);
-      border-left: 4px solid var(--accent);
-      color: var(--gold-light);
-    }
-
-    .btn-gold {
-      background: linear-gradient(135deg, #c59b27, #dfba48);
-      color: #121315;
-      border: 1px solid #b88d1e;
-      font-weight: 700;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg); color: var(--text); }
+    .main-header { background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%); border-bottom: 3px solid var(--accent); color: #fff; padding: 16px; }
+    .section-banner { background: linear-gradient(90deg, #121315, #24272c); border-left: 4px solid var(--accent); color: var(--gold-light); }
+    .btn-gold { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; border: 1px solid #b88d1e; font-weight: 700; }
     .btn-gold:hover { filter: brightness(1.05); }
-    .btn-gold:active { filter: brightness(0.95); }
-
-    .card-box {
-      background-color: var(--card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .loader-gold {
-      border-top-color: var(--gold);
-      animation: spinner 0.8s linear infinite;
-    }
-
-    @keyframes spinner {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .app-header-logo {
-      height: 80px;
-      width: auto;
-      max-width: 200px;
-      object-fit: contain;
-      display: block;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    }
+    .card-box { background-color: var(--card); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .loader-gold { border-top-color: var(--gold); animation: spinner 0.8s linear infinite; }
+    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .app-header-logo { height: 80px; width: auto; max-width: 200px; object-fit: contain; display: block; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
   </style>
 </head>
 <body class="min-h-screen pb-16">
 
-  <!-- Header Principal com Logo Centralizada, Dobro do Tamanho e Textos Alinhados -->
   <header class="main-header shadow-md sticky top-0 z-30">
     <div class="mx-auto flex flex-col items-center text-center w-full" style="max-width: 650px;">
       <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mb-2.5">
@@ -100,110 +41,54 @@
     </div>
   </header>
 
-  <!-- Contêiner Central Mobile -->
   <main class="mx-auto p-4 space-y-4" style="max-width: 650px;">
 
-    <!-- Alerta de Processamento -->
     <div id="statusAlert" class="hidden text-xs p-3.5 rounded-xl shadow-lg border flex items-center gap-3" style="background-color: var(--secondary); border-color: var(--accent); color: var(--silver);">
       <div class="loader-gold rounded-full border-2 border-t-2 border-slate-600 h-4 w-4 flex-shrink-0"></div>
-      <span id="statusAlertTxt" class="font-medium tracking-wide">Processando imagens...</span>
+      <span id="statusAlertTxt" class="font-medium tracking-wide">Processando...</span>
     </div>
 
-    <!-- PASSO 1: Extratos Bancários -->
+    <!-- PASSO 1: Extratos -->
     <div class="card-box p-4">
       <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
-        <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          1. Extratos Bancários (Fotos ou Documentos)
-        </h2>
-        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider text-white" style="background-color: var(--success);">Obrigatório</span>
+        <h2 class="font-bold text-xs tracking-wider uppercase">1. Extratos Bancários</h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white" style="background-color: var(--success);">Obrigatório</span>
       </div>
-
-      <p class="text-[11px] mb-3 leading-relaxed" style="color: #666;">Selecione fotos de extratos impressos, digitalizações ou arquivos PDF. A IA identifica o titular da conta automaticamente.</p>
-
-      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer" />
-      <div id="fileCounter" class="mt-2 text-[11px] font-medium" style="color: #888;">Nenhum arquivo selecionado.</div>
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+      <div id="fileCounter" class="mt-2 text-[11px]" style="color: #888;">Nenhum arquivo selecionado.</div>
     </div>
 
-    <!-- PASSO 2: Documento do Cliente -->
+    <!-- PASSO 2: Documento -->
     <div class="card-box p-4">
       <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
-        <h2 class="font-bold text-xs tracking-wider uppercase flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          2. Documento do Cliente (Foto CNH / RG / Certidão de Casamento)
-        </h2>
-        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
+        <h2 class="font-bold text-xs tracking-wider uppercase">2. Documento do Cliente (CNH / Certidão)</h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
       </div>
+      <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+      <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg mt-3 shadow-sm">Ler Foto/Doc</button>
       
-      <p class="text-[11px] mb-3 leading-relaxed" style="color: #666;">Anexe a foto da CNH, RG ou Certidão de Casamento. Em Certidão de Casamento, a IA cruza o nome do titular do extrato para identificar cônjuge e pais.</p>
-
-      <div class="flex gap-2 mb-3">
-        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer" />
-        <button type="button" id="btnLerDoc" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">
-          Ler Foto/Doc
-        </button>
-      </div>
-
-      <!-- Campos de Conferência e Exclusão -->
-      <div class="space-y-2.5 pt-3 border-t" style="border-color: var(--border);">
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Cliente (Titular do Extrato)</label>
-          <input type="text" id="titularName" placeholder="Ex: Nome do titular" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none font-semibold text-slate-900" style="border-color: var(--border);" />
-        </div>
+      <div class="space-y-2.5 pt-3 mt-3 border-t" style="border-color: var(--border);">
+        <div><label class="block text-[11px] font-bold uppercase mb-1">Nome do Cliente (Titular)</label><input type="text" id="titularName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 font-semibold" /></div>
         <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Pai</label>
-            <input type="text" id="paiName" placeholder="Ex: Nome do pai" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800" style="border-color: var(--border);" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome da Mãe</label>
-            <input type="text" id="maeName" placeholder="Ex: Nome da mãe" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800" style="border-color: var(--border);" />
-          </div>
+          <div><label class="block text-[11px] font-bold uppercase mb-1">Pai</label><input type="text" id="paiName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
+          <div><label class="block text-[11px] font-bold uppercase mb-1">Mãe</label><input type="text" id="maeName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
         </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--secondary);">Nome do Cônjuge (Para Exclusão)</label>
-          <input type="text" id="conjugeName" placeholder="Ex: Nome da esposa/esposo" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none text-slate-800 font-semibold" style="border-color: var(--border);" />
-        </div>
+        <div><label class="block text-[11px] font-bold uppercase mb-1">Cônjuge</label><input type="text" id="conjugeName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
       </div>
     </div>
 
-    <!-- Botão Primário CTA Ouro -->
-    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
-      <span id="txtBtnApura">Executar Apuração Visual via IA</span>
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-    </button>
+    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider">Executar Apuração Visual via IA</button>
 
-    <!-- Card 3: Sucesso e Ações do Laudo PDF -->
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
-      
-      <!-- Box Confirmação Ouro / Grafite -->
       <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
-        <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center shadow-md" style="background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315;">
-          <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-        </div>
-        <h3 class="font-bold text-sm tracking-wider uppercase" style="color: var(--primary);">Apuração Concluída com Sucesso</h3>
-        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 com a tabela consolidada Mês/Ano foi gerado e está pronto para envio.</p>
+        <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto.</p>
       </div>
-
-      <!-- Botões de Exportação do PDF -->
       <div class="grid grid-cols-2 gap-2.5">
-        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-          <span>Compartilhar</span>
-        </button>
-
-        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider border" style="background-color: var(--secondary); border-color: var(--border);">
-          <svg class="w-4 h-4" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          <span>Baixar PDF</span>
-        </button>
+        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase">Compartilhar</button>
+        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase" style="background-color: var(--secondary);">Baixar PDF</button>
       </div>
-
-      <!-- Botão Nova Análise -->
-      <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition border flex items-center justify-center gap-2" style="background-color: #ffffff; color: var(--secondary); border-color: var(--border);">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        <span>Nova Análise</span>
-      </button>
-
+      <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 bg-white font-bold rounded-xl text-xs uppercase border">Nova Análise</button>
     </div>
 
   </main>
@@ -224,11 +109,11 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1500; let w = img.width, h = img.height;
+            const maxDim = 1200; let w = img.width, h = img.height;
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -240,14 +125,14 @@
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
+      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
         const page = await pdf.getPage(i);
         const txt = await page.getTextContent();
         texto += txt.items.map(it => it.str).join(" ") + "\n";
-        const viewport = page.getViewport({ scale: 1.3 });
+        const viewport = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+        imagens.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
       }
       return { texto: texto.trim(), imagens };
     }
@@ -258,8 +143,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Erro no servidor de IA da Vercel");
-      return await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro no servidor de IA da Vercel");
+      return data;
     }
 
     async function lerDocumentoCliente() {
@@ -269,7 +155,7 @@
       try {
         const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON com as chaves exatas: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
         
         const json = await chamarApiServidor({ prompt, texts: resPdf.texto, images: resPdf.imagens });
         if (json.titular) document.getElementById('titularName').value = json.titular;
@@ -292,7 +178,7 @@
             textoGeral += res.texto; res.imagens.forEach(img => imagens.push(img));
           } else { imagens.push(await otimizarFotoBase64(file)); }
         }
-        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
+        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne EXCLUSIVAMENTE um JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
         
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
