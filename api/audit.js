@@ -23,60 +23,68 @@ export default async function handler(req, res) {
   let detalheErro = "";
 
   try {
-    // Tenta Gemini primeiro
+    // 1. Tenta Gemini com modelos vigentes
     if (GEMINI_API_KEY) {
-      const parts = [{ text: prompt }];
-      if (texts) parts.push({ text: "TEXTO DO DOCUMENTO:\n" + texts });
-      if (images && Array.isArray(images)) {
-        images.forEach(img => {
-          parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
-        });
-      }
-
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts }] })
-      });
-
-      const geminiData = await geminiRes.json();
-
-      if (geminiRes.ok) {
-        const textResp = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (textResp) {
-          const cleanJson = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
-          return res.status(200).json(JSON.parse(cleanJson));
+      const modelosGemini = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      
+      for (const mod of modelosGemini) {
+        const parts = [{ text: prompt }];
+        if (texts) parts.push({ text: "TEXTO DO DOCUMENTO:\n" + texts });
+        if (images && Array.isArray(images)) {
+          images.forEach(img => {
+            parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
+          });
         }
-      } else {
-        detalheErro += ` Gemini: ${JSON.stringify(geminiData.error || geminiRes.statusText)}`;
+
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts }] })
+        });
+
+        const geminiData = await geminiRes.json();
+
+        if (geminiRes.ok) {
+          const textResp = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (textResp) {
+            const cleanJson = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
+            return res.status(200).json(JSON.parse(cleanJson));
+          }
+        } else {
+          detalheErro += ` Gemini (${mod}): ${JSON.stringify(geminiData.error?.message || geminiRes.statusText)}`;
+        }
       }
     }
 
-    // Fallback para Groq se Gemini falhou
+    // 2. Fallback para Groq com modelos vigentes (`llama-3.1-70b-versatile` ou `llama-3.1-8b-instant`)
     if (GROQ_API_KEY) {
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: "Retorne estritamente um JSON válido." },
-            { role: "user", content: prompt + "\n\n" + (texts || "") }
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.1
-        })
-      });
+      const modelosGroq = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant"];
 
-      const groqData = await groqRes.json();
+      for (const mod of modelosGroq) {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: mod,
+            messages: [
+              { role: "system", content: "Retorne estritamente um JSON válido." },
+              { role: "user", content: prompt + "\n\n" + (texts || "") }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.1
+          })
+        });
 
-      if (groqRes.ok) {
-        return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
-      } else {
-        detalheErro += ` Groq: ${JSON.stringify(groqData.error || groqRes.statusText)}`;
+        const groqData = await groqRes.json();
+
+        if (groqRes.ok) {
+          return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
+        } else {
+          detalheErro += ` Groq (${mod}): ${JSON.stringify(groqData.error?.message || groqRes.statusText)}`;
+        }
       }
     }
 
