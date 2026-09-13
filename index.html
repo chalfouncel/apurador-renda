@@ -91,41 +91,17 @@
 
   <!-- Header Principal com Logo Centralizada, Dobro do Tamanho e Textos Alinhados -->
   <header class="main-header shadow-md sticky top-0 z-30">
-    <div class="mx-auto flex flex-col items-center text-center w-full relative" style="max-width: 650px;">
-      
-      <!-- Botão de Configuração alinhado à direita no topo -->
-      <button onclick="toggleConfig()" class="absolute right-0 top-0 text-[10px] px-2.5 py-1.5 rounded font-semibold tracking-wider uppercase border flex items-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500">
-        ⚙️ Configurar Chaves
-      </button>
-
-      <!-- Logo Centralizada com o dobro do tamanho -->
+    <div class="mx-auto flex flex-col items-center text-center w-full" style="max-width: 650px;">
       <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mb-2.5">
-      
-      <!-- Textos alinhados e centralizados com o restante do app -->
       <div class="w-full">
         <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
         <p class="text-[9px] uppercase tracking-wider mt-0.5" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
       </div>
-
     </div>
   </header>
 
   <!-- Contêiner Central Mobile -->
   <main class="mx-auto p-4 space-y-4" style="max-width: 650px;">
-
-    <!-- Painel Oculto de Configuração de Chaves -->
-    <div id="configPanel" class="hidden card-box p-4 border border-amber-500/50 bg-amber-50/30 space-y-3">
-      <h3 class="font-bold text-xs uppercase tracking-wider text-amber-800">Chaves de API (Salvas localmente no seu aparelho)</h3>
-      <div>
-        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Chave Groq API</label>
-        <input type="password" id="inputGroqKey" placeholder="gsk_..." class="w-full text-xs border rounded-lg px-3 py-2 bg-white" />
-      </div>
-      <div>
-        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Chave Gemini API</label>
-        <input type="password" id="inputGeminiKey" placeholder="AQ..." class="w-full text-xs border rounded-lg px-3 py-2 bg-white" />
-      </div>
-      <button onclick="salvarChaves()" class="w-full bg-slate-900 text-white font-bold py-2 rounded-lg text-xs">Salvar Chaves no Aparelho</button>
-    </div>
 
     <!-- Alerta de Processamento -->
     <div id="statusAlert" class="hidden text-xs p-3.5 rounded-xl shadow-lg border flex items-center gap-3" style="background-color: var(--secondary); border-color: var(--accent); color: var(--silver);">
@@ -233,78 +209,29 @@
   </main>
 
   <script>
-    function getGroqKey() { return localStorage.getItem('groq_key') || ""; }
-    function getGeminiKey() { return localStorage.getItem('gemini_key') || ""; }
+    let consolidadoMeses = [], dadosCliente = {};
 
-    function toggleConfig() {
-      const p = document.getElementById('configPanel');
-      p.classList.toggle('hidden');
-      document.getElementById('inputGroqKey').value = getGroqKey();
-      document.getElementById('inputGeminiKey').value = getGeminiKey();
-    }
-
-    function salvarChaves() {
-      localStorage.setItem('groq_key', document.getElementById('inputGroqKey').value.trim());
-      localStorage.setItem('gemini_key', document.getElementById('inputGeminiKey').value.trim());
-      alert("Chaves salvas com sucesso neste dispositivo!");
-      toggleConfig();
-    }
-
-    const MODELOS_VISAO = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"];
-    let transacoesAnalisadas = [], consolidadoMeses = [], dadosCliente = {};
-
-    function showStatus(msg) {
-      document.getElementById('statusAlert').classList.remove('hidden');
-      document.getElementById('statusAlertTxt').innerText = msg;
-    }
+    function showStatus(msg) { document.getElementById('statusAlert').classList.remove('hidden'); document.getElementById('statusAlertTxt').innerText = msg; }
     function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
 
-    document.getElementById('extratosInput').addEventListener('change', async function(e) {
-      const count = e.target.files.length;
-      document.getElementById('fileCounter').innerText = count > 0 ? `${count} arquivo(s) selecionado(s)` : 'Nenhum arquivo selecionado.';
-
-      if (e.target.files && e.target.files[0]) {
-        try {
-          const file = e.target.files[0];
-          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-            const resPdf = await extrairDadosCompletosPDF(file);
-            if (resPdf.texto) {
-              const linhas = resPdf.texto.split('\n').map(l => l.trim()).filter(Boolean);
-              for (let l of linhas.slice(0, 20)) {
-                const mNome = l.match(/^([A-ZÀ-Ú ]{8,50})(?:\s+\d{3}\.\d{3}\.\d{3}-\d{2}|\s+CPF)/i);
-                if (mNome && !document.getElementById('titularName').value) {
-                  document.getElementById('titularName').value = mNome[1].trim();
-                  break;
-                }
-              }
-            }
-          }
-        } catch (err) { console.warn("Extração de titular do extrato:", err); }
-      }
+    document.getElementById('extratosInput').addEventListener('change', function(e) {
+      document.getElementById('fileCounter').innerText = e.target.files.length > 0 ? `${e.target.files.length} arquivo(s)` : 'Nenhum arquivo.';
     });
 
-    document.getElementById('docInput').addEventListener('change', function() { lerDocumentoCliente(); });
-
-    function otimizarFotoBase64(file) {
-      return new Promise((resolve, reject) => {
+    async function otimizarFotoBase64(file) {
+      return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1500; let width = img.width, height = img.height;
-            if (width > maxDim || height > maxDim) {
-              if (width > height) { height = Math.round((height * maxDim) / width); width = maxDim; }
-              else { width = Math.round((width * maxDim) / height); height = maxDim; }
-            }
-            const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-            resolve(dataUrl.split(',')[1]);
+            const maxDim = 1500; let w = img.width, h = img.height;
+            if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
           };
-          img.onerror = reject;
           img.src = e.target.result;
         };
-        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
     }
@@ -312,117 +239,39 @@
     async function extrairDadosCompletosPDF(file) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const imagens = []; let texto = "";
+      let imagens = [], texto = "";
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const txtContent = await page.getTextContent();
-        texto += txtContent.items.map(it => it.str).join(" ") + "\n";
+        const txt = await page.getTextContent();
+        texto += txt.items.map(it => it.str).join(" ") + "\n";
         const viewport = page.getViewport({ scale: 1.3 });
         const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
         imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
       }
       return { texto: texto.trim(), imagens };
     }
 
-    function parseCNHLocalRegex(texto) {
-      if (!texto) return {};
-      const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
-      const dados = {};
-      const termosIgnorar = ['MINISTERIO', 'MINISTÉRIO', 'SECRETARIA', 'SENATRAN', 'CARTEIRA', 'NACIONAL', 'HABILITAÇÃO', 'HABILITACAO', 'DRIVER', 'LICENSE', 'PERMISO', 'CONDUCCIÓN', 'RIO DE JANEIRO', 'BRASILEIRO', 'SERPRO', 'DETRAN', 'ASSINADOR', 'VALIDA', 'TERRITORIO', 'FEDERATIVA', 'DE JANEIRO', 'SOBRENOME', 'OPGEMISOOR', 'DOCUMENTO', 'ASSINADO', 'MEDIDA', 'PROVISORIA', 'VALIDADE', 'CONFORMIDADE', 'PROGRAMA', 'QR-CODE'];
-
-      for (let i = linhas.length - 1; i >= 0; i--) {
-        const l = linhas[i];
-        if (l.includes('<<')) {
-          const partes = l.split('<<');
-          if (partes.length >= 2 && !/\d/.test(partes[0])) {
-            const p1 = partes[0].replace(/</g, '').trim();
-            const p2 = partes[1].replace(/</g, ' ').replace(/\s+/g, ' ').trim();
-            const nomeCompleto = `${p1} ${p2}`.trim();
-            if (nomeCompleto.length > 5 && !nomeCompleto.includes('BRA')) { dados.titular = nomeCompleto; break; }
-          }
-        }
-      }
-
-      if (!dados.titular) {
-        for (let i = 0; i < linhas.length; i++) {
-          const u = linhas[i].toUpperCase();
-          if (u.includes('HABILITAÇÃO') || u.includes('SOBRENOME')) {
-            for (let j = i + 1; j < Math.min(i + 4, linhas.length); j++) {
-              const cand = linhas[j];
-              if (/^[A-ZÀ-Ú ]{6,50}$/i.test(cand) && !/\d/.test(cand)) {
-                if (!termosIgnorar.some(t => cand.toUpperCase().includes(t))) { dados.titular = cand; break; }
-              }
-            }
-            if (dados.titular) break;
-          }
-        }
-      }
-
-      const nomesFil = [];
-      for (let l of linhas) {
-        const u = l.toUpperCase();
-        if (/^[A-ZÀ-Ú ]{8,60}$/i.test(l) && l.split(/\s+/).length >= 3) {
-          if (!termosIgnorar.some(t => u.includes(t)) && l !== dados.titular) { nomesFil.push(l); }
-        }
-      }
-
-      if (nomesFil.length >= 2) { dados.pai = nomesFil[0]; dados.mae = nomesFil[1]; }
-      else if (nomesFil.length === 1) { dados.mae = nomesFil[0]; }
-      return dados;
-    }
-
-    async function chamarGroqAPI(promptTexto) {
-      const key = getGroqKey();
-      if (!key) throw new Error("Chave Groq não configurada. Clique em '⚙️ Configurar Chaves'.");
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "system", content: "Você é um auditor financeiro e contábil rigoroso especializado em apuração de renda bancária. Retorne estritamente um JSON válido sem nenhum comentário adicional." }, { role: "user", content: promptTexto }],
-          response_format: { type: "json_object" }, temperature: 0.1
-        })
+    async function chamarApiServidor(payload) {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Erro na API Groq");
-      return (await res.json()).choices[0].message.content;
-    }
-
-    async function chamarGeminiVisao(parts) {
-      const key = getGeminiKey();
-      if (!key) throw new Error("Chave Gemini não configurada. Clique em '⚙️ Configurar Chaves'.");
-      for (let m of MODELOS_VISAO) {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts }] })
-        });
-        if (res.ok) return (await res.json()).candidates[0].content.parts[0].text;
-      }
-      throw new Error("Erro nas chamadas Gemini");
+      if (!res.ok) throw new Error("Erro no servidor de IA da Vercel");
+      return await res.json();
     }
 
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
-      if (!file) { alert("Por favor, selecione ou tire uma foto do documento."); return; }
-      showStatus("Otimizando foto do documento...");
+      if (!file) { alert("Selecione o documento."); return; }
+      showStatus("Lendo documento...");
       try {
         const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
-        if (resPdf.texto.length > 20) {
-          const local = parseCNHLocalRegex(resPdf.texto);
-          if (local.titular) document.getElementById('titularName').value = local.titular;
-          if (local.pai) document.getElementById('paiName').value = local.pai;
-          if (local.mae) document.getElementById('maeName').value = local.mae;
-          if (local.titular && local.pai && local.mae) { hideStatus(); return; }
-        }
-        showStatus("Cruzando dados do documento via IA...");
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const promptVisaoDoc = `Você é um perito documental e contábil. Analise esta CNH, RG ou CERTIDÃO DE CASAMENTO. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
-        const parts = [{ text: promptVisaoDoc }];
-        if (resPdf.texto.length > 20) { parts.push({ text: "TEXTO COMPLEMENTAR:\n" + resPdf.texto }); }
-        resPdf.imagens.forEach(img => parts.push({ inline_data: { mime_type: "image/jpeg", data: img } }));
-        const resposta = await chamarGeminiVisao(parts);
-        const json = JSON.parse(resposta.replace(/```json/g, '').replace(/```/g, '').trim());
+        const prompt = `Analise esta CNH ou Certidão de Casamento. Titular do extrato: "${titularExtrato}". Retorne EXCLUSIVAMENTE JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        
+        const json = await chamarApiServidor({ prompt, texts: resPdf.texto, images: resPdf.imagens });
         if (json.titular) document.getElementById('titularName').value = json.titular;
         if (json.pai) document.getElementById('paiName').value = json.pai;
         if (json.mae) document.getElementById('maeName').value = json.mae;
@@ -431,74 +280,37 @@
     }
 
     async function executarApuracaoRenda() {
-      const extratosInput = document.getElementById('extratosInput');
-      if (!extratosInput.files || extratosInput.files.length === 0) { alert("Por favor, adicione os extratos bancários."); return; }
-      const titular = document.getElementById('titularName').value.trim();
-      const pai = document.getElementById('paiName').value.trim();
-      const mae = document.getElementById('maeName').value.trim();
-      const conjuge = document.getElementById('conjugeName').value.trim();
-      dadosCliente = { titular, pai, mae, conjuge };
-
-      showStatus("Preparando imagens dos extratos...");
-      const btn = document.getElementById('btnProcessar');
-      btn.disabled = true; btn.classList.add('opacity-50');
-
+      const files = document.getElementById('extratosInput').files;
+      if (!files.length) { alert("Adicione os extratos."); return; }
+      dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
+      showStatus("Processando extratos...");
       try {
-        const imagensExtratos = [];
-        let textosExtratosGeral = "";
-        for (let file of Array.from(extratosInput.files)) {
-          showStatus(`Processando: ${file.name}...`);
-          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-            const resPdf = await extrairDadosCompletosPDF(file);
-            textosExtratosGeral += `\n--- ARQUIVO: ${file.name} ---\n` + resPdf.texto;
-            resPdf.imagens.forEach(img => imagensExtratos.push(img));
-          } else {
-            const imgBase64 = await otimizarFotoBase64(file);
-            imagensExtratos.push(imgBase64);
-          }
+        let imagens = [], textoGeral = "";
+        for (let file of Array.from(files)) {
+          if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+            const res = await extrairDadosCompletosPDF(file);
+            textoGeral += res.texto; res.imagens.forEach(img => imagens.push(img));
+          } else { imagens.push(await otimizarFotoBase64(file)); }
         }
-
-        const promptAuditoria = `Você é um auditor contábil especialista em apuração de renda bancária. Analise entradas e créditos. Titular: "${titular}", Pai: "${pai}", Mãe: "${mae}", Cônjuge: "${conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
+        const prompt = `Audite entradas bancárias considerando Titular: "${dadosCliente.titular}", Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}". Ignore salário formal, resgates de cofrinho, mesma titularidade e familiares. Retorne JSON: {"resumo_geral": {"total_entradas_consideradas": 0, "total_entradas_descartadas": 0, "quantidade_meses": 1, "renda_media_mensal": 0}, "apuracao_mensal": [{"mes_ano": "MM/AAAA", "somatorio_entradas": 0}], "transacoes": []}`;
         
-        let json = null;
-        if (textosExtratosGeral.length > 50) {
-          try {
-            showStatus("⚡ Apurando via Groq...");
-            const respGroq = await chamarGroqAPI(promptAuditoria + "\n\nTEXTOS DOS EXTRATOS:\n" + textosExtratosGeral);
-            json = JSON.parse(respGroq);
-          } catch (groqErr) { console.warn("Groq falhou, usando Gemini:", groqErr); }
-        }
-
-        if (!json) {
-          showStatus("Auditando imagens via Gemini Visão...");
-          const parts = [{ text: promptAuditoria }];
-          if (textosExtratosGeral.length > 50) { parts.push({ text: "TEXTOS COMPLEMENTARES:\n" + textosExtratosGeral }); }
-          imagensExtratos.forEach(img => parts.push({ inline_data: { mime_type: "image/jpeg", data: img } }));
-          const respGemini = await chamarGeminiVisao(parts);
-          json = JSON.parse(respGemini.replace(/```json/g, '').replace(/```/g, '').trim());
-        }
-
+        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
         document.getElementById('resultadoBox').classList.remove('hidden');
-      } catch (err) { alert("Erro na apuração: " + err.message); } finally {
-        hideStatus(); btn.disabled = false; btn.classList.remove('opacity-50');
-      }
+      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
     }
 
     function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-    // Função auxiliar para carregar imagem local em Base64 para o jsPDF
     function carregarImagemBase64(url) {
       return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
         img.onload = function() {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width; canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
+          const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg'));
         };
         img.onerror = () => resolve(null);
         img.src = url;
@@ -509,27 +321,19 @@
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
 
-      // Carrega e desenha a logo no PDF buscando de logo.png
       const logoBase64 = await carregarImagemBase64('logo.png');
-      if (logoBase64) {
-        try { doc.addImage(logoBase64, 'PNG', 11, 6, 26, 13); } catch(e) {}
-      }
+      if (logoBase64) { try { doc.addImage(logoBase64, 'JPEG', 11, 6, 26, 13); } catch(e) {} }
 
       doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
       doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
-      
       doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(212, 175, 55);
       doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 40, 12);
-      
       doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
       doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 40, 19);
       doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
 
-      // Carrega e desenha a marca d'água pericial centralizada no PDF buscando de marca-dagua.png
       const watermarkBase64 = await carregarImagemBase64('marca-dagua.png');
-      if (watermarkBase64) {
-        try { doc.addImage(watermarkBase64, 'PNG', 35, 78, 140, 140, '', 'FAST', -12); } catch(e) {}
-      }
+      if (watermarkBase64) { try { doc.addImage(watermarkBase64, 'JPEG', 35, 78, 140, 140, '', 'FAST', -12); } catch(e) {} }
 
       doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
       doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
@@ -568,8 +372,7 @@
 
     function resetarParaNovaAnalise() {
       document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
-      document.getElementById('titularName').value = ''; document.getElementById('paiName').value = '';
-      document.getElementById('maeName').value = ''; document.getElementById('conjugeName').value = '';
+      ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
       window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -577,9 +380,7 @@
 
     function baixarPDFLocal() {
       if (!window.ultimoResultado) return;
-      gerarDocumentoPDF().then(({ doc, titular }) => {
-        doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`);
-      });
+      gerarDocumentoPDF().then(({ doc, titular }) => { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); });
     }
 
     async function gerarECompartilharPDF() {
@@ -587,14 +388,9 @@
       const { doc, titular } = await gerarDocumentoPDF();
       const pdfBlob = doc.output('blob');
       const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
-
       if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        try {
-          await navigator.share({ title: 'Laudo de Apuração de Renda', text: `Laudo de apuração pericial de renda de ${titular}.`, files: [pdfFile] });
-        } catch (shareErr) {
-          if (shareErr.name !== 'AbortError') { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
-        }
-      } else { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
+        try { await navigator.share({ title: 'Laudo de Apuração de Renda', files: [pdfFile] }); } catch (e) { if (e.name !== 'AbortError') doc.save(); }
+      } else { doc.save(); }
     }
   </script>
 </body>
