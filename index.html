@@ -54,7 +54,6 @@
     }
     .file-input-green::file-selector-button:hover { filter: brightness(1.05); }
 
-    /* Estilos dos Botões de Finalidade */
     .btn-mode {
       border: 2px solid var(--border);
       background-color: #ffffff;
@@ -148,7 +147,7 @@
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
       <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
         <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
-        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para compartilhamento ou download.</p>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para download ou compartilhamento.</p>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
         <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
@@ -205,11 +204,11 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1200; let w = img.width, h = img.height;
+            const maxDim = 1600; let w = img.width, h = img.height;
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -226,10 +225,10 @@
           const page = await pdf.getPage(i);
           const txt = await page.getTextContent();
           texto += txt.items.map(it => it.str).join(" ") + "\n";
-          const viewport = page.getViewport({ scale: 1.2 });
+          const viewport = page.getViewport({ scale: 1.5 });
           const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+          imagens.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
         }
         return { texto: texto.trim(), imagens };
       } else {
@@ -273,30 +272,48 @@
       return data;
     }
 
+    function limparTextoExtraido(val) {
+      if (!val) return "";
+      const limpo = String(val).replace(/\.+/g, '').trim();
+      return limpo.length > 1 ? String(val).trim() : "";
+    }
+
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
-      if (!file) { alert("Selecione o documento."); return; }
-      showStatus("Lendo documento...");
+      if (!file) { alert("Selecione o documento primeiro."); return; }
+      showStatus("Lendo documento oficial...");
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Você é um perito em análise documental.
-Analise com atenção a imagem ou texto anexo deste documento oficial brasileiro (CNH, RG, Identidade ou Certidão de Casamento).
-Extraia os nomes com precisão cirúrgica:
-- Titular: O nome da pessoa do documento (se for certidão, cruze com o titular sugerido "${titularExtrato}")
-- Pai: Nome do pai / filiação paterna
-- Mãe: Nome da mãe / filiação materna
-- Cônjuge: Nome do cônjuge / parceiro (caso seja Certidão de Casamento)
+        
+        const prompt = `Você é um auditor documental pericial. Analise o documento oficial brasileiro (CNH, RG ou Certidão).
+Extraia os nomes reais encontrados:
+- titular: Nome completo do titular do documento
+- pai: Nome do pai registrado na filiação
+- mae: Nome da mãe registrada na filiação
+- conjuge: Nome do cônjuge/esposo(a) se for certidão de casamento
 
-Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
-{"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+IMPORTANTE: Se algum campo não existir ou não estiver legível, preencha com string vazia "". NUNCA retorne reticências ("...") ou caracteres de exemplo.
+
+Retorne EXCLUSIVAMENTE um JSON válido no formato:
+{
+  "titular": "NOME COMPLETO",
+  "pai": "NOME DO PAI",
+  "mae": "NOME DA MAE",
+  "conjuge": "NOME DO CONJUGE"
+}`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
-        if (json.titular) document.getElementById('titularName').value = json.titular;
-        if (json.pai) document.getElementById('paiName').value = json.pai;
-        if (json.mae) document.getElementById('maeName').value = json.mae;
-        if (json.conjuge) document.getElementById('conjugeName').value = json.conjuge;
-      } catch (err) { alert("Erro ao ler documento: " + err.message); } finally { hideStatus(); }
+        
+        if (json.titular) document.getElementById('titularName').value = limparTextoExtraido(json.titular);
+        if (json.pai) document.getElementById('paiName').value = limparTextoExtraido(json.pai);
+        if (json.mae) document.getElementById('maeName').value = limparTextoExtraido(json.mae);
+        if (json.conjuge) document.getElementById('conjugeName').value = limparTextoExtraido(json.conjuge);
+      } catch (err) { 
+        alert("Erro ao ler documento: " + err.message); 
+      } finally { 
+        hideStatus(); 
+      }
     }
 
     async function executarApuracaoRenda() {
@@ -305,7 +322,7 @@ Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
         return;
       }
       const files = document.getElementById('extratosInput').files;
-      if (!files.length) { alert("Adicione os extratos."); return; }
+      if (!files.length) { alert("Adicione os extratos bancários."); return; }
 
       dadosCliente = { 
         titular: document.getElementById('titularName').value.trim(), 
@@ -327,7 +344,7 @@ Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
           }
         }
 
-        const prompt = `Você é um perito financeiro e auditor contábil judicial.
+        const prompt = `Você é um perito financeiro e auditor contábil.
 Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, etc.).
 Regras de Exclusão (Descarte):
 - Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
@@ -335,7 +352,7 @@ Regras de Exclusão (Descarte):
 - Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
 - Considere apenas ENTRADAS legítimas como renda.
 
-Retorne ESTRITAMENTE o JSON no formato abaixo, com todas as transações auditadas individualmente para permitir auditoria discriminada:
+Retorne ESTRITAMENTE o JSON no formato:
 {
   "resumo_geral": {
     "total_entradas_consideradas": 0.00,
@@ -347,8 +364,8 @@ Retorne ESTRITAMENTE o JSON no formato abaixo, com todas as transações auditad
     { "mes_ano": "03/2026", "somatorio_entradas": 0.00 }
   ],
   "transacoes": [
-    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "...", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
-    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "...", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
   ]
 }`;
         
@@ -458,7 +475,6 @@ Retorne ESTRITAMENTE o JSON no formato abaixo, com todas as transações auditad
       doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
       doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
 
-      // SE OPÇÃO 2 (FINANCIAMENTO): Detalhamento mês a mês com fontes verde e vermelha
       if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
         currentY = currentY + 24;
         if (currentY > 255) {
@@ -499,7 +515,6 @@ Retorne ESTRITAMENTE o JSON no formato abaixo, com todas as transações auditad
           didParseCell: function(data) {
             if (data.section === 'body') {
               const status = data.row.raw[4];
-              // Fonte verde para considerado e vermelha para rejeitado
               if (status === 'CONSIDERADO') {
                 if (data.column.index === 3 || data.column.index === 4) {
                   data.cell.styles.textColor = [40, 167, 69];
