@@ -27,6 +27,46 @@
     .loader-gold { border-top-color: var(--gold); animation: spinner 0.8s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .app-header-logo { height: 80px; width: auto; max-width: 200px; object-fit: contain; display: block; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+    .file-input-gold::file-selector-button {
+      background: linear-gradient(135deg, #c59b27, #dfba48);
+      color: #121315;
+      border: 1px solid #b88d1e;
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-input-gold::file-selector-button:hover { filter: brightness(1.05); }
+
+    .file-input-green::file-selector-button {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #ffffff;
+      border: 1px solid #1e7e34;
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-input-green::file-selector-button:hover { filter: brightness(1.05); }
+
+    .btn-mode {
+      border: 2px solid var(--border);
+      background-color: #ffffff;
+      color: #4b5563;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .btn-mode.active {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #121315, #1a1c20);
+      color: var(--gold);
+      box-shadow: 0 2px 8px rgba(197, 155, 39, 0.25);
+    }
   </style>
 </head>
 <body class="min-h-screen pb-16">
@@ -54,7 +94,7 @@
         <h2 class="font-bold text-xs tracking-wider uppercase">1. Extratos Bancários</h2>
         <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white" style="background-color: var(--success);">Obrigatório</span>
       </div>
-      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
       <div id="fileCounter" class="mt-2 text-[11px]" style="color: #888;">Nenhum arquivo selecionado.</div>
     </div>
 
@@ -66,7 +106,7 @@
       </div>
       
       <div class="flex items-center gap-2">
-        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
         <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
       </div>
       
@@ -80,16 +120,42 @@
       </div>
     </div>
 
-    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider">Executar Apuração Visual via IA</button>
+    <!-- SELEÇÃO DA FINALIDADE -->
+    <div class="card-box p-3.5">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-center mb-2" style="color: var(--secondary);">
+        Finalidade da Análise <span class="text-red-500">*</span>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="btnAluguel" onclick="selecionarModo('aluguel')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Aluguel</span>
+        </button>
+        <button type="button" id="btnFinanciamento" onclick="selecionarModo('financiamento')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span>Financiamento</span>
+        </button>
+      </div>
+    </div>
+
+    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+      <span>Executar Apuração Visual via IA</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </button>
 
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
       <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
         <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
-        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto.</p>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para download ou compartilhamento.</p>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
-        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase">Compartilhar</button>
-        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase" style="background-color: var(--secondary);">Baixar PDF</button>
+        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          <span>Compartilhar</span>
+        </button>
+        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5" style="background-color: var(--secondary);">
+          <svg class="w-4 h-4" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Baixar PDF</span>
+        </button>
       </div>
       <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 bg-white font-bold rounded-xl text-xs uppercase border">Nova Análise</button>
     </div>
@@ -97,13 +163,37 @@
   </main>
 
   <script>
-    let consolidadoMeses = [], dadosCliente = {};
+    let consolidadoMeses = [], transacoesDetalhadas = [], dadosCliente = {}, modoSelecionado = null;
+
+    function selecionarModo(modo) {
+      modoSelecionado = modo;
+      document.getElementById('btnAluguel').classList.toggle('active', modo === 'aluguel');
+      document.getElementById('btnFinanciamento').classList.toggle('active', modo === 'financiamento');
+    }
 
     function showStatus(msg) { document.getElementById('statusAlert').classList.remove('hidden'); document.getElementById('statusAlertTxt').innerText = msg; }
     function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
 
     document.getElementById('extratosInput').addEventListener('change', function(e) {
-      document.getElementById('fileCounter').innerText = e.target.files.length > 0 ? `${e.target.files.length} arquivo(s)` : 'Nenhum arquivo.';
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+        document.getElementById('fileCounter').innerText = `${e.target.files.length} arquivo(s) selecionado(s).`;
+      } else {
+        e.target.classList.remove('file-input-green');
+        e.target.classList.add('file-input-gold');
+        document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
+      }
+    });
+
+    document.getElementById('docInput').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+      } else {
+        e.target.classList.remove('file-input-green');
+        e.target.classList.add('file-input-gold');
+      }
     });
 
     async function otimizarFotoBase64(file) {
@@ -116,7 +206,7 @@
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -124,7 +214,36 @@
       });
     }
 
-    async function extrairDadosCompletosPDF(file) {
+    // NOVA FUNÇÃO PURA PARA LEITURA VISUAL DO DOCUMENTO (IGNORA O TEXTO DO PDF)
+    async function processarDocumentoIdentificacao(file) {
+      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let imagens = [];
+
+        // Lemos só a primeira página com resolução alta para o OCR visual funcionar
+        for (let i = 1; i <= Math.min(pdf.numPages, 1); i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 }); 
+          const canvas = document.createElement('canvas'); 
+          canvas.width = viewport.width; 
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.fillStyle = '#ffffff'; // Fundo branco forçado
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]); // 70% compressão previne erro 413 Payload Too Large
+        }
+        return { texto: "", imagens };
+      } else {
+        const img = await otimizarFotoBase64(file);
+        return { texto: "", imagens: [img] };
+      }
+    }
+
+    async function extrairDadosCompletosExtratos(file) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
@@ -132,8 +251,7 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const txt = await page.getTextContent();
-        const pageStr = txt.items.map(it => it.str).join(" ");
-        texto += `--- PÁGINA ${i} ---\n` + pageStr + "\n";
+        texto += `--- PÁGINA ${i} ---\n` + txt.items.map(it => it.str).join(" ") + "\n";
       }
 
       if (texto.trim().length < 200) {
@@ -141,7 +259,10 @@
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.0 });
           const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          await page.render({ canvasContext: ctx, viewport }).promise;
           imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
         }
       }
@@ -162,31 +283,59 @@
 
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
-      if (!file) { alert("Selecione o documento."); return; }
-      showStatus("Lendo documento...");
+      if (!file) { alert("Selecione o documento primeiro."); return; }
+      showStatus("Lendo documento oficial (IA Visão)...");
       try {
-        const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
-        const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Analise este documento de identificação (CNH, RG ou Certidão). Titular do extrato sugerido: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const resDoc = await processarDocumentoIdentificacao(file);
         
-        const json = await chamarApiServidor({ prompt, texts: resPdf.texto, images: resPdf.imagens });
-        if (json.titular) document.getElementById('titularName').value = json.titular;
-        if (json.pai) document.getElementById('paiName').value = json.pai;
-        if (json.mae) document.getElementById('maeName').value = json.mae;
-        if (json.conjuge) document.getElementById('conjugeName').value = json.conjuge;
-      } catch (err) { alert("Erro ao ler documento: " + err.message); } finally { hideStatus(); }
+        const prompt = `Analise a IMAGEM do documento de identificação em anexo. 
+Extraia EXATAMENTE E APENAS os nomes próprios das pessoas nos campos indicados. 
+Não invente, não use "Nome completo do...", "Nome da...", e deixe a string perfeitamente vazia "" caso o dado não esteja na imagem.
+
+Retorne EXCLUSIVAMENTE o JSON:
+{"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
+        
+        const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
+        
+        const limpar = (str) => {
+          if (!str) return "";
+          const limpo = String(str).replace(/[\.\*]/g, '').trim();
+          if (limpo.toLowerCase().includes("nome")) return "";
+          return limpo.toUpperCase();
+        };
+
+        if (json.titular !== undefined) document.getElementById('titularName').value = limpar(json.titular);
+        if (json.pai !== undefined) document.getElementById('paiName').value = limpar(json.pai);
+        if (json.mae !== undefined) document.getElementById('maeName').value = limpar(json.mae);
+        if (json.conjuge !== undefined) document.getElementById('conjugeName').value = limpar(json.conjuge);
+      } catch (err) { 
+        alert("Erro ao ler documento: " + err.message); 
+      } finally { 
+        hideStatus(); 
+      }
     }
 
     async function executarApuracaoRenda() {
+      if (!modoSelecionado) {
+        alert("Por favor, selecione a finalidade da análise (Aluguel ou Financiamento) antes de continuar.");
+        return;
+      }
       const files = document.getElementById('extratosInput').files;
-      if (!files.length) { alert("Adicione os extratos."); return; }
-      dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
+      if (!files.length) { alert("Adicione os extratos bancários."); return; }
+
+      dadosCliente = { 
+        titular: document.getElementById('titularName').value.trim(), 
+        pai: document.getElementById('paiName').value.trim(), 
+        mae: document.getElementById('maeName').value.trim(), 
+        conjuge: document.getElementById('conjugeName').value.trim() 
+      };
+
       showStatus("Auditando todos os meses do extrato...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await extrairDadosCompletosPDF(file);
+            const res = await extrairDadosCompletosExtratos(file);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
@@ -194,13 +343,13 @@
           }
         }
 
-        const prompt = `Você é um auditor financeiro e contábil pericial.
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, 06/2026, 07/2026, 08/2026, etc.).
+        const prompt = `Você é um perito financeiro e auditor contábil judicial.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, etc.).
 Regras de Exclusão (Descarte):
 - Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
 - Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
 - Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
-- Considere apenas ENTRADAS (Pix recebidos, vendas em cartão crédito/débito líquidas, depósitos e transferências de terceiros válidas como renda).
+- Considere apenas ENTRADAS legítimas como renda.
 
 Retorne ESTRITAMENTE o JSON no formato:
 {
@@ -211,14 +360,18 @@ Retorne ESTRITAMENTE o JSON no formato:
     "renda_media_mensal": 0.00
   },
   "apuracao_mensal": [
-    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 },
-    { "mes_ano": "04/2026", "somatorio_entradas": 0.00 }
+    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 }
+  ],
+  "transacoes": [
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
   ]
 }`;
         
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
+        transacoesDetalhadas = json.transacoes || [];
         document.getElementById('resultadoBox').classList.remove('hidden');
       } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
     }
@@ -270,7 +423,7 @@ Retorne ESTRITAMENTE o JSON no formato:
         doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
         doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
         doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
-        doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 36, 17.5);
+        doc.text(`M&IC Corretores de Imóveis — Auditoria para ${modoSelecionado === 'financiamento' ? 'Financiamento Imobiliário' : 'Locação Residencial/Comercial'}`, 36, 17.5);
         doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
       };
 
@@ -321,6 +474,63 @@ Retorne ESTRITAMENTE o JSON no formato:
       doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
       doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
 
+      if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
+        currentY = currentY + 24;
+        if (currentY > 255) {
+          doc.addPage();
+          desenharCabecalho();
+          currentY = 35;
+        }
+
+        doc.setFillColor(18, 19, 21); doc.rect(11, currentY, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, currentY, 2, 7, 'F');
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+        doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
+
+        const rowsTransacoes = transacoesDetalhadas.map(t => [
+          t.data || '',
+          t.mes_ano || '',
+          t.descricao || '',
+          formatMoeda(t.valor || 0),
+          t.status || '',
+          t.motivo || ''
+        ]);
+
+        doc.autoTable({
+          startY: currentY + 8,
+          head: [['Data', 'Mês/Ano', 'Descrição do Lançamento', 'Valor', 'Status', 'Motivo da Decisão']],
+          body: rowsTransacoes,
+          headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
+          columnStyles: {
+            0: { width: 18 },
+            1: { width: 16 },
+            2: { width: 62 },
+            3: { width: 24, halign: 'right', fontStyle: 'bold' },
+            4: { width: 26, fontStyle: 'bold' },
+            5: { width: 42 }
+          },
+          margin: { left: 11, right: 11 },
+          tableWidth: 188,
+          didParseCell: function(data) {
+            if (data.section === 'body') {
+              const status = data.row.raw[4];
+              if (status === 'CONSIDERADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [40, 167, 69];
+                }
+              } else if (status === 'REJEITADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [220, 53, 69];
+                }
+              }
+            }
+          },
+          didDrawPage: function() {
+            desenharCabecalho();
+          }
+        });
+      }
+
       const totalPaginas = doc.internal.getNumberOfPages();
       if (watermarkBase64) {
         for (let p = 1; p <= totalPaginas; p++) {
@@ -335,10 +545,26 @@ Retorne ESTRITAMENTE o JSON no formato:
     }
 
     function resetarParaNovaAnalise() {
-      document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
+      document.getElementById('docInput').value = ''; 
+      document.getElementById('extratosInput').value = '';
+      
+      const extratosEl = document.getElementById('extratosInput');
+      extratosEl.classList.remove('file-input-green');
+      extratosEl.classList.add('file-input-gold');
+
+      const docEl = document.getElementById('docInput');
+      docEl.classList.remove('file-input-green');
+      docEl.classList.add('file-input-gold');
+
       ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
-      window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
+      
+      modoSelecionado = null;
+      document.getElementById('btnAluguel').classList.remove('active');
+      document.getElementById('btnFinanciamento').classList.remove('active');
+
+      window.ultimoResultado = null; 
+      document.getElementById('resultadoBox').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
