@@ -20,10 +20,18 @@ export default async function handler(req, res) {
 
     // MODO VISÃO (Documentos e CNH com imagens)
     if (temImagens && GEMINI_API_KEY) {
-      const modelos = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      // Sequência de contingência de modelos
+      const modelosGemini = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-pro-vision"
+      ];
+      
       let lastError = "";
 
-      for (const modelo of modelos) {
+      for (const modelo of modelosGemini) {
         try {
           const parts = [{ text: prompt }];
           if (texts) parts.push({ text: "TEXTOS ADICIONAIS:\n" + texts });
@@ -46,62 +54,81 @@ export default async function handler(req, res) {
             }
           } else {
             const errData = await response.json();
-            lastError = errData.error?.message || "Erro Gemini API";
+            lastError = errData.error?.message || `Erro no modelo ${modelo}`;
           }
         } catch (err) {
           lastError = err.message;
         }
       }
-      return res.status(500).json({ error: "Falha na IA Visual: " + lastError });
+      return res.status(500).json({ error: "Nenhuma IA Visual respondeu. Último erro: " + lastError });
     }
 
     // MODO TEXTO (Apenas texto, sem imagens)
     if (!temImagens && texts) {
       if (GROQ_API_KEY) {
         try {
-          const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: "llama-3.3-70b-versatile",
-              messages: [
-                { role: "system", content: "Retorne ESTRITAMENTE um JSON válido." },
-                { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
-              ],
-              response_format: { type: "json_object" },
-              temperature: 0.1
-            })
+          // Descoberta dinâmica de modelos na Groq para evitar erros de versão
+          const listRes = await fetch("https://api.groq.com/openai/v1/models", {
+            headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
           });
-          if (response.ok) {
-            const data = await response.json();
-            return res.status(200).json(JSON.parse(data.choices[0].message.content));
+          
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            const modelosGroq = (listData.data || [])
+              .map(m => m.id)
+              .filter(id => !id.includes("whisper") && !id.includes("guard"));
+
+            for (const mod of modelosGroq) {
+              try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${GROQ_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                    model: mod,
+                    messages: [
+                      { role: "system", content: "Retorne ESTRITAMENTE um JSON válido." },
+                      { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.1
+                  })
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  return res.status(200).json(JSON.parse(data.choices[0].message.content));
+                }
+              } catch (err) {}
+            }
           }
-        } catch (err) {
-          // Fallback para Gemini
-        }
+        } catch (err) {}
       }
 
       if (GEMINI_API_KEY) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (raw) {
-            const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-            return res.status(200).json(JSON.parse(clean));
-          }
+        const modelosGeminiText = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash"];
+        for (const mod of modelosGeminiText) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
+                });
+                if (response.ok) {
+                const data = await response.json();
+                const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (raw) {
+                    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return res.status(200).json(JSON.parse(clean));
+                }
+                }
+            } catch(e) {}
         }
       }
     }
 
-    return res.status(500).json({ error: "Não foi possível processar a requisição com os modelos disponíveis." });
+    return res.status(500).json({ error: "Não foi possível processar a requisição com as IAs ativas." });
 
   } catch (error) {
     return res.status(500).json({ error: "Erro interno: " + error.message });
