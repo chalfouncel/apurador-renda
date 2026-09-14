@@ -1,2043 +1,411 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Apurador de Renda IA — M&IC</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
   </script>
-
   <style>
-
     :root {
-      --primary: #121315;
-      --secondary: #1a1c20;
-      --accent: #c59b27;
-      --gold: #d4af37;
-      --gold-light: #dfba48;
-      --silver: #cfd4dc;
-      --bg: #f4f5f7;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --border: #e0e0e0;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #e67e22;
+      --primary: #121315; --secondary: #1a1c20; --accent: #c59b27;
+      --gold: #d4af37; --gold-light: #dfba48; --silver: #cfd4dc;
+      --bg: #f4f5f7; --card: #ffffff; --text: #1a1a1a; --border: #e0e0e0;
+      --success: #28a745; --danger: #dc3545; --warning: #e67e22;
     }
-
-    body {
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-
-      background-color: var(--bg);
-      color: var(--text);
-    }
-
-    .main-header {
-      background:
-        linear-gradient(
-          135deg,
-          #0d0e10 0%,
-          #1a1c20 70%,
-          #2b261b 100%
-        );
-
-      border-bottom:
-        3px solid var(--accent);
-
-      color: #fff;
-      padding: 16px;
-    }
-
-    .section-banner {
-      background:
-        linear-gradient(
-          90deg,
-          #121315,
-          #24272c
-        );
-
-      border-left:
-        4px solid var(--accent);
-
-      color: var(--gold-light);
-    }
-
-    .btn-gold {
-      background:
-        linear-gradient(
-          135deg,
-          #c59b27,
-          #dfba48
-        );
-
-      color: #121315;
-      border:
-        1px solid #b88d1e;
-
-      font-weight: 700;
-    }
-
-    .btn-gold:hover {
-      filter: brightness(1.05);
-    }
-
-    .card-box {
-      background-color: var(--card);
-      border-radius: 12px;
-      border:
-        1px solid var(--border);
-
-      box-shadow:
-        0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .loader-gold {
-      border-top-color: var(--gold);
-      animation:
-        spinner 0.8s linear infinite;
-    }
-
-    @keyframes spinner {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    .app-header-logo {
-      height: 80px;
-      width: auto;
-      max-width: 200px;
-      object-fit: contain;
-      display: block;
-      border-radius: 6px;
-
-      box-shadow:
-        0 2px 6px rgba(0,0,0,0.4);
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg); color: var(--text); }
+    .main-header { background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%); border-bottom: 3px solid var(--accent); color: #fff; padding: 16px; }
+    .section-banner { background: linear-gradient(90deg, #121315, #24272c); border-left: 4px solid var(--accent); color: var(--gold-light); }
+    .btn-gold { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; border: 1px solid #b88d1e; font-weight: 700; }
+    .btn-gold:hover { filter: brightness(1.05); }
+    .card-box { background-color: var(--card); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .loader-gold { border-top-color: var(--gold); animation: spinner 0.8s linear infinite; }
+    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .app-header-logo { height: 80px; width: auto; max-width: 200px; object-fit: contain; display: block; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 
     .file-input-gold::file-selector-button {
-      background:
-        linear-gradient(
-          135deg,
-          #c59b27,
-          #dfba48
-        );
-
+      background: linear-gradient(135deg, #c59b27, #dfba48);
       color: #121315;
-      border:
-        1px solid #b88d1e;
-
+      border: 1px solid #b88d1e;
       font-weight: 700;
-      padding:
-        0.5rem 0.75rem;
-
-      border-radius:
-        0.5rem;
-
-      margin-right:
-        0.5rem;
-
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
       cursor: pointer;
+      transition: all 0.2s;
     }
+    .file-input-gold::file-selector-button:hover { filter: brightness(1.05); }
 
     .file-input-green::file-selector-button {
-      background:
-        linear-gradient(
-          135deg,
-          #28a745,
-          #218838
-        );
-
-      color: #fff;
-
-      border:
-        1px solid #1e7e34;
-
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #ffffff;
+      border: 1px solid #1e7e34;
       font-weight: 700;
-
-      padding:
-        0.5rem 0.75rem;
-
-      border-radius:
-        0.5rem;
-
-      margin-right:
-        0.5rem;
-
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
       cursor: pointer;
+      transition: all 0.2s;
     }
+    .file-input-green::file-selector-button:hover { filter: brightness(1.05); }
 
     .btn-mode {
-      border:
-        2px solid var(--border);
-
-      background-color:
-        #ffffff;
-
-      color:
-        #4b5563;
-
-      font-weight:
-        700;
-
-      transition:
-        all 0.2s;
+      border: 2px solid var(--border);
+      background-color: #ffffff;
+      color: #4b5563;
+      font-weight: 700;
+      transition: all 0.2s;
     }
-
     .btn-mode.active {
-      border-color:
-        var(--accent);
-
-      background:
-        linear-gradient(
-          135deg,
-          #121315,
-          #1a1c20
-        );
-
-      color:
-        var(--gold);
-
-      box-shadow:
-        0 2px 8px
-        rgba(197,155,39,0.25);
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #121315, #1a1c20);
+      color: var(--gold);
+      box-shadow: 0 2px 8px rgba(197, 155, 39, 0.25);
     }
-
+    
+    .locked-section {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(100%);
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
-
 <body class="min-h-screen pb-16">
 
-<header
-  class="main-header shadow-md sticky top-0 z-30"
->
-
-  <div
-    class="mx-auto flex flex-col items-center text-center w-full"
-    style="max-width:650px;"
-  >
-
-    <img
-      src="logo.png"
-      alt="M&IC Corretores"
-      class="app-header-logo mb-2.5"
-    >
-
-    <div class="w-full">
-
-      <h1
-        class="font-bold text-sm leading-tight tracking-wide"
-        style="color:var(--gold);"
-      >
-        APURAÇÃO DE RENDA POR IA
-      </h1>
-
-      <p
-        class="text-[9px] uppercase tracking-wider mt-0.5"
-        style="color:var(--silver);"
-      >
-        M&IC Corretores de Imóveis
-      </p>
-
-    </div>
-
-  </div>
-
-</header>
-
-
-<main
-  class="mx-auto p-4 space-y-4"
-  style="max-width:650px;"
->
-
-  <div
-    id="statusAlert"
-    class="hidden text-xs p-3.5 rounded-xl shadow-lg border flex items-center gap-3"
-    style="
-      background-color:var(--secondary);
-      border-color:var(--accent);
-      color:var(--silver);
-    "
-  >
-
-    <div
-      class="loader-gold rounded-full border-2 border-t-2 border-slate-600 h-4 w-4 flex-shrink-0"
-    ></div>
-
-    <span
-      id="statusAlertTxt"
-      class="font-medium tracking-wide"
-    >
-      Processando...
-    </span>
-
-  </div>
-
-
-  <!-- ======================================================
-       EXTRATOS
-  ======================================================= -->
-
-  <div class="card-box p-4">
-
-    <div
-      class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between"
-    >
-
-      <h2
-        class="font-bold text-xs tracking-wider uppercase"
-      >
-        1. Extratos Bancários
-      </h2>
-
-      <span
-        class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white"
-        style="background-color:var(--success);"
-      >
-        Obrigatório
-      </span>
-
-    </div>
-
-    <input
-      type="file"
-      id="extratosInput"
-      multiple
-      accept="image/*,application/pdf"
-      class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer"
-    >
-
-    <div
-      id="fileCounter"
-      class="mt-2 text-[11px]"
-      style="color:#888;"
-    >
-      Nenhum arquivo selecionado.
-    </div>
-
-    <div
-      id="titularStatus"
-      class="hidden mt-2 text-[10px] font-semibold"
-      style="color:#28a745;"
-    ></div>
-
-  </div>
-
-
-  <!-- ======================================================
-       DOCUMENTO
-  ======================================================= -->
-
-  <div class="card-box p-4">
-
-    <div
-      class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between"
-    >
-
-      <h2
-        class="font-bold text-xs tracking-wider uppercase"
-      >
-        2. Documento do Cliente (CNH / Certidão / RG)
-      </h2>
-
-      <span
-        class="text-[9px] px-2 py-0.5 rounded font-bold uppercase"
-        style="
-          background:rgba(207,212,220,0.15);
-          color:var(--silver);
-        "
-      >
-        Opcional
-      </span>
-
-    </div>
-
-
-    <div class="flex items-center gap-2">
-
-      <input
-        type="file"
-        id="docInput"
-        accept="image/*,application/pdf"
-        capture="environment"
-        class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer"
-      >
-
-      <button
-        type="button"
-        onclick="lerDocumentoCliente()"
-        class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm"
-      >
-        Ler Foto/Doc
-      </button>
-
-    </div>
-
-
-    <div
-      class="space-y-2.5 pt-3 mt-3 border-t"
-      style="border-color:var(--border);"
-    >
-
-      <div>
-
-        <label
-          class="block text-[11px] font-bold uppercase mb-1"
-        >
-          Nome do Cliente (Titular)
-        </label>
-
-        <input
-          type="text"
-          id="titularName"
-          class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 font-semibold"
-        >
-
+  <header class="main-header shadow-md sticky top-0 z-30">
+    <div class="mx-auto flex flex-col items-center text-center w-full" style="max-width: 650px;">
+      <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mb-2.5">
+      <div class="w-full">
+        <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
+        <p class="text-[9px] uppercase tracking-wider mt-0.5" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
       </div>
+    </div>
+  </header>
 
+  <main class="mx-auto p-4 space-y-4" style="max-width: 650px;">
 
-      <div class="grid grid-cols-2 gap-2">
+    <div id="statusAlert" class="hidden text-xs p-3.5 rounded-xl shadow-lg border flex items-center gap-3" style="background-color: var(--secondary); border-color: var(--accent); color: var(--silver);">
+      <div class="loader-gold rounded-full border-2 border-t-2 border-slate-600 h-4 w-4 flex-shrink-0"></div>
+      <span id="statusAlertTxt" class="font-medium tracking-wide">Processando...</span>
+    </div>
 
-        <div>
+    <!-- PASSO 1: Extratos -->
+    <div class="card-box p-4">
+      <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
+        <h2 class="font-bold text-xs tracking-wider uppercase">1. Extratos Bancários</h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white" style="background-color: var(--success);">Obrigatório</span>
+      </div>
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
+      <div id="fileCounter" class="mt-2 text-[11px]" style="color: #888;">Nenhum arquivo selecionado.</div>
+    </div>
 
-          <label
-            class="block text-[11px] font-bold uppercase mb-1"
-          >
-            Pai
-          </label>
-
-          <input
-            type="text"
-            id="paiName"
-            class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50"
-          >
-
+    <!-- PASSO 2: Documento (Inicialmente Bloqueado) -->
+    <div id="step2Container" class="card-box p-4 locked-section">
+      <div class="section-banner px-3 py-1.5 rounded-md mb-3 flex items-center justify-between">
+        <h2 class="font-bold text-xs tracking-wider uppercase">2. Documento do Cliente (CNH / Certidão / RG)</h2>
+        <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase" style="background: rgba(207, 212, 220, 0.15); color: var(--silver);">Opcional</span>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
+        <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
+      </div>
+      
+      <div class="space-y-2.5 pt-3 mt-3 border-t" style="border-color: var(--border);">
+        <div><label class="block text-[11px] font-bold uppercase mb-1">Nome do Cliente (Titular)</label><input type="text" id="titularName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 font-semibold" readonly /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-[11px] font-bold uppercase mb-1">Pai</label><input type="text" id="paiName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
+          <div><label class="block text-[11px] font-bold uppercase mb-1">Mãe</label><input type="text" id="maeName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
         </div>
-
-
-        <div>
-
-          <label
-            class="block text-[11px] font-bold uppercase mb-1"
-          >
-            Mãe
-          </label>
-
-          <input
-            type="text"
-            id="maeName"
-            class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50"
-          >
-
-        </div>
-
+        <div><label class="block text-[11px] font-bold uppercase mb-1">Cônjuge</label><input type="text" id="conjugeName" class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50" /></div>
       </div>
+    </div>
 
-
-      <div>
-
-        <label
-          class="block text-[11px] font-bold uppercase mb-1"
-        >
-          Cônjuge
-        </label>
-
-        <input
-          type="text"
-          id="conjugeName"
-          class="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50"
-        >
-
+    <!-- SELEÇÃO DA FINALIDADE (Inicialmente Bloqueado) -->
+    <div id="finalidadeContainer" class="card-box p-3.5 locked-section">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-center mb-2" style="color: var(--secondary);">
+        Finalidade da Análise <span class="text-red-500">*</span>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="btnAluguel" onclick="selecionarModo('aluguel')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Aluguel</span>
+        </button>
+        <button type="button" id="btnFinanciamento" onclick="selecionarModo('financiamento')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span>Financiamento</span>
+        </button>
       </div>
-
     </div>
 
-  </div>
-
-
-  <!-- ======================================================
-       FINALIDADE
-  ======================================================= -->
-
-  <div class="card-box p-3.5">
-
-    <label
-      class="block text-[11px] font-bold uppercase tracking-wider text-center mb-2"
-      style="color:var(--secondary);"
-    >
-      Finalidade da Análise
-      <span class="text-red-500">*</span>
-    </label>
-
-
-    <div class="grid grid-cols-2 gap-3">
-
-      <button
-        type="button"
-        id="btnAluguel"
-        onclick="selecionarModo('aluguel')"
-        class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2"
-      >
-        <span>⌂</span>
-        <span>Aluguel</span>
-      </button>
-
-
-      <button
-        type="button"
-        id="btnFinanciamento"
-        onclick="selecionarModo('financiamento')"
-        class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2"
-      >
-        <span>▣</span>
-        <span>Financiamento</span>
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <button
-    id="btnProcessar"
-    onclick="executarApuracaoRenda()"
-    class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider flex items-center justify-center gap-2"
-  >
-    <span>Executar Apuração Visual via IA</span>
-    <span>→</span>
-  </button>
-
-
-  <!-- ======================================================
-       RESULTADO
-  ======================================================= -->
-
-  <div
-    id="resultadoBox"
-    class="hidden space-y-3 pt-1"
-  >
-
-    <div
-      class="card-box p-4 text-center space-y-2 border"
-      style="border-color:var(--accent);"
-    >
-
-      <h3
-        class="font-bold text-sm tracking-wider uppercase"
-      >
-        Apuração Concluída com Sucesso
-      </h3>
-
-      <p
-        class="text-[11px]"
-        style="color:#666;"
-      >
-        O Laudo Pericial A4 foi gerado e está pronto para download ou compartilhamento.
-      </p>
-
-    </div>
-
-
-    <div class="grid grid-cols-2 gap-2.5">
-
-      <button
-        onclick="gerarECompartilharPDF()"
-        class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5"
-      >
-        Compartilhar
-      </button>
-
-
-      <button
-        onclick="baixarPDFLocal()"
-        class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5"
-        style="background-color:var(--secondary);"
-      >
-        Baixar PDF
-      </button>
-
-    </div>
-
-
-    <button
-      onclick="resetarParaNovaAnalise()"
-      class="w-full py-3 px-4 bg-white font-bold rounded-xl text-xs uppercase border"
-    >
-      Nova Análise
+    <!-- Botão Principal (Inicialmente Bloqueado) -->
+    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider flex items-center justify-center gap-2 locked-section">
+      <span>Executar Apuração Visual via IA</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
     </button>
 
-  </div>
+    <div id="resultadoBox" class="hidden space-y-3 pt-1">
+      <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
+        <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para download ou compartilhamento.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          <span>Compartilhar</span>
+        </button>
+        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5" style="background-color: var(--secondary);">
+          <svg class="w-4 h-4" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Baixar PDF</span>
+        </button>
+      </div>
+      <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 bg-white font-bold rounded-xl text-xs uppercase border">Nova Análise</button>
+    </div>
 
-</main>
+  </main>
 
+  <script>
+    let consolidadoMeses = [], transacoesDetalhadas = [], dadosCliente = {}, modoSelecionado = null;
 
-<script>
+    function selecionarModo(modo) {
+      modoSelecionado = modo;
+      document.getElementById('btnAluguel').classList.toggle('active', modo === 'aluguel');
+      document.getElementById('btnFinanciamento').classList.toggle('active', modo === 'financiamento');
+    }
 
-  // ============================================================
-  // ESTADO
-  // ============================================================
+    function showStatus(msg) { document.getElementById('statusAlert').classList.remove('hidden'); document.getElementById('statusAlertTxt').innerText = msg; }
+    function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
 
-  let consolidadoMeses = [];
-  let transacoesDetalhadas = [];
-  let dadosCliente = {};
-  let modoSelecionado = null;
+    function resetExtratosUI() {
+      const extInput = document.getElementById('extratosInput');
+      extInput.value = '';
+      extInput.classList.remove('file-input-green');
+      extInput.classList.add('file-input-gold');
+      document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
+      document.getElementById('step2Container').classList.add('locked-section');
+      document.getElementById('finalidadeContainer').classList.add('locked-section');
+      document.getElementById('btnProcessar').classList.add('locked-section');
+      document.getElementById('titularName').value = '';
+      dadosCliente.titular = '';
+    }
 
-  let titularExtratoDetectado = '';
-  let promessaTitularExtrato = null;
-
-
-  // ============================================================
-  // MODO
-  // ============================================================
-
-  function selecionarModo(modo) {
-
-    modoSelecionado = modo;
-
-    document
-      .getElementById('btnAluguel')
-      .classList
-      .toggle(
-        'active',
-        modo === 'aluguel'
-      );
-
-    document
-      .getElementById('btnFinanciamento')
-      .classList
-      .toggle(
-        'active',
-        modo === 'financiamento'
-      );
-  }
-
-
-  // ============================================================
-  // STATUS
-  // ============================================================
-
-  function showStatus(msg) {
-
-    document
-      .getElementById('statusAlert')
-      .classList
-      .remove('hidden');
-
-    document
-      .getElementById('statusAlertTxt')
-      .innerText = msg;
-  }
-
-
-  function hideStatus() {
-
-    document
-      .getElementById('statusAlert')
-      .classList
-      .add('hidden');
-  }
-
-
-  // ============================================================
-  // EXTRATO ANEXADO
-  //
-  // A identificação começa imediatamente.
-  // ============================================================
-
-  document
-    .getElementById('extratosInput')
-    .addEventListener(
-      'change',
-      function(e) {
-
-        if (
-          e.target.files.length > 0
-        ) {
-
-          e.target.classList
-            .remove(
-              'file-input-gold'
-            );
-
-          e.target.classList
-            .add(
-              'file-input-green'
-            );
-
-          document
-            .getElementById(
-              'fileCounter'
-            )
-            .innerText =
-              `${e.target.files.length} arquivo(s) selecionado(s).`;
-
-          const status =
-            document.getElementById(
-              'titularStatus'
-            );
-
-          status.classList
-            .remove('hidden');
-
-          status.innerText =
-            'Identificando titular do extrato em segundo plano...';
-
-          promessaTitularExtrato =
-            identificarTitularExtratoEmSegundoPlano(
-              Array.from(
-                e.target.files
-              )
-            );
-
-        } else {
-
-          e.target.classList
-            .remove(
-              'file-input-green'
-            );
-
-          e.target.classList
-            .add(
-              'file-input-gold'
-            );
-
-          document
-            .getElementById(
-              'fileCounter'
-            )
-            .innerText =
-              'Nenhum arquivo selecionado.';
-
-          titularExtratoDetectado = '';
-          promessaTitularExtrato = null;
-
-          document
-            .getElementById(
-              'titularStatus'
-            )
-            .classList
-            .add('hidden');
-        }
+    document.getElementById('extratosInput').addEventListener('change', async function(e) {
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+        document.getElementById('fileCounter').innerText = `${e.target.files.length} arquivo(s) selecionado(s).`;
+        
+        // Mantém as etapas bloqueadas até validação
+        document.getElementById('step2Container').classList.add('locked-section');
+        document.getElementById('finalidadeContainer').classList.add('locked-section');
+        document.getElementById('btnProcessar').classList.add('locked-section');
+        
+        await validarTitularidadeExtratos(e.target.files);
+      } else {
+        resetExtratosUI();
       }
-    );
+    });
 
-
-  // ============================================================
-  // DOCUMENTO ANEXADO
-  //
-  // Assim que o documento entra:
-  // aguarda titular do extrato e faz a vinculação.
-  // ============================================================
-
-  document
-    .getElementById('docInput')
-    .addEventListener(
-      'change',
-      function(e) {
-
-        if (
-          e.target.files.length > 0
-        ) {
-
-          e.target.classList
-            .remove(
-              'file-input-gold'
-            );
-
-          e.target.classList
-            .add(
-              'file-input-green'
-            );
-
-          setTimeout(
-            () => {
-              lerDocumentoCliente(true);
-            },
-            0
-          );
-
-        } else {
-
-          e.target.classList
-            .remove(
-              'file-input-green'
-            );
-
-          e.target.classList
-            .add(
-              'file-input-gold'
-            );
-        }
+    document.getElementById('docInput').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+      } else {
+        e.target.classList.remove('file-input-green');
+        e.target.classList.add('file-input-gold');
       }
-    );
+    });
 
-
-  // ============================================================
-  // OTIMIZAÇÃO DE IMAGEM
-  // ============================================================
-
-  async function otimizarFotoBase64(
-    file,
-    maxDimension = 1000,
-    quality = 0.6
-  ) {
-
-    return new Promise(
-      (resolve, reject) => {
-
-        const reader =
-          new FileReader();
-
-        reader.onload =
-          e => {
-
-            const img =
-              new Image();
-
-            img.onload =
-              () => {
-
-                let w =
-                  img.width;
-
-                let h =
-                  img.height;
-
-                if (
-                  w > maxDimension ||
-                  h > maxDimension
-                ) {
-
-                  if (
-                    w > h
-                  ) {
-
-                    h =
-                      Math.round(
-                        h *
-                        maxDimension /
-                        w
-                      );
-
-                    w =
-                      maxDimension;
-
-                  } else {
-
-                    w =
-                      Math.round(
-                        w *
-                        maxDimension /
-                        h
-                      );
-
-                    h =
-                      maxDimension;
-                  }
-                }
-
-                const canvas =
-                  document.createElement(
-                    'canvas'
-                  );
-
-                canvas.width = w;
-                canvas.height = h;
-
-                canvas
-                  .getContext('2d')
-                  .drawImage(
-                    img,
-                    0,
-                    0,
-                    w,
-                    h
-                  );
-
-                resolve(
-                  canvas
-                    .toDataURL(
-                      'image/jpeg',
-                      quality
-                    )
-                    .split(',')[1]
-                );
-              };
-
-            img.onerror =
-              () =>
-                reject(
-                  new Error(
-                    'Erro ao carregar imagem.'
-                  )
-                );
-
-            img.src =
-              e.target.result;
+    async function otimizarFotoBase64(file, maxDimension = 1000, quality = 0.6) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxDimension || h > maxDimension) { 
+              if (w > h) { h = Math.round(h * maxDimension / w); w = maxDimension; } 
+              else { w = Math.round(w * maxDimension / h); h = maxDimension; } 
+            }
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
           };
-
-        reader.onerror =
-          () =>
-            reject(
-              new Error(
-                'Erro ao ler arquivo.'
-              )
-            );
-
-        reader.readAsDataURL(
-          file
-        );
-      }
-    );
-  }
-
-
-  // ============================================================
-  // PDF INTELIGENTE
-  // ============================================================
-
-  async function processarPDFInteligente(
-    file,
-    maxPagesVision = 4
-  ) {
-
-    const arrayBuffer =
-      await file.arrayBuffer();
-
-    const pdf =
-      await pdfjsLib
-        .getDocument({
-          data: arrayBuffer
-        })
-        .promise;
-
-    let texto = '';
-
-    const paginasSemTexto = [];
-
-    for (
-      let i = 1;
-      i <= pdf.numPages;
-      i++
-    ) {
-
-      const page =
-        await pdf.getPage(i);
-
-      const txt =
-        await page.getTextContent();
-
-      const paginaTexto =
-        txt.items
-          .map(
-            it => it.str || ''
-          )
-          .join(' ')
-          .replace(
-            /\s+/g,
-            ' '
-          )
-          .trim();
-
-      texto +=
-        `--- PÁGINA ${i} ---\n` +
-        paginaTexto +
-        '\n';
-
-      if (
-        paginaTexto.length < 40
-      ) {
-        paginasSemTexto.push(i);
-      }
-    }
-
-
-    const imagens = [];
-
-    for (
-      const numeroPagina
-      of paginasSemTexto.slice(
-        0,
-        maxPagesVision
-      )
-    ) {
-
-      const page =
-        await pdf.getPage(
-          numeroPagina
-        );
-
-      const viewport =
-        page.getViewport({
-          scale: 0.85
-        });
-
-      const canvas =
-        document.createElement(
-          'canvas'
-        );
-
-      canvas.width =
-        Math.round(
-          viewport.width
-        );
-
-      canvas.height =
-        Math.round(
-          viewport.height
-        );
-
-      const ctx =
-        canvas.getContext('2d');
-
-      ctx.fillStyle =
-        '#ffffff';
-
-      ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-      await page.render({
-        canvasContext: ctx,
-        viewport
-      }).promise;
-
-      imagens.push(
-        canvas
-          .toDataURL(
-            'image/jpeg',
-            0.55
-          )
-          .split(',')[1]
-      );
-    }
-
-    return {
-      texto:
-        texto.trim(),
-
-      imagens,
-
-      paginasSemTexto:
-        paginasSemTexto.length,
-
-      totalPaginas:
-        pdf.numPages
-    };
-  }
-
-
-  // ============================================================
-  // PDF DOCUMENTO
-  // ============================================================
-
-  async function processarDocumentosPDF(
-    file,
-    maxPages = 4,
-    scale = 1.0,
-    quality = 0.6
-  ) {
-
-    const arrayBuffer =
-      await file.arrayBuffer();
-
-    const pdf =
-      await pdfjsLib
-        .getDocument({
-          data: arrayBuffer
-        })
-        .promise;
-
-    let texto = '';
-
-    let imagens = [];
-
-    for (
-      let i = 1;
-      i <= pdf.numPages;
-      i++
-    ) {
-
-      const page =
-        await pdf.getPage(i);
-
-      const txt =
-        await page.getTextContent();
-
-      texto +=
-        `--- PÁGINA ${i} ---\n` +
-        txt.items
-          .map(
-            it => it.str || ''
-          )
-          .join(' ') +
-        '\n';
-    }
-
-
-    for (
-      let i = 1;
-      i <= Math.min(
-        pdf.numPages,
-        maxPages
-      );
-      i++
-    ) {
-
-      const page =
-        await pdf.getPage(i);
-
-      const viewport =
-        page.getViewport({
-          scale
-        });
-
-      const canvas =
-        document.createElement(
-          'canvas'
-        );
-
-      canvas.width =
-        Math.round(
-          viewport.width
-        );
-
-      canvas.height =
-        Math.round(
-          viewport.height
-        );
-
-      const ctx =
-        canvas.getContext('2d');
-
-      ctx.fillStyle =
-        '#ffffff';
-
-      ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-      await page.render({
-        canvasContext: ctx,
-        viewport
-      }).promise;
-
-      imagens.push(
-        canvas
-          .toDataURL(
-            'image/jpeg',
-            quality
-          )
-          .split(',')[1]
-      );
-    }
-
-    return {
-      texto:
-        texto.trim(),
-
-      imagens
-    };
-  }
-
-
-  // ============================================================
-  // COMPACTAR TEXTO
-  // ============================================================
-
-  function compactarTextoExtrato(
-    texto
-  ) {
-
-    return String(
-      texto || ''
-    )
-      .replace(
-        /[ \t]+/g,
-        ' '
-      )
-      .replace(
-        /\n{3,}/g,
-        '\n\n'
-      )
-      .trim();
-  }
-
-
-  // ============================================================
-  // API
-  // ============================================================
-
-  async function chamarApiServidor(
-    payload
-  ) {
-
-    const res =
-      await fetch(
-        '/api/audit',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify(
-              payload
-            )
-        }
-      );
-
-    const textData =
-      await res.text();
-
-    let data;
-
-    try {
-      data =
-        JSON.parse(
-          textData
-        );
-    } catch (_) {
-      throw new Error(
-        'Resposta inválida do servidor: ' +
-        textData.substring(
-          0,
-          150
-        )
-      );
-    }
-
-    if (!res.ok) {
-      throw new Error(
-        data.error ||
-        'Erro no servidor de IA.'
-      );
-    }
-
-    return data;
-  }
-
-
-  // ============================================================
-  // IDENTIFICA TITULAR DO EXTRATO
-  // SEGUNDO PLANO
-  // ============================================================
-
-  async function identificarTitularExtratoEmSegundoPlano(
-    files
-  ) {
-
-    try {
-
-      if (
-        !files ||
-        !files.length
-      ) {
-        return '';
-      }
-
-      let textoGeral = '';
-
-      let imagens = [];
-
-      for (
-        const file of files
-      ) {
-
-        if (
-          file.type.includes(
-            'pdf'
-          ) ||
-          file.name
-            .toLowerCase()
-            .endsWith('.pdf')
-        ) {
-
-          const res =
-            await processarPDFInteligente(
-              file,
-              4
-            );
-
-          textoGeral +=
-            `\n===== ARQUIVO: ${file.name} =====\n` +
-            res.texto +
-            '\n';
-
-          res.imagens.forEach(
-            img =>
-              imagens.push(img)
-          );
-
-        } else {
-
-          imagens.push(
-            await otimizarFotoBase64(
-              file,
-              1000,
-              0.55
-            )
-          );
-        }
-      }
-
-
-      const resposta =
-        await chamarApiServidor({
-
-          action:
-            'identificar_titular_extrato',
-
-          prompt:
-            'Identifique exclusivamente o titular da conta nos extratos enviados.',
-
-          texts:
-            compactarTextoExtrato(
-              textoGeral
-            ),
-
-          images
-        });
-
-
-      const titular =
-        String(
-          resposta?.titular_extrato ||
-          ''
-        )
-          .trim()
-          .toUpperCase();
-
-
-      if (titular) {
-
-        titularExtratoDetectado =
-          titular;
-
-        const campo =
-          document.getElementById(
-            'titularName'
-          );
-
-        if (
-          campo
-        ) {
-
-          campo.value =
-            titular;
-        }
-
-
-        const status =
-          document.getElementById(
-            'titularStatus'
-          );
-
-        status.classList
-          .remove(
-            'hidden'
-          );
-
-        status.innerText =
-          '✓ Titular identificado: ' +
-          titular;
-      }
-
-      return titular;
-
-    } catch (erro) {
-
-      console.warn(
-        'Falha na identificação do titular:',
-        erro
-      );
-
-      const status =
-        document.getElementById(
-          'titularStatus'
-        );
-
-      status.classList
-        .remove(
-          'hidden'
-        );
-
-      status.style.color =
-        '#dc3545';
-
-      status.innerText =
-        'Não foi possível identificar automaticamente o titular.';
-
-      return '';
-    }
-  }
-
-
-  // ============================================================
-  // LEITURA DO DOCUMENTO
-  // ============================================================
-
-  async function lerDocumentoCliente(
-    automatico = false
-  ) {
-
-    const file =
-      document
-        .getElementById(
-          'docInput'
-        )
-        .files[0];
-
-
-    if (!file) {
-
-      if (!automatico) {
-        alert(
-          'Selecione o documento primeiro.'
-        );
-      }
-
-      return;
-    }
-
-
-    if (!automatico) {
-
-      showStatus(
-        'Lendo documento oficial e relacionando ao titular...'
-      );
-    }
-
-
-    try {
-
-      // ========================================================
-      // PRIMEIRO:
-      // GARANTE QUE O TITULAR DO EXTRATO FOI IDENTIFICADO
-      // ========================================================
-
-      if (
-        promessaTitularExtrato
-      ) {
-
-        try {
-
-          await promessaTitularExtrato;
-
-        } catch (_) {}
-      }
-
-
-      // ========================================================
-      // PREPARA DOCUMENTO
-      // ========================================================
-
-      let resDoc;
-
-
-      if (
-        file.type.includes(
-          'pdf'
-        ) ||
-        file.name
-          .toLowerCase()
-          .endsWith('.pdf')
-      ) {
-
-        resDoc =
-          await processarDocumentosPDF(
-            file,
-            4,
-            1.0,
-            0.6
-          );
-
-      } else {
-
-        const img =
-          await otimizarFotoBase64(
-            file,
-            1200,
-            0.65
-          );
-
-        resDoc = {
-          texto: '',
-          imagens: [img]
+          img.src = e.target.result;
         };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function processarDocumentosPDF(file, maxPages, scale, quality) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let imagens = [], texto = "";
+
+      for (let i = 1; i <= Math.min(pdf.numPages, maxPages); i++) {
+        const page = await pdf.getPage(i);
+        const txt = await page.getTextContent();
+        texto += `--- PÁGINA ${i} ---\n` + txt.items.map(it => it.str).join(" ") + "\n";
+        
+        const viewport = page.getViewport({ scale: scale }); 
+        const canvas = document.createElement('canvas'); 
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        imagens.push(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
       }
+      return { texto: texto.trim(), imagens }; 
+    }
 
-
-      // ========================================================
-      // TITULAR DE REFERÊNCIA
-      // ========================================================
-
-      const titularReferencia =
-        titularExtratoDetectado ||
-        document
-          .getElementById(
-            'titularName'
-          )
-          .value
-          .trim();
-
-
-      let json;
-
-
-      // ========================================================
-      // SE TEMOS TITULAR:
-      // O DOCUMENTO É INTERPRETADO EM RELAÇÃO A ELE.
-      // ========================================================
-
-      if (
-        titularReferencia
-      ) {
-
-        showStatus(
-          'Relacionando pai, mãe e cônjuge ao titular do extrato...'
-        );
-
-
-        json =
-          await chamarApiServidor({
-
-            action:
-              'identificar_vinculos_documento',
-
-            prompt:
-              'Relacione o documento civil exclusivamente ao titular do extrato informado.',
-
-            titular_extrato:
-              titularReferencia,
-
-            texts:
-              resDoc.texto || '',
-
-            images:
-              resDoc.imagens
-          });
-
-
+    async function processarDocumentoParaImagemPura(file) {
+      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+        const res = await processarDocumentosPDF(file, 1, 2.0, 0.8);
+        return { texto: "", imagens: res.imagens }; 
       } else {
-
-        // ======================================================
-        // FALLBACK
-        // ======================================================
-
-        json =
-          await chamarApiServidor({
-
-            prompt: `
-Analise este documento oficial.
-
-Identifique:
-
-- titular
-- pai
-- mãe
-- cônjuge
-
-Não invente dados.
-
-Se for certidão de casamento,
-identifique os cônjuges e use a
-filiação correspondente ao titular.
-
-Retorne:
-
-{
-  "titular": "",
-  "pai": "",
-  "mae": "",
-  "conjuge": ""
-}
-`,
-
-            texts:
-              resDoc.texto || '',
-
-            images:
-              resDoc.imagens
-          });
-      }
-
-
-      // ========================================================
-      // LIMPEZA
-      // ========================================================
-
-      const limpar =
-        str => {
-
-          if (!str) return '';
-
-          const limpo =
-            String(str)
-              .replace(
-                /[\.\*]/g,
-                ''
-              )
-              .trim();
-
-          if (
-            limpo
-              .toLowerCase()
-              .includes(
-                'nome'
-              )
-          ) {
-            return '';
-          }
-
-          return limpo
-            .toUpperCase();
-        };
-
-
-      // ========================================================
-      // TITULAR
-      // SEMPRE PREVALECE O TITULAR DO EXTRATO
-      // ========================================================
-
-      if (
-        titularReferencia
-      ) {
-
-        document
-          .getElementById(
-            'titularName'
-          )
-          .value =
-            limpar(
-              titularReferencia
-            );
-
-      } else if (
-        json.titular
-      ) {
-
-        document
-          .getElementById(
-            'titularName'
-          )
-          .value =
-            limpar(
-              json.titular
-            );
-      }
-
-
-      // ========================================================
-      // PAI
-      // ========================================================
-
-      if (
-        json.pai !== undefined
-      ) {
-
-        document
-          .getElementById(
-            'paiName'
-          )
-          .value =
-            limpar(
-              json.pai
-            );
-      }
-
-
-      // ========================================================
-      // MÃE
-      // ========================================================
-
-      if (
-        json.mae !== undefined
-      ) {
-
-        document
-          .getElementById(
-            'maeName'
-          )
-          .value =
-            limpar(
-              json.mae
-            );
-      }
-
-
-      // ========================================================
-      // CÔNJUGE
-      // ========================================================
-
-      if (
-        json.conjuge !== undefined
-      ) {
-
-        document
-          .getElementById(
-            'conjugeName'
-          )
-          .value =
-            limpar(
-              json.conjuge
-            );
-      }
-
-
-    } catch (err) {
-
-      console.error(
-        err
-      );
-
-      if (!automatico) {
-
-        alert(
-          'Erro ao ler documento: ' +
-          err.message
-        );
-
-      }
-
-    } finally {
-
-      if (!automatico) {
-        hideStatus();
+        const img = await otimizarFotoBase64(file, 1000, 0.6);
+        return { texto: "", imagens: [img] };
       }
     }
-  }
 
-
-  // ============================================================
-  // EXECUTAR APURAÇÃO
-  // ============================================================
-
-  async function executarApuracaoRenda() {
-
-    if (!modoSelecionado) {
-
-      alert(
-        'Por favor, selecione a finalidade da análise (Aluguel ou Financiamento) antes de continuar.'
-      );
-
-      return;
-    }
-
-
-    const files =
-      document
-        .getElementById(
-          'extratosInput'
-        )
-        .files;
-
-
-    if (!files.length) {
-
-      alert(
-        'Adicione os extratos bancários.'
-      );
-
-      return;
-    }
-
-
-    // ========================================================
-    // ESPERA A IDENTIFICAÇÃO DO TITULAR
-    // ========================================================
-
-    if (
-      promessaTitularExtrato
-    ) {
-
+    async function chamarApiServidor(payload) {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const textData = await res.text();
       try {
-
-        await promessaTitularExtrato;
-
-      } catch (_) {}
-    }
-
-
-    if (
-      titularExtratoDetectado
-    ) {
-
-      document
-        .getElementById(
-          'titularName'
-        )
-        .value =
-          titularExtratoDetectado;
-    }
-
-
-    dadosCliente = {
-
-      titular:
-        document
-          .getElementById(
-            'titularName'
-          )
-          .value
-          .trim(),
-
-      pai:
-        document
-          .getElementById(
-            'paiName'
-          )
-          .value
-          .trim(),
-
-      mae:
-        document
-          .getElementById(
-            'maeName'
-          )
-          .value
-          .trim(),
-
-      conjuge:
-        document
-          .getElementById(
-            'conjugeName'
-          )
-          .value
-          .trim()
-    };
-
-
-    showStatus(
-      'Auditando extratos...'
-    );
-
-
-    try {
-
-      let imagens = [];
-
-      let textoGeral = '';
-
-      let paginasVision = 0;
-
-
-      // ========================================================
-      // PROCESSAMENTO DOS EXTRATOS
-      // ========================================================
-
-      for (
-        const file of Array.from(
-          files
-        )
-      ) {
-
-        if (
-          file.type.includes(
-            'pdf'
-          ) ||
-          file.name
-            .toLowerCase()
-            .endsWith('.pdf')
-        ) {
-
-          const res =
-            await processarPDFInteligente(
-              file,
-              4
-            );
-
-          textoGeral +=
-            `\n===== ARQUIVO: ${file.name} =====\n` +
-            res.texto +
-            '\n';
-
-          res.imagens.forEach(
-            img =>
-              imagens.push(img)
-          );
-
-          paginasVision +=
-            res.imagens.length;
-
-        } else {
-
-          imagens.push(
-            await otimizarFotoBase64(
-              file,
-              1000,
-              0.55
-            )
-          );
-
-          paginasVision++;
-        }
+        const data = JSON.parse(textData);
+        if (!res.ok) throw new Error(data.error || "Erro no servidor de IA.");
+        return data;
+      } catch (e) {
+        throw new Error("Erro de servidor (Timeout/Payload): " + textData.substring(0, 80));
       }
+    }
 
+    // NOVA FUNÇÃO: VALIDAÇÃO DE TITULARIDADE DOS EXTRATOS
+    async function validarTitularidadeExtratos(files) {
+      showStatus("Validando titularidade dos extratos em segundo plano...");
+      try {
+        let imagens = [], textoGeral = "";
+        for (let file of Array.from(files)) {
+          if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+            // Extrai as 2 primeiras páginas para ler o cabeçalho rapidamente
+            const res = await processarDocumentosPDF(file, 2, 1.0, 0.5);
+            textoGeral += res.texto + "\n";
+          } else { 
+            imagens.push(await otimizarFotoBase64(file, 800, 0.5)); 
+          }
+        }
 
-      showStatus(
-        paginasVision > 0
-          ? `Analisando extratos (${paginasVision} página(s) em imagem)...`
-          : 'Analisando extratos em modo texto...'
-      );
+        const prompt = `Analise os cabeçalhos destes extratos bancários.
+Verifique detalhadamente se TODOS os extratos pertencem estritamente à MESMA PESSOA (mesmo nome completo).
+Retorne EXCLUSIVAMENTE um objeto JSON:
+{
+  "mesma_pessoa": true, // ou false caso exista extratos de pessoas diferentes
+  "titular_unico": "NOME COMPLETO" // preencha apenas se for a mesma pessoa
+}`;
 
+        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
 
-      // ========================================================
-      // PROMPT DA AUDITORIA
-      // ========================================================
+        if (json.mesma_pessoa === false || !json.titular_unico) {
+          alert("um ou mais extratos não pertencem a mesma pessoa");
+          resetExtratosUI();
+          hideStatus();
+          return;
+        }
 
-      const prompt = `
+        // Sucesso: Preenche o titular e desbloqueia o resto
+        const titularValidado = String(json.titular_unico).toUpperCase().trim();
+        document.getElementById('titularName').value = titularValidado;
+        dadosCliente.titular = titularValidado;
 
-Você é um perito financeiro e auditor contábil judicial.
+        document.getElementById('step2Container').classList.remove('locked-section');
+        document.getElementById('finalidadeContainer').classList.remove('locked-section');
+        document.getElementById('btnProcessar').classList.remove('locked-section');
+        hideStatus();
 
-O TITULAR OFICIAL DA CONTA É:
+      } catch (err) { 
+        alert("Erro na validação do extrato: " + err.message); 
+        resetExtratosUI();
+        hideStatus(); 
+      }
+    }
 
-"${dadosCliente.titular}"
+    async function lerDocumentoCliente() {
+      const file = document.getElementById('docInput').files[0];
+      if (!file) { alert("Selecione o documento primeiro."); return; }
+      showStatus("Lendo documento oficial (IA Visão)...");
+      try {
+        const resDoc = await processarDocumentoParaImagemPura(file);
+        const prompt = `Analise a IMAGEM deste documento de identificação.
+O titular identificado nos extratos foi: "${dadosCliente.titular}".
+Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe vazio ("") se o campo não existir.
 
-Esse nome foi identificado diretamente
-a partir do extrato bancário.
+{"pai": "", "mae": "", "conjuge": ""}`;
+        
+        const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
+        
+        const limpar = (str) => {
+          if (!str) return "";
+          const limpo = String(str).replace(/[\.\*]/g, '').trim();
+          if (limpo.toLowerCase().includes("nome")) return "";
+          return limpo.toUpperCase();
+        };
 
-============================================================
-REGRAS DE TITULARIDADE
-============================================================
+        if (json.pai !== undefined) document.getElementById('paiName').value = limpar(json.pai);
+        if (json.mae !== undefined) document.getElementById('maeName').value = limpar(json.mae);
+        if (json.conjuge !== undefined) document.getElementById('conjugeName').value = limpar(json.conjuge);
+      } catch (err) { 
+        alert("Erro ao ler documento: " + err.message); 
+      } finally { 
+        hideStatus(); 
+      }
+    }
 
-- Não confunda titular com remetente de PIX.
-- Não confunda titular com beneficiário.
-- Não confunda titular com pessoa que realizou uma transferência.
-- Não confunda titular com familiar.
-- Não confunda titular com cônjuge.
+    async function executarApuracaoRenda() {
+      if (!modoSelecionado) {
+        alert("Por favor, selecione a finalidade da análise (Aluguel ou Financiamento) antes de continuar.");
+        return;
+      }
+      const files = document.getElementById('extratosInput').files;
+      if (!files.length) { alert("Adicione os extratos bancários."); return; }
 
-============================================================
-REGRAS DE FAMÍLIA
-============================================================
+      // Atualiza os dados finais de parentesco
+      dadosCliente.pai = document.getElementById('paiName').value.trim();
+      dadosCliente.mae = document.getElementById('maeName').value.trim();
+      dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
 
-Pai do titular:
-"${dadosCliente.pai}"
+      showStatus("Auditando extratos (Pode levar até 40s)...");
+      try {
+        let imagens = [], textoGeral = "";
+        for (let file of Array.from(files)) {
+          if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+            const res = await processarDocumentosPDF(file, 10, 1.0, 0.6);
+            textoGeral += res.texto + "\n";
+            res.imagens.forEach(img => imagens.push(img));
+          } else { 
+            imagens.push(await otimizarFotoBase64(file, 1000, 0.6)); 
+          }
+        }
 
-Mãe do titular:
-"${dadosCliente.mae}"
+        const prompt = `Você é um perito financeiro e auditor contábil judicial.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
+Regras de Exclusão (Descarte):
+- Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
+- Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
+- Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
+- Considere apenas ENTRADAS legítimas como renda.
 
-Cônjuge do titular:
-"${dadosCliente.conjuge}"
-
-Esses vínculos pertencem EXCLUSIVAMENTE
-ao titular do extrato.
-
-============================================================
-REGRAS DE ENTRADAS
-============================================================
-
-Considere somente ENTRADAS legítimas.
-
-Cada transferência recebida é
-uma transação individual.
-
-NUNCA transforme:
-
-"TOTAL DE ENTRADAS"
-
-em uma transação.
-
-NUNCA transforme:
-
-"TOTAL DE SAÍDAS"
-
-em uma transação.
-
-Se o extrato mostrar:
-
-Pessoa A = R$ 7,50
-Pessoa B = R$ 150,00
-Total de entradas = R$ 157,50
-
-registre:
-
-Pessoa A = R$ 7,50
-Pessoa B = R$ 150,00
-
-NUNCA:
-
-Pessoa A = R$ 157,50.
-
-============================================================
-REGRAS DE EXCLUSÃO
-============================================================
-
-Rejeite:
-
-- transferências da mesma titularidade;
-- transferências do próprio titular;
-- transferências entre familiares;
-- pai;
-- mãe;
-- cônjuge;
-- estornos;
-- devoluções;
-- reembolsos;
-- aplicações;
-- resgates;
-- CDB;
-- RDB;
-- investimentos;
-- cofrinhos;
-- rendimentos automáticos.
-
-============================================================
-REGRA CRÍTICA
-============================================================
-
-O VALOR DEVE PERMANECER ASSOCIADO
-À DESCRIÇÃO E AO REMETENTE CORRESPONDENTE.
-
-Nunca mova um valor de uma transação
-para outra pessoa somente para fazer
-o total fechar.
-
-Nunca agrupe duas transferências.
-
-Nunca divida uma transferência.
-
-============================================================
-
-RETORNE ESTRITAMENTE JSON:
-
+Retorne ESTRITAMENTE o JSON no formato:
 {
   "resumo_geral": {
     "total_entradas_consideradas": 0.00,
@@ -2045,1409 +413,223 @@ RETORNE ESTRITAMENTE JSON:
     "quantidade_meses": 0,
     "renda_media_mensal": 0.00
   },
-
   "apuracao_mensal": [
-    {
-      "mes_ano": "03/2026",
-      "somatorio_entradas": 0.00
-    }
+    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 }
   ],
-
   "transacoes": [
-    {
-      "data": "DD/MM/AAAA",
-      "mes_ano": "MM/AAAA",
-      "descricao": "texto completo",
-      "valor": 0.00,
-      "status": "CONSIDERADO",
-      "motivo": "Renda válida"
-    },
-    {
-      "data": "DD/MM/AAAA",
-      "mes_ano": "MM/AAAA",
-      "descricao": "texto completo",
-      "valor": 0.00,
-      "status": "REJEITADO",
-      "motivo": "Motivo da rejeição"
-    }
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
   ]
-}
-
-`;
-
-
-      // ========================================================
-      // CHAMADA DA IA
-      // ========================================================
-
-      const json =
-        await chamarApiServidor({
-
-          prompt,
-
-          texts:
-            compactarTextoExtrato(
-              textoGeral
-            ),
-
-          images
-        });
-
-
-      window.ultimoResultado =
-        json;
-
-      consolidadoMeses =
-        json.apuracao_mensal ||
-        [];
-
-      transacoesDetalhadas =
-        json.transacoes ||
-        [];
-
-
-      document
-        .getElementById(
-          'resultadoBox'
-        )
-        .classList
-        .remove(
-          'hidden'
-        );
-
-
-    } catch (err) {
-
-      alert(
-        'Erro: ' +
-        err.message
-      );
-
-    } finally {
-
-      hideStatus();
+}`;
+        
+        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
+        window.ultimoResultado = json;
+        consolidadoMeses = json.apuracao_mensal || [];
+        transacoesDetalhadas = json.transacoes || [];
+        document.getElementById('resultadoBox').classList.remove('hidden');
+      } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
     }
-  }
 
+    function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-  // ============================================================
-  // MOEDA
-  // ============================================================
-
-  function formatMoeda(
-    val
-  ) {
-
-    return (
-      Number(val) || 0
-    )
-      .toLocaleString(
-        'pt-BR',
-        {
-          style: 'currency',
-          currency: 'BRL'
-        }
-      );
-  }
-
-
-  // ============================================================
-  // LOGO
-  // ============================================================
-
-  function carregarLogoTransparente(
-    url,
-    opacidade = 1.0
-  ) {
-
-    return new Promise(
-      resolve => {
-
-        const img =
-          new Image();
-
-        img.crossOrigin =
-          'Anonymous';
-
-        img.onload =
-          function() {
-
-            const canvas =
-              document.createElement(
-                'canvas'
-              );
-
-            canvas.width =
-              img.width;
-
-            canvas.height =
-              img.height;
-
-            const ctx =
-              canvas.getContext(
-                '2d'
-              );
-
-            ctx.drawImage(
-              img,
-              0,
-              0
-            );
-
-
-            const imgData =
-              ctx.getImageData(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-              );
-
-            const data =
-              imgData.data;
-
-
-            for (
-              let i = 0;
-              i < data.length;
-              i += 4
-            ) {
-
-              const r =
-                data[i];
-
-              const g =
-                data[i + 1];
-
-              const b =
-                data[i + 2];
-
-
-              if (
-                r < 35 &&
-                g < 35 &&
-                b < 35
-              ) {
-
-                data[i + 3] =
-                  0;
-
-              } else if (
-                opacidade < 1
-              ) {
-
-                data[i + 3] =
-                  Math.round(
-                    data[i + 3] *
-                    opacidade
-                  );
-              }
+    function carregarLogoTransparente(url, opacidade = 1.0) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width; canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2];
+            if (r < 35 && g < 35 && b < 35) {
+              data[i+3] = 0; 
+            } else if (opacidade < 1.0) {
+              data[i+3] = Math.round(data[i+3] * opacidade);
             }
-
-
-            ctx.putImageData(
-              imgData,
-              0,
-              0
-            );
-
-
-            resolve(
-              canvas.toDataURL(
-                'image/png'
-              )
-            );
-          };
-
-
-        img.onerror =
-          () =>
-            resolve(
-              null
-            );
-
-        img.src =
-          encodeURI(url);
-      }
-    );
-  }
-
-
-  // ============================================================
-  // GERAÇÃO DO PDF
-  // ============================================================
-
-  async function gerarDocumentoPDF() {
-
-    const {
-      jsPDF
-    } =
-      window.jspdf;
-
-
-    const PDF_FONT =
-      'helvetica';
-
-    const PDF_SIZE =
-      7.5;
-
-
-    const doc =
-      new jsPDF({
-
-        orientation:
-          'portrait',
-
-        unit:
-          'mm',
-
-        format:
-          'a4',
-
-        compress:
-          true
-      });
-
-
-    const resumo =
-      window
-        .ultimoResultado
-        .resumo_geral;
-
-
-    const titular =
-      dadosCliente.titular ||
-      'Não especificado';
-
-
-    const watermarkBase64 =
-      await carregarLogoTransparente(
-        'Marca dagua nova.png',
-        0.25
-      );
-
-
-    const logoBase64 =
-      await carregarLogoTransparente(
-        'logo.png',
-        1
-      );
-
-
-    function fontePadrao(
-      peso = 'normal'
-    ) {
-
-      doc.setFont(
-        PDF_FONT,
-        peso
-      );
-
-      doc.setFontSize(
-        PDF_SIZE
-      );
-    }
-
-
-    function desenharCabecalho() {
-
-      doc.setFillColor(
-        18,
-        19,
-        21
-      );
-
-      doc.rect(
-        0,
-        0,
-        210,
-        26,
-        'F'
-      );
-
-
-      doc.setFillColor(
-        197,
-        155,
-        39
-      );
-
-      doc.rect(
-        0,
-        26,
-        210,
-        1.2,
-        'F'
-      );
-
-
-      if (
-        logoBase64
-      ) {
-
-        try {
-
-          doc.addImage(
-            logoBase64,
-            'PNG',
-            12,
-            6,
-            22,
-            14
-          );
-
-        } catch (_) {}
-      }
-
-
-      fontePadrao(
-        'bold'
-      );
-
-      doc.setTextColor(
-        212,
-        175,
-        55
-      );
-
-
-      doc.text(
-        'LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA',
-        36,
-        11.5
-      );
-
-
-      fontePadrao(
-        'normal'
-      );
-
-      doc.setTextColor(
-        207,
-        212,
-        220
-      );
-
-
-      const finalidade =
-        modoSelecionado ===
-        'financiamento'
-
-          ? 'Financiamento Imobiliário'
-
-          : 'Locação Residencial/Comercial';
-
-
-      doc.text(
-        `M&IC Corretores de Imóveis — Auditoria para ${finalidade}`,
-        36,
-        17.5
-      );
-
-
-      doc.text(
-        `Emissão: ${new Date().toLocaleDateString('pt-BR')}`,
-        162,
-        19
-      );
-    }
-
-
-    desenharCabecalho();
-
-
-    // ========================================================
-    // IDENTIFICAÇÃO
-    // ========================================================
-
-    doc.setFillColor(
-      18,
-      19,
-      21
-    );
-
-    doc.rect(
-      11,
-      33,
-      188,
-      7,
-      'F'
-    );
-
-
-    doc.setFillColor(
-      197,
-      155,
-      39
-    );
-
-    doc.rect(
-      11,
-      33,
-      2,
-      7,
-      'F'
-    );
-
-
-    fontePadrao(
-      'bold'
-    );
-
-    doc.setTextColor(
-      223,
-      186,
-      72
-    );
-
-
-    doc.text(
-      '1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO',
-      16,
-      38
-    );
-
-
-    doc.setDrawColor(
-      224,
-      224,
-      224
-    );
-
-    doc.setFillColor(
-      255,
-      255,
-      255
-    );
-
-
-    doc.rect(
-      11,
-      40,
-      188,
-      17,
-      'FD'
-    );
-
-
-    fontePadrao(
-      'normal'
-    );
-
-    doc.setTextColor(
-      26,
-      26,
-      26
-    );
-
-
-    doc.text(
-      `Titular da Conta: ${titular}`,
-      15,
-      45
-    );
-
-
-    doc.text(
-      `Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`,
-      15,
-      50
-    );
-
-
-    doc.text(
-      `Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`,
-      15,
-      55
-    );
-
-
-    // ========================================================
-    // CONSOLIDADO
-    // ========================================================
-
-    doc.setFillColor(
-      18,
-      19,
-      21
-    );
-
-    doc.rect(
-      11,
-      62,
-      188,
-      7,
-      'F'
-    );
-
-
-    doc.setFillColor(
-      197,
-      155,
-      39
-    );
-
-    doc.rect(
-      11,
-      62,
-      2,
-      7,
-      'F'
-    );
-
-
-    fontePadrao(
-      'bold'
-    );
-
-    doc.setTextColor(
-      223,
-      186,
-      72
-    );
-
-
-    doc.text(
-      '2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)',
-      16,
-      67
-    );
-
-
-    doc.autoTable({
-
-      startY:
-        70,
-
-      head: [[
-        'Mês / Ano',
-        'Somatório das Entradas Consideradas'
-      ]],
-
-      body:
-        consolidadoMeses.map(
-          m => [
-            m.mes_ano,
-            formatMoeda(
-              m.somatorio_entradas
-            )
-          ]
-        ),
-
-      styles: {
-
-        font:
-          PDF_FONT,
-
-        fontSize:
-          PDF_SIZE,
-
-        cellPadding:
-          1.5,
-
-        overflow:
-          'ellipsize',
-
-        valign:
-          'middle'
-      },
-
-      headStyles: {
-
-        fillColor:
-          [250,246,236],
-
-        textColor:
-          [115,87,14],
-
-        font:
-          PDF_FONT,
-
-        fontSize:
-          PDF_SIZE,
-
-        fontStyle:
-          'bold'
-      },
-
-      bodyStyles: {
-
-        font:
-          PDF_FONT,
-
-        fontSize:
-          PDF_SIZE,
-
-        textColor:
-          [26,26,26]
-      },
-
-      columnStyles: {
-
-        0: {
-          fontStyle:
-            'bold',
-
-          cellWidth:
-            60
-        },
-
-        1: {
-          halign:
-            'right',
-
-          fontStyle:
-            'bold'
-        }
-      },
-
-      margin: {
-        left:
-          11,
-
-        right:
-          11
-      },
-
-      tableWidth:
-        188,
-
-      didDrawPage:
-        function() {
-
-          if (
-            doc.internal
-              .getNumberOfPages() > 1
-          ) {
-
-            desenharCabecalho();
           }
+          ctx.putImageData(imgData, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+        img.src = encodeURI(url);
+      });
+    }
+
+    async function gerarDocumentoPDF() {
+      const { jsPDF } = window.jspdf; 
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
+
+      const watermarkBase64 = await carregarLogoTransparente('Marca dagua nova.png', 0.25);
+      const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
+
+      const desenharCabecalho = () => {
+        doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
+        doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+        if (logoBase64) {
+          try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
         }
-    });
-
-
-    let currentY =
-      doc.lastAutoTable.finalY +
-      5;
-
-
-    if (
-      currentY > 265
-    ) {
-
-      doc.addPage();
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
+        doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
+        doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
+        doc.text(`M&IC Corretores de Imóveis — Auditoria para ${modoSelecionado === 'financiamento' ? 'Financiamento Imobiliário' : 'Locação Residencial/Comercial'}`, 36, 17.5);
+        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+      };
 
       desenharCabecalho();
 
-      currentY =
-        35;
-    }
+      doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO", 16, 38);
 
+      doc.setDrawColor(224, 224, 224); doc.setFillColor(255, 255, 255); doc.rect(11, 40, 188, 17, 'FD');
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(26, 26, 26);
+      doc.text(`Titular da Conta: ${titular}`, 15, 45);
+      doc.text(`Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`, 15, 50);
+      doc.text(`Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`, 15, 55);
 
-    // ========================================================
-    // RESUMO
-    // ========================================================
-
-    doc.setFillColor(
-      244,
-      245,
-      247
-    );
-
-    doc.setDrawColor(
-      197,
-      155,
-      39
-    );
-
-
-    doc.roundedRect(
-      11,
-      currentY,
-      188,
-      18,
-      2,
-      2,
-      'FD'
-    );
-
-
-    fontePadrao(
-      'bold'
-    );
-
-
-    doc.setTextColor(
-      18,
-      19,
-      21
-    );
-
-
-    doc.text(
-      `TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`,
-      16,
-      currentY + 7
-    );
-
-
-    doc.text(
-      `MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`,
-      16,
-      currentY + 13
-    );
-
-
-    fontePadrao(
-      'normal'
-    );
-
-
-    doc.setTextColor(
-      110,
-      110,
-      110
-    );
-
-
-    doc.text(
-      `Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`,
-      115,
-      currentY + 7
-    );
-
-
-    doc.text(
-      `Meses Analisados: ${resumo.quantidade_meses}`,
-      115,
-      currentY + 13
-    );
-
-
-    // ========================================================
-    // FINANCIAMENTO
-    // ========================================================
-
-    if (
-      modoSelecionado ===
-        'financiamento' &&
-      transacoesDetalhadas.length
-    ) {
-
-      currentY +=
-        24;
-
-
-      if (
-        currentY > 255
-      ) {
-
-        doc.addPage();
-
-        desenharCabecalho();
-
-        currentY =
-          35;
-      }
-
-
-      doc.setFillColor(
-        18,
-        19,
-        21
-      );
-
-
-      doc.rect(
-        11,
-        currentY,
-        188,
-        7,
-        'F'
-      );
-
-
-      doc.setFillColor(
-        197,
-        155,
-        39
-      );
-
-
-      doc.rect(
-        11,
-        currentY,
-        2,
-        7,
-        'F'
-      );
-
-
-      fontePadrao(
-        'bold'
-      );
-
-
-      doc.setTextColor(
-        223,
-        186,
-        72
-      );
-
-
-      doc.text(
-        '3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)',
-        16,
-        currentY + 5
-      );
-
-
-      const rows =
-        transacoesDetalhadas.map(
-          t => [
-
-            String(
-              t.data || ''
-            ),
-
-            String(
-              t.mes_ano || ''
-            ),
-
-            String(
-              t.descricao || ''
-            ),
-
-            formatMoeda(
-              t.valor || 0
-            ),
-
-            String(
-              t.status || ''
-            ),
-
-            String(
-              t.motivo || ''
-            )
-          ]
-        );
-
+      doc.setFillColor(18, 19, 21); doc.rect(11, 62, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 62, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
 
       doc.autoTable({
-
-        startY:
-          currentY + 8,
-
-        head: [[
-          'Data',
-          'Mês/Ano',
-          'Descrição',
-          'Valor',
-          'Status',
-          'Motivo'
-        ]],
-
-        body:
-          rows,
-
-        styles: {
-
-          font:
-            PDF_FONT,
-
-          fontSize:
-            PDF_SIZE,
-
-          cellPadding:
-            1.1,
-
-          overflow:
-            'ellipsize',
-
-          valign:
-            'middle',
-
-          minCellHeight:
-            5
-        },
-
-        headStyles: {
-
-          fillColor:
-            [18,19,21],
-
-          textColor:
-            [212,175,55],
-
-          font:
-            PDF_FONT,
-
-          fontSize:
-            PDF_SIZE,
-
-          fontStyle:
-            'bold',
-
-          overflow:
-            'ellipsize',
-
-          halign:
-            'center'
-        },
-
-        bodyStyles: {
-
-          font:
-            PDF_FONT,
-
-          fontSize:
-            PDF_SIZE,
-
-          overflow:
-            'ellipsize'
-        },
-
-        columnStyles: {
-
-          0: {
-            cellWidth:
-              18,
-
-            halign:
-              'center'
-          },
-
-          1: {
-            cellWidth:
-              20,
-
-            halign:
-              'center'
-          },
-
-          2: {
-            cellWidth:
-              55,
-
-            halign:
-              'left'
-          },
-
-          3: {
-            cellWidth:
-              25,
-
-            halign:
-              'right'
-          },
-
-          4: {
-            cellWidth:
-              27,
-
-            halign:
-              'center'
-          },
-
-          5: {
-            cellWidth:
-              43,
-
-            halign:
-              'left'
+        startY: 70, 
+        head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
+        body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
+        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
+        bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
+        margin: { left: 11, right: 11 }, 
+        tableWidth: 188,
+        didDrawPage: function() {
+          if (doc.internal.getNumberOfPages() > 1) {
+            desenharCabecalho();
           }
-        },
+        }
+      });
 
-        margin: {
-          left:
-            11,
+      let currentY = doc.lastAutoTable.finalY + 5;
+      if (currentY > 265) {
+        doc.addPage();
+        desenharCabecalho();
+        currentY = 35;
+      }
 
-          right:
-            11
-        },
+      doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
+      doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
+      doc.text(`MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`, 16, currentY + 13);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
+      doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
+      doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
 
-        tableWidth:
-          188,
+      if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
+        currentY = currentY + 24;
+        if (currentY > 255) {
+          doc.addPage();
+          desenharCabecalho();
+          currentY = 35;
+        }
 
-        rowPageBreak:
-          'avoid',
+        doc.setFillColor(18, 19, 21); doc.rect(11, currentY, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, currentY, 2, 7, 'F');
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+        doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
 
-        didParseCell:
-          function(data) {
+        const rowsTransacoes = transacoesDetalhadas.map(t => [
+          t.data || '',
+          t.mes_ano || '',
+          t.descricao || '',
+          formatMoeda(t.valor || 0),
+          t.status || '',
+          t.motivo || ''
+        ]);
 
-            data.cell.styles.font =
-              PDF_FONT;
-
-            data.cell.styles.fontSize =
-              PDF_SIZE;
-
-
-            if (
-              data.section ===
-              'body'
-            ) {
-
-              const status =
-                data.row.raw[4];
-
-
-              if (
-                status ===
-                'CONSIDERADO'
-              ) {
-
-                if (
-                  data.column.index === 3 ||
-                  data.column.index === 4
-                ) {
-
-                  data.cell.styles
-                    .textColor =
-                    [40,167,69];
+        doc.autoTable({
+          startY: currentY + 8,
+          head: [['Data', 'Mês/Ano', 'Descrição do Lançamento', 'Valor', 'Status', 'Motivo da Decisão']],
+          body: rowsTransacoes,
+          headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
+          columnStyles: {
+            0: { width: 18 },
+            1: { width: 16 },
+            2: { width: 62 },
+            3: { width: 24, halign: 'right', fontStyle: 'bold' },
+            4: { width: 26, fontStyle: 'bold' },
+            5: { width: 42 }
+          },
+          margin: { left: 11, right: 11 },
+          tableWidth: 188,
+          didParseCell: function(data) {
+            if (data.section === 'body') {
+              const status = data.row.raw[4];
+              if (status === 'CONSIDERADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [40, 167, 69];
                 }
-
-              }
-
-
-              if (
-                status ===
-                'REJEITADO'
-              ) {
-
-                if (
-                  data.column.index === 3 ||
-                  data.column.index === 4
-                ) {
-
-                  data.cell.styles
-                    .textColor =
-                    [220,53,69];
+              } else if (status === 'REJEITADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [220, 53, 69];
                 }
               }
             }
           },
-
-        didDrawPage:
-          function() {
-
+          didDrawPage: function() {
             desenharCabecalho();
           }
-      });
-    }
-
-
-    // ========================================================
-    // MARCA D'ÁGUA
-    // ========================================================
-
-    const totalPaginas =
-      doc.internal
-        .getNumberOfPages();
-
-
-    if (
-      watermarkBase64
-    ) {
-
-      for (
-        let p = 1;
-        p <= totalPaginas;
-        p++
-      ) {
-
-        doc.setPage(
-          p
-        );
-
-        try {
-
-          doc.addImage(
-            watermarkBase64,
-            'PNG',
-            50,
-            93.5,
-            110,
-            110,
-            '',
-            'FAST',
-            0
-          );
-
-        } catch (_) {}
-      }
-    }
-
-
-    return {
-      doc,
-      titular
-    };
-  }
-
-
-  // ============================================================
-  // NOVA ANÁLISE
-  // ============================================================
-
-  function resetarParaNovaAnalise() {
-
-    document
-      .getElementById(
-        'docInput'
-      )
-      .value = '';
-
-
-    document
-      .getElementById(
-        'extratosInput'
-      )
-      .value = '';
-
-
-    document
-      .getElementById(
-        'extratosInput'
-      )
-      .classList
-      .remove(
-        'file-input-green'
-      );
-
-
-    document
-      .getElementById(
-        'extratosInput'
-      )
-      .classList
-      .add(
-        'file-input-gold'
-      );
-
-
-    document
-      .getElementById(
-        'docInput'
-      )
-      .classList
-      .remove(
-        'file-input-green'
-      );
-
-
-    document
-      .getElementById(
-        'docInput'
-      )
-      .classList
-      .add(
-        'file-input-gold'
-      );
-
-
-    [
-      'titularName',
-      'paiName',
-      'maeName',
-      'conjugeName'
-    ].forEach(
-      id => {
-
-        document
-          .getElementById(
-            id
-          )
-          .value = '';
-      }
-    );
-
-
-    document
-      .getElementById(
-        'fileCounter'
-      )
-      .innerText =
-        'Nenhum arquivo selecionado.';
-
-
-    document
-      .getElementById(
-        'titularStatus'
-      )
-      .classList
-      .add(
-        'hidden'
-      );
-
-
-    titularExtratoDetectado =
-      '';
-
-    promessaTitularExtrato =
-      null;
-
-    dadosCliente =
-      {};
-
-    consolidadoMeses =
-      [];
-
-    transacoesDetalhadas =
-      [];
-
-    modoSelecionado =
-      null;
-
-
-    document
-      .getElementById(
-        'btnAluguel'
-      )
-      .classList
-      .remove(
-        'active'
-      );
-
-
-    document
-      .getElementById(
-        'btnFinanciamento'
-      )
-      .classList
-      .remove(
-        'active'
-      );
-
-
-    window.ultimoResultado =
-      null;
-
-
-    document
-      .getElementById(
-        'resultadoBox'
-      )
-      .classList
-      .add(
-        'hidden'
-      );
-
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  }
-
-
-  // ============================================================
-  // BAIXAR PDF
-  // ============================================================
-
-  function baixarPDFLocal() {
-
-    if (
-      !window.ultimoResultado
-    ) {
-      return;
-    }
-
-
-    gerarDocumentoPDF()
-      .then(
-        ({
-          doc,
-          titular
-        }) => {
-
-          doc.save(
-            `Laudo_Renda_${titular.replace(/\s+/g,'_')}.pdf`
-          );
-        }
-      );
-  }
-
-
-  // ============================================================
-  // COMPARTILHAR PDF
-  // ============================================================
-
-  async function gerarECompartilharPDF() {
-
-    if (
-      !window.ultimoResultado
-    ) {
-      return;
-    }
-
-
-    const {
-      doc,
-      titular
-    } =
-      await gerarDocumentoPDF();
-
-
-    const pdfBlob =
-      doc.output(
-        'blob'
-      );
-
-
-    const pdfFile =
-      new File(
-        [
-          pdfBlob
-        ],
-
-        `Laudo_Renda_${titular.replace(/\s+/g,'_')}.pdf`,
-
-        {
-          type:
-            'application/pdf'
-        }
-      );
-
-
-    if (
-      navigator.canShare &&
-      navigator.canShare({
-        files: [
-          pdfFile
-        ]
-      })
-    ) {
-
-      try {
-
-        await navigator.share({
-
-          title:
-            'Laudo de Apuração de Renda',
-
-          files: [
-            pdfFile
-          ]
         });
+      }
 
-      } catch (e) {
-
-        if (
-          e.name !==
-          'AbortError'
-        ) {
-
-          doc.save();
+      const totalPaginas = doc.internal.getNumberOfPages();
+      if (watermarkBase64) {
+        for (let p = 1; p <= totalPaginas; p++) {
+          doc.setPage(p);
+          try {
+            doc.addImage(watermarkBase64, 'PNG', 50, 93.5, 110, 110, '', 'FAST', 0);
+          } catch(e) {}
         }
       }
 
-    } else {
-
-      doc.save();
+      return { doc, titular };
     }
-  }
 
-</script>
+    function resetarParaNovaAnalise() {
+      resetExtratosUI();
+      const docEl = document.getElementById('docInput');
+      docEl.value = '';
+      docEl.classList.remove('file-input-green');
+      docEl.classList.add('file-input-gold');
 
+      ['paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
+      
+      modoSelecionado = null;
+      document.getElementById('btnAluguel').classList.remove('active');
+      document.getElementById('btnFinanciamento').classList.remove('active');
+
+      window.ultimoResultado = null; 
+      document.getElementById('resultadoBox').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function baixarPDFLocal() {
+      if (!window.ultimoResultado) return;
+      gerarDocumentoPDF().then(({ doc, titular }) => { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); });
+    }
+
+    async function gerarECompartilharPDF() {
+      if (!window.ultimoResultado) return;
+      const { doc, titular } = await gerarDocumentoPDF();
+      const pdfBlob = doc.output('blob');
+      const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try { await navigator.share({ title: 'Laudo de Apuração de Renda', files: [pdfFile] }); } catch (e) { if (e.name !== 'AbortError') doc.save(); }
+      } else { doc.save(); }
+    }
+  </script>
 </body>
 </html>
