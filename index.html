@@ -394,11 +394,18 @@ Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe
 
         const prompt = `Você é um perito financeiro e auditor contábil judicial.
 Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
-Regras de Exclusão (Descarte):
-- Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
-- Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
-- Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
-- Considere apenas ENTRADAS legítimas como renda.
+
+REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
+1. Transferências da PRÓPRIA titularidade do cliente: Identifique variações do nome de casada/solteira ou partes do nome de "${dadosCliente.titular}" (ex: se o titular for "Maria Silva Costa", bloqueie transferências vindas de "Maria Silva").
+2. Transferências Familiares RESTRITAS: 
+   Rejeite APENAS transferências recebidas das seguintes pessoas (se cadastradas):
+   - Pai: "${dadosCliente.pai}"
+   - Mãe: "${dadosCliente.mae}"
+   - Cônjuge: "${dadosCliente.conjuge}"
+   ATENÇÃO: Transferências recebidas de FILHOS ou outros parentes com o mesmo sobrenome (ex: irmãos) SÃO RENDAS VÁLIDAS e devem ser marcadas como CONSIDERADO.
+3. Estornos, devoluções, reembolsos, aplicações ou resgates de RDB/CDB/investimentos/cofrinho e rendimentos automáticos.
+
+Considere como CONSIDERADO apenas ENTRADAS legítimas e reais vindas de terceiros e familiares não restritos.
 
 Retorne ESTRITAMENTE o JSON no formato:
 {
@@ -413,7 +420,7 @@ Retorne ESTRITAMENTE o JSON no formato:
   ],
   "transacoes": [
     { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
-    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Restrição Familiar / Rendimento" }
   ]
 }`;
         
@@ -503,7 +510,7 @@ Retorne ESTRITAMENTE o JSON no formato:
         headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
         bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
         columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
-        margin: { left: 11, right: 11 }, 
+        margin: { top: 38, left: 11, right: 11 }, 
         tableWidth: 188,
         didDrawPage: function() {
           if (doc.internal.getNumberOfPages() > 1) {
@@ -563,11 +570,11 @@ Retorne ESTRITAMENTE o JSON no formato:
             0: { cellWidth: 15 },
             1: { cellWidth: 12, halign: 'center' },
             2: { cellWidth: 'auto' }, 
-            3: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }, // Evita quebra de linha no valor
+            3: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }, 
             4: { cellWidth: 10, halign: 'center' }, 
             5: { cellWidth: 50 } 
           },
-          margin: { left: 11, right: 11 },
+          margin: { top: 38, left: 11, right: 11 },
           tableWidth: 188,
           didParseCell: function(data) {
             if (data.section === 'body') {
@@ -576,7 +583,7 @@ Retorne ESTRITAMENTE o JSON no formato:
                   data.cell.styles.textColor = status === 'CONSIDERADO' ? [40, 167, 69] : [220, 53, 69];
               }
               if (data.column.index === 4) {
-                  data.cell.text = ['']; // Remove o texto para desenhar o círculo
+                  data.cell.text = ['']; 
               }
             }
           },
@@ -594,7 +601,6 @@ Retorne ESTRITAMENTE o JSON no formato:
           }
         });
         
-        // Legenda ao final da tabela
         let legendY = doc.lastAutoTable.finalY + 5;
         if (legendY > 275) {
           doc.addPage();
