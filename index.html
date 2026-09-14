@@ -28,7 +28,6 @@
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .app-header-logo { height: 80px; width: auto; max-width: 200px; object-fit: contain; display: block; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 
-    /* Estado Inicial: Botão Escolher Arquivo Amarelo/Dourado */
     .file-input-gold::file-selector-button {
       background: linear-gradient(135deg, #c59b27, #dfba48);
       color: #121315;
@@ -40,11 +39,8 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .file-input-gold::file-selector-button:hover {
-      filter: brightness(1.05);
-    }
+    .file-input-gold::file-selector-button:hover { filter: brightness(1.05); }
 
-    /* Estado Após Seleção: Botão Escolher Arquivo Verde */
     .file-input-green::file-selector-button {
       background: linear-gradient(135deg, #28a745, #218838);
       color: #ffffff;
@@ -56,8 +52,21 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .file-input-green::file-selector-button:hover {
-      filter: brightness(1.05);
+    .file-input-green::file-selector-button:hover { filter: brightness(1.05); }
+
+    /* Estilos dos Botões de Finalidade */
+    .btn-mode {
+      border: 2px solid var(--border);
+      background-color: #ffffff;
+      color: #4b5563;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .btn-mode.active {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #121315, #1a1c20);
+      color: var(--gold);
+      box-shadow: 0 2px 8px rgba(197, 155, 39, 0.25);
     }
   </style>
 </head>
@@ -112,16 +121,44 @@
       </div>
     </div>
 
-    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider">Executar Apuração Visual via IA</button>
+    <!-- SELEÇÃO OBRIGATÓRIA DA FINALIDADE -->
+    <div class="card-box p-3.5">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-center mb-2" style="color: var(--secondary);">
+        Finalidade da Análise <span class="text-red-500">*</span>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="btnAluguel" onclick="selecionarModo('aluguel')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Aluguel</span>
+        </button>
+        <button type="button" id="btnFinanciamento" onclick="selecionarModo('financiamento')" class="btn-mode py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span>Financiamento</span>
+        </button>
+      </div>
+    </div>
 
+    <!-- Botão Principal CTA -->
+    <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+      <span>Executar Apuração Visual via IA</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </button>
+
+    <!-- Card 3: Sucesso e Ações do Laudo PDF -->
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
       <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
         <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
-        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto.</p>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para compartilhamento ou download.</p>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
-        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase">Compartilhar</button>
-        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase" style="background-color: var(--secondary);">Baixar PDF</button>
+        <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          <span>Compartilhar</span>
+        </button>
+        <button onclick="baixarPDFLocal()" class="w-full text-white font-bold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5" style="background-color: var(--secondary);">
+          <svg class="w-4 h-4" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Baixar PDF</span>
+        </button>
       </div>
       <button onclick="resetarParaNovaAnalise()" class="w-full py-3 px-4 bg-white font-bold rounded-xl text-xs uppercase border">Nova Análise</button>
     </div>
@@ -129,12 +166,17 @@
   </main>
 
   <script>
-    let consolidadoMeses = [], dadosCliente = {};
+    let consolidadoMeses = [], transacoesDetalhadas = [], dadosCliente = {}, modoSelecionado = null;
+
+    function selecionarModo(modo) {
+      modoSelecionado = modo;
+      document.getElementById('btnAluguel').classList.toggle('active', modo === 'aluguel');
+      document.getElementById('btnFinanciamento').classList.toggle('active', modo === 'financiamento');
+    }
 
     function showStatus(msg) { document.getElementById('statusAlert').classList.remove('hidden'); document.getElementById('statusAlertTxt').innerText = msg; }
     function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
 
-    // Alternância de cores dos botões "Escolher arquivo" (Amarelo -> Verde)
     document.getElementById('extratosInput').addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
         e.target.classList.remove('file-input-gold');
@@ -258,9 +300,20 @@ Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
     }
 
     async function executarApuracaoRenda() {
+      if (!modoSelecionado) {
+        alert("Por favor, selecione a finalidade da análise (Aluguel ou Financiamento) antes de continuar.");
+        return;
+      }
       const files = document.getElementById('extratosInput').files;
       if (!files.length) { alert("Adicione os extratos."); return; }
-      dadosCliente = { titular: document.getElementById('titularName').value.trim(), pai: document.getElementById('paiName').value.trim(), mae: document.getElementById('maeName').value.trim(), conjuge: document.getElementById('conjugeName').value.trim() };
+
+      dadosCliente = { 
+        titular: document.getElementById('titularName').value.trim(), 
+        pai: document.getElementById('paiName').value.trim(), 
+        mae: document.getElementById('maeName').value.trim(), 
+        conjuge: document.getElementById('conjugeName').value.trim() 
+      };
+
       showStatus("Auditando todos os meses do extrato...");
       try {
         let imagens = [], textoGeral = "";
@@ -274,15 +327,15 @@ Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
           }
         }
 
-        const prompt = `Você é um auditor financeiro e contábil pericial.
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, 06/2026, 07/2026, 08/2026, etc.).
+        const prompt = `Você é um perito financeiro e auditor contábil judicial.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, etc.).
 Regras de Exclusão (Descarte):
 - Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
 - Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
 - Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
-- Considere apenas ENTRADAS (Pix recebidos, vendas em cartão crédito/débito líquidas, depósitos e transferências de terceiros válidas como renda).
+- Considere apenas ENTRADAS legítimas como renda.
 
-Retorne ESTRITAMENTE o JSON no formato:
+Retorne ESTRITAMENTE o JSON no formato abaixo, com todas as transações auditadas individualmente para permitir auditoria discriminada:
 {
   "resumo_geral": {
     "total_entradas_consideradas": 0.00,
@@ -291,14 +344,18 @@ Retorne ESTRITAMENTE o JSON no formato:
     "renda_media_mensal": 0.00
   },
   "apuracao_mensal": [
-    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 },
-    { "mes_ano": "04/2026", "somatorio_entradas": 0.00 }
+    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 }
+  ],
+  "transacoes": [
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "...", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
+    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "...", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
   ]
 }`;
         
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
+        transacoesDetalhadas = json.transacoes || [];
         document.getElementById('resultadoBox').classList.remove('hidden');
       } catch (err) { alert("Erro: " + err.message); } finally { hideStatus(); }
     }
@@ -350,7 +407,7 @@ Retorne ESTRITAMENTE o JSON no formato:
         doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
         doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
         doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
-        doc.text("M&IC Corretores de Imóveis — Auditoria Óptica e Visão Computacional", 36, 17.5);
+        doc.text(`M&IC Corretores de Imóveis — Auditoria para ${modoSelecionado === 'financiamento' ? 'Financiamento Imobiliário' : 'Locação Residencial/Comercial'}`, 36, 17.5);
         doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
       };
 
@@ -401,6 +458,65 @@ Retorne ESTRITAMENTE o JSON no formato:
       doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
       doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
 
+      // SE OPÇÃO 2 (FINANCIAMENTO): Detalhamento mês a mês com fontes verde e vermelha
+      if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
+        currentY = currentY + 24;
+        if (currentY > 255) {
+          doc.addPage();
+          desenharCabecalho();
+          currentY = 35;
+        }
+
+        doc.setFillColor(18, 19, 21); doc.rect(11, currentY, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, currentY, 2, 7, 'F');
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+        doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
+
+        const rowsTransacoes = transacoesDetalhadas.map(t => [
+          t.data || '',
+          t.mes_ano || '',
+          t.descricao || '',
+          formatMoeda(t.valor || 0),
+          t.status || '',
+          t.motivo || ''
+        ]);
+
+        doc.autoTable({
+          startY: currentY + 8,
+          head: [['Data', 'Mês/Ano', 'Descrição do Lançamento', 'Valor', 'Status', 'Motivo da Decisão']],
+          body: rowsTransacoes,
+          headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
+          columnStyles: {
+            0: { width: 18 },
+            1: { width: 16 },
+            2: { width: 62 },
+            3: { width: 24, halign: 'right', fontStyle: 'bold' },
+            4: { width: 26, fontStyle: 'bold' },
+            5: { width: 42 }
+          },
+          margin: { left: 11, right: 11 },
+          tableWidth: 188,
+          didParseCell: function(data) {
+            if (data.section === 'body') {
+              const status = data.row.raw[4];
+              // Fonte verde para considerado e vermelha para rejeitado
+              if (status === 'CONSIDERADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [40, 167, 69];
+                }
+              } else if (status === 'REJEITADO') {
+                if (data.column.index === 3 || data.column.index === 4) {
+                  data.cell.styles.textColor = [220, 53, 69];
+                }
+              }
+            }
+          },
+          didDrawPage: function() {
+            desenharCabecalho();
+          }
+        });
+      }
+
       const totalPaginas = doc.internal.getNumberOfPages();
       if (watermarkBase64) {
         for (let p = 1; p <= totalPaginas; p++) {
@@ -428,6 +544,11 @@ Retorne ESTRITAMENTE o JSON no formato:
 
       ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
+      
+      modoSelecionado = null;
+      document.getElementById('btnAluguel').classList.remove('active');
+      document.getElementById('btnFinanciamento').classList.remove('active');
+
       window.ultimoResultado = null; 
       document.getElementById('resultadoBox').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
