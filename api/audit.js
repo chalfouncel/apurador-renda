@@ -4,27 +4,59 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
   const { prompt, texts, images } = req.body;
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-    return res.status(500).json({ error: "Nenhuma chave de API configurada nas Environment Variables da Vercel." });
+    return res.status(500).json({ error: "Nenhuma chave de API configurada na Vercel." });
   }
 
   let errosLogs = [];
 
-  // 1. Varrimento automático da família Gemini atualizada (3.8, 3.7, 3.6, 3.5)
+  // 1. Prioriza Groq se houver texto (rápido e sem sobrecarga em horários de pico)
+  if (texts && texts.length > 50 && GROQ_API_KEY) {
+    const modelosGroq = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+
+    for (const mod of modelosGroq) {
+      try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: mod,
+            messages: [
+              { role: "system", content: "Você é um auditor contábil financeiro rigoroso. Retorne ESTRITAMENTE um JSON válido conforme solicitado, sem comentários extras." },
+              { role: "user", content: prompt + "\n\nCONTEÚDO DO EXTRATO:\n" + texts }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.1
+          })
+        });
+
+        if (groqRes.ok) {
+          const groqData = await groqRes.json();
+          const parsed = JSON.parse(groqData.choices[0].message.content);
+          return res.status(200).json(parsed);
+        } else {
+          const errBody = await groqRes.text();
+          errosLogs.push(`Groq [${mod}]: ${errBody}`);
+        }
+      } catch (e) {
+        errosLogs.push(`Groq [${mod}] Exceção: ${e.message}`);
+      }
+    }
+  }
+
+  // 2. Fallback para Gemini (ideal para imagens/fotos diretas ou se a Groq não processar)
   if (GEMINI_API_KEY) {
-    const modelosGemini = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+    const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
     for (const mod of modelosGemini) {
       try {
@@ -42,16 +74,16 @@ export default async function handler(req, res) {
           body: JSON.stringify({ contents: [{ parts }] })
         });
 
-        const geminiData = await geminiRes.json();
-
         if (geminiRes.ok) {
+          const geminiData = await geminiRes.json();
           const textResp = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
           if (textResp) {
             const cleanJson = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
             return res.status(200).json(JSON.parse(cleanJson));
           }
         } else {
-          errosLogs.push(`Gemini [${mod}]: ${geminiData.error?.message || 'Erro'}`);
+          const errData = await geminiRes.json().catch(() => ({}));
+          errosLogs.push(`Gemini [${mod}]: ${errData.error?.message || geminiRes.statusText}`);
         }
       } catch (e) {
         errosLogs.push(`Gemini [${mod}] Exceção: ${e.message}`);
@@ -59,41 +91,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. Varrimento automático dos modelos da Groq atuais
-  if (GROQ_API_KEY) {
-    const modelosGroq = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"];
-
-    for (const mod of modelosGroq) {
-      try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: mod,
-            messages: [
-              { role: "system", content: "Retorne estritamente um JSON válido." },
-              { role: "user", content: prompt + "\n\n" + (texts || "") }
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.1
-          })
-        });
-
-        const groqData = await groqRes.json();
-
-        if (groqRes.ok) {
-          return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
-        } else {
-          errosLogs.push(`Groq [${mod}]: ${groqData.error?.message || 'Erro'}`);
-        }
-      } catch (e) {
-        errosLogs.push(`Groq [${mod}] Exceção: ${e.message}`);
-      }
-    }
-  }
-
-  return res.status(500).json({ error: "Todas as tentativas de IA falharam. Detalhes:\n" + errosLogs.join(" | ") });
+  return res.status(500).json({ error: "Falha na análise. Detalhes: " + errosLogs.join(" | ") });
 }
