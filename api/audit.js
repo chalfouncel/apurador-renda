@@ -12,20 +12,16 @@ export default async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-    return res.status(500).json({ error: "Nenhuma chave de API configurada na Vercel." });
+    return res.status(500).json({ error: "Nenhuma chave configurada na Vercel." });
   }
 
-  let errosLogs = [];
-
-  // Se tem imagem (leitura de CNH/RG ou extrato escaneado), prioriza Gemini Multimodal
-  const temImagens = Array.isArray(images) && images.length > 0;
-
-  if (temImagens && GEMINI_API_KEY) {
-    const modelosGemini = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+  // Se tem imagem (foto de documento/CNH/RG), DEVE rodar no Gemini Multimodal
+  if (images && Array.isArray(images) && images.length > 0 && GEMINI_API_KEY) {
+    const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"];
     for (const mod of modelosGemini) {
       try {
         const parts = [{ text: prompt }];
-        if (texts) parts.push({ text: "TEXTO EXTRAÍDO:\n" + texts });
+        if (texts) parts.push({ text: "TEXTO DO ARQUIVO:\n" + texts });
         images.forEach(img => {
           parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
         });
@@ -36,64 +32,82 @@ export default async function handler(req, res) {
           body: JSON.stringify({ contents: [{ parts }] })
         });
 
-        const geminiData = await geminiRes.json();
         if (geminiRes.ok) {
-          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            return res.status(200).json(JSON.parse(cleanJson));
+          const data = await geminiRes.json();
+          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (raw) {
+            const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+            return res.status(200).json(JSON.parse(clean));
           }
-        } else {
-          errosLogs.push(`Gemini [${mod}]: ${geminiData.error?.message || geminiRes.statusText}`);
         }
-      } catch (e) {
-        errosLogs.push(`Gemini [${mod}] Exceção: ${e.message}`);
-      }
+      } catch (e) {}
     }
   }
 
-  // Fallback para Groq quando há texto volumoso disponível
-  if (texts && texts.length > 20 && GROQ_API_KEY) {
-    try {
-      const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
-        headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
-      });
-      if (modelsRes.ok) {
-        const listData = await modelsRes.json();
-        const modelosGroq = (listData.data || [])
-          .map(m => m.id)
-          .filter(id => !id.includes("whisper") && !id.includes("guard"));
+  // Se for análise puramente textual volumosa (extratos) ou fallback
+  if (texts && texts.length > 30) {
+    // 1. Tenta Groq
+    if (GROQ_API_KEY) {
+      try {
+        const listRes = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
+        });
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          const modelosValidos = (listData.data || [])
+            .map(m => m.id)
+            .filter(id => !id.includes("whisper") && !id.includes("guard"));
 
-        for (const mod of modelosGroq) {
-          try {
-            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${GROQ_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: mod,
-                messages: [
-                  { role: "system", content: "Retorne ESTRITAMENTE um objeto JSON válido." },
-                  { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0.1
-              })
-            });
+          for (const mod of modelosValidos) {
+            try {
+              const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                  model: mod,
+                  messages: [
+                    { role: "system", content: "Retorne estritamente um JSON válido." },
+                    { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
+                  ],
+                  response_format: { type: "json_object" },
+                  temperature: 0.1
+                })
+              });
+              if (groqRes.ok) {
+                const groqData = await groqRes.json();
+                return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
+              }
+            } catch (err) {}
+          }
+        }
+      } catch (err) {}
+    }
 
-            if (groqRes.ok) {
-              const groqData = await groqRes.json();
-              return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
+    // 2. Tenta Gemini Texto
+    if (GEMINI_API_KEY) {
+      const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash"];
+      for (const mod of modelosGemini) {
+        try {
+          const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
+          });
+          if (geminiRes.ok) {
+            const data = await geminiRes.json();
+            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (raw) {
+              const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+              return res.status(200).json(JSON.parse(clean));
             }
-          } catch (e) {}
-        }
+          }
+        } catch (e) {}
       }
-    } catch (e) {
-      errosLogs.push(`Groq Exceção: ${e.message}`);
     }
   }
 
-  return res.status(500).json({ error: "Falha ao ler o documento. Detalhes:\n" + errosLogs.join(" | ") });
+  return res.status(500).json({ error: "Não foi possível extrair os dados do documento. Tente novamente." });
 }
