@@ -17,46 +17,57 @@ export default async function handler(req, res) {
 
   let errosLogs = [];
 
-  // 1. Prioriza Groq se houver texto (rápido e sem sobrecarga em horários de pico)
+  // 1. Descoberta Dinâmica dos Modelos Ativos na Groq
   if (texts && texts.length > 50 && GROQ_API_KEY) {
-    const modelosGroq = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+    try {
+      const modelsListRes = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
+      });
 
-    for (const mod of modelosGroq) {
-      try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: mod,
-            messages: [
-              { role: "system", content: "Você é um auditor contábil financeiro rigoroso. Retorne ESTRITAMENTE um JSON válido conforme solicitado, sem comentários extras." },
-              { role: "user", content: prompt + "\n\nCONTEÚDO DO EXTRATO:\n" + texts }
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.1
-          })
-        });
+      if (modelsListRes.ok) {
+        const listData = await modelsListRes.json();
+        // Filtra apenas modelos de chat utilizáveis ativos na sua conta
+        const modelosValidos = listData.data
+          ? listData.data.map(m => m.id).filter(id => !id.includes("whisper") && !id.includes("guard"))
+          : [];
 
-        if (groqRes.ok) {
-          const groqData = await groqRes.json();
-          const parsed = JSON.parse(groqData.choices[0].message.content);
-          return res.status(200).json(parsed);
-        } else {
-          const errBody = await groqRes.text();
-          errosLogs.push(`Groq [${mod}]: ${errBody}`);
+        for (const mod of modelosValidos) {
+          try {
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${GROQ_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: mod,
+                messages: [
+                  { role: "system", content: "Você é um auditor financeiro rigoroso. Retorne ESTRITAMENTE um JSON válido conforme solicitado." },
+                  { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.1
+              })
+            });
+
+            if (groqRes.ok) {
+              const groqData = await groqRes.json();
+              return res.status(200).json(JSON.parse(groqData.choices[0].message.content));
+            }
+          } catch (e) {
+            errosLogs.push(`Groq [${mod}]: ${e.message}`);
+          }
         }
-      } catch (e) {
-        errosLogs.push(`Groq [${mod}] Exceção: ${e.message}`);
       }
+    } catch (e) {
+      errosLogs.push(`Falha listagem Groq: ${e.message}`);
     }
   }
 
-  // 2. Fallback para Gemini (ideal para imagens/fotos diretas ou se a Groq não processar)
+  // 2. Fallback com modelos de Visão e Texto do Gemini
   if (GEMINI_API_KEY) {
-    const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    // Modelos com alta disponibilidade para documentos e imagens
+    const modelosGemini = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash"];
 
     for (const mod of modelosGemini) {
       try {
@@ -91,5 +102,5 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(500).json({ error: "Falha na análise. Detalhes: " + errosLogs.join(" | ") });
+  return res.status(500).json({ error: "Falha geral. Detalhes:\n" + errosLogs.join(" | ") });
 }
