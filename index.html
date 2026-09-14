@@ -670,52 +670,185 @@ Retorne ESTRITAMENTE o JSON no formato:
     }
 
     async function gerarDocumentoPDF() {
-      const { jsPDF } = window.jspdf; 
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
+      const { jsPDF } = window.jspdf;
+
+      // ========================================================
+      // PADRÃO ÚNICO DO LAUDO
+      // ========================================================
+      // Todo o documento usa a mesma família e o mesmo tamanho
+      // de fonte. O negrito é usado apenas como peso visual.
+      const PDF_FONT = 'helvetica';
+      const PDF_SIZE = 7.5;
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      const resumo = window.ultimoResultado.resumo_geral;
+      const titular = dadosCliente.titular || 'Não especificado';
 
       const watermarkBase64 = await carregarLogoTransparente('Marca dagua nova.png', 0.25);
       const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
 
+      // Aplica SEMPRE a mesma fonte e tamanho.
+      const fontePadrao = (peso = 'normal') => {
+        doc.setFont(PDF_FONT, peso);
+        doc.setFontSize(PDF_SIZE);
+      };
+
       const desenharCabecalho = () => {
-        doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
-        doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+        doc.setFillColor(18, 19, 21);
+        doc.rect(0, 0, 210, 26, 'F');
+
+        doc.setFillColor(197, 155, 39);
+        doc.rect(0, 26, 210, 1.2, 'F');
+
         if (logoBase64) {
-          try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
+          try {
+            doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14);
+          } catch (e) {}
         }
-        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
-        doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
-        doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
-        doc.text(`M&IC Corretores de Imóveis — Auditoria para ${modoSelecionado === 'financiamento' ? 'Financiamento Imobiliário' : 'Locação Residencial/Comercial'}`, 36, 17.5);
-        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+
+        fontePadrao('bold');
+        doc.setTextColor(212, 175, 55);
+        doc.text(
+          'LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA',
+          36,
+          11.5
+        );
+
+        fontePadrao('normal');
+        doc.setTextColor(207, 212, 220);
+
+        const finalidade =
+          modoSelecionado === 'financiamento'
+            ? 'Financiamento Imobiliário'
+            : 'Locação Residencial/Comercial';
+
+        doc.text(
+          `M&IC Corretores de Imóveis — Auditoria para ${finalidade}`,
+          36,
+          17.5
+        );
+
+        doc.text(
+          `Emissão: ${new Date().toLocaleDateString('pt-BR')}`,
+          162,
+          19
+        );
       };
 
       desenharCabecalho();
 
-      doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
-      doc.text("1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO", 16, 38);
+      // ========================================================
+      // 1. IDENTIFICAÇÃO
+      // ========================================================
 
-      doc.setDrawColor(224, 224, 224); doc.setFillColor(255, 255, 255); doc.rect(11, 40, 188, 17, 'FD');
-      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(26, 26, 26);
-      doc.text(`Titular da Conta: ${titular}`, 15, 45);
-      doc.text(`Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`, 15, 50);
-      doc.text(`Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`, 15, 55);
+      doc.setFillColor(18, 19, 21);
+      doc.rect(11, 33, 188, 7, 'F');
+      doc.setFillColor(197, 155, 39);
+      doc.rect(11, 33, 2, 7, 'F');
 
-      doc.setFillColor(18, 19, 21); doc.rect(11, 62, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 62, 2, 7, 'F');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
-      doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
+      fontePadrao('bold');
+      doc.setTextColor(223, 186, 72);
+      doc.text(
+        '1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO',
+        16,
+        38
+      );
+
+      doc.setDrawColor(224, 224, 224);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(11, 40, 188, 17, 'FD');
+
+      fontePadrao('normal');
+      doc.setTextColor(26, 26, 26);
+
+      doc.text(
+        `Titular da Conta: ${titular}`,
+        15,
+        45
+      );
+
+      doc.text(
+        `Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`,
+        15,
+        50
+      );
+
+      doc.text(
+        `Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`,
+        15,
+        55
+      );
+
+      // ========================================================
+      // 2. CONSOLIDADO
+      // ========================================================
+
+      doc.setFillColor(18, 19, 21);
+      doc.rect(11, 62, 188, 7, 'F');
+      doc.setFillColor(197, 155, 39);
+      doc.rect(11, 62, 2, 7, 'F');
+
+      fontePadrao('bold');
+      doc.setTextColor(223, 186, 72);
+      doc.text(
+        '2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)',
+        16,
+        67
+      );
 
       doc.autoTable({
-        startY: 70, 
-        head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
-        body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
-        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
-        bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
-        columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
-        margin: { left: 11, right: 11 }, 
+        startY: 70,
+        head: [[
+          'Mês / Ano',
+          'Somatório das Entradas Consideradas'
+        ]],
+        body: consolidadoMeses.map(m => [
+          m.mes_ano,
+          formatMoeda(m.somatorio_entradas)
+        ]),
+        styles: {
+          font: PDF_FONT,
+          fontSize: PDF_SIZE,
+          cellPadding: 1.5,
+          overflow: 'ellipsize',
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [250, 246, 236],
+          textColor: [115, 87, 14],
+          font: PDF_FONT,
+          fontSize: PDF_SIZE,
+          fontStyle: 'bold',
+          lineColor: [204, 204, 204],
+          lineWidth: 0.2
+        },
+        bodyStyles: {
+          font: PDF_FONT,
+          fontSize: PDF_SIZE,
+          textColor: [26, 26, 26],
+          lineColor: [224, 224, 224],
+          lineWidth: 0.2
+        },
+        columnStyles: {
+          0: {
+            fontStyle: 'bold',
+            cellWidth: 60
+          },
+          1: {
+            halign: 'right',
+            fontStyle: 'bold',
+            textColor: [40, 167, 69]
+          }
+        },
+        margin: { left: 11, right: 11 },
         tableWidth: 188,
-        didDrawPage: function() {
+        didDrawPage: function () {
           if (doc.internal.getNumberOfPages() > 1) {
             desenharCabecalho();
           }
@@ -723,91 +856,295 @@ Retorne ESTRITAMENTE o JSON no formato:
       });
 
       let currentY = doc.lastAutoTable.finalY + 5;
+
       if (currentY > 265) {
         doc.addPage();
         desenharCabecalho();
         currentY = 35;
       }
 
-      doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
-      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
-      doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
-      doc.text(`MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`, 16, currentY + 13);
-      doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
-      doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
-      doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
+      // ========================================================
+      // RESUMO
+      // ========================================================
 
-      if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
-        currentY = currentY + 24;
+      doc.setFillColor(244, 245, 247);
+      doc.setDrawColor(197, 155, 39);
+      doc.roundedRect(
+        11,
+        currentY,
+        188,
+        18,
+        2,
+        2,
+        'FD'
+      );
+
+      fontePadrao('bold');
+      doc.setTextColor(18, 19, 21);
+
+      doc.text(
+        `TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`,
+        16,
+        currentY + 7
+      );
+
+      doc.text(
+        `MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`,
+        16,
+        currentY + 13
+      );
+
+      fontePadrao('normal');
+      doc.setTextColor(110, 110, 110);
+
+      doc.text(
+        `Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`,
+        115,
+        currentY + 7
+      );
+
+      doc.text(
+        `Meses Analisados: ${resumo.quantidade_meses}`,
+        115,
+        currentY + 13
+      );
+
+      // ========================================================
+      // 3. AUDITORIA — FINANCIAMENTO
+      // ========================================================
+
+      if (
+        modoSelecionado === 'financiamento' &&
+        transacoesDetalhadas &&
+        transacoesDetalhadas.length > 0
+      ) {
+
+        currentY += 24;
+
         if (currentY > 255) {
           doc.addPage();
           desenharCabecalho();
           currentY = 35;
         }
 
-        doc.setFillColor(18, 19, 21); doc.rect(11, currentY, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, currentY, 2, 7, 'F');
-        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
-        doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
+        doc.setFillColor(18, 19, 21);
+        doc.rect(11, currentY, 188, 7, 'F');
+        doc.setFillColor(197, 155, 39);
+        doc.rect(11, currentY, 2, 7, 'F');
 
-        const rowsTransacoes = transacoesDetalhadas.map(t => [
-          t.data || '',
-          t.mes_ano || '',
-          t.descricao || '',
-          formatMoeda(t.valor || 0),
-          t.status || '',
-          t.motivo || ''
-        ]);
+        fontePadrao('bold');
+        doc.setTextColor(223, 186, 72);
+        doc.text(
+          '3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)',
+          16,
+          currentY + 5
+        );
 
+        const rowsTransacoes =
+          transacoesDetalhadas.map(t => [
+            String(t.data || ''),
+            String(t.mes_ano || ''),
+            String(t.descricao || ''),
+            formatMoeda(t.valor || 0),
+            String(t.status || ''),
+            String(t.motivo || '')
+          ]);
+
+        // --------------------------------------------------------
+        // As larguras somam exatamente 188 mm.
+        // A tabela usa uma única linha por registro.
+        // overflow: ellipsize impede quebra de linha.
+        // --------------------------------------------------------
         doc.autoTable({
           startY: currentY + 8,
-          head: [['Data', 'Mês/Ano', 'Descrição do Lançamento', 'Valor', 'Status', 'Motivo da Decisão']],
+
+          head: [[
+            'Data',
+            'Mês/Ano',
+            'Descrição',
+            'Valor',
+            'Status',
+            'Motivo'
+          ]],
+
           body: rowsTransacoes,
-          headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
-          bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
-          columnStyles: {
-            0: { width: 18 },
-            1: { width: 16 },
-            2: { width: 62 },
-            3: { width: 24, halign: 'right', fontStyle: 'bold' },
-            4: { width: 26, fontStyle: 'bold' },
-            5: { width: 42 }
+
+          styles: {
+            font: PDF_FONT,
+            fontSize: PDF_SIZE,
+            cellPadding: {
+              top: 1.1,
+              right: 1,
+              bottom: 1.1,
+              left: 1
+            },
+            overflow: 'ellipsize',
+            valign: 'middle',
+            minCellHeight: 5
           },
-          margin: { left: 11, right: 11 },
-          tableWidth: 188,
-          didParseCell: function(data) {
-            if (data.section === 'body') {
-              const status = data.row.raw[4];
-              if (status === 'CONSIDERADO') {
-                if (data.column.index === 3 || data.column.index === 4) {
-                  data.cell.styles.textColor = [40, 167, 69];
-                }
-              } else if (status === 'REJEITADO') {
-                if (data.column.index === 3 || data.column.index === 4) {
-                  data.cell.styles.textColor = [220, 53, 69];
-                }
-              }
+
+          headStyles: {
+            fillColor: [18, 19, 21],
+            textColor: [212, 175, 55],
+            font: PDF_FONT,
+            fontSize: PDF_SIZE,
+            fontStyle: 'bold',
+            overflow: 'ellipsize',
+            halign: 'center',
+            valign: 'middle'
+          },
+
+          bodyStyles: {
+            font: PDF_FONT,
+            fontSize: PDF_SIZE,
+            lineColor: [224, 224, 224],
+            lineWidth: 0.1,
+            overflow: 'ellipsize',
+            valign: 'middle'
+          },
+
+          columnStyles: {
+            // Total = 188 mm
+            0: {
+              cellWidth: 18,
+              halign: 'center'
+            },
+
+            1: {
+              cellWidth: 20,
+              halign: 'center'
+            },
+
+            2: {
+              cellWidth: 55,
+              halign: 'left'
+            },
+
+            3: {
+              cellWidth: 25,
+              halign: 'right',
+              fontStyle: 'bold'
+            },
+
+            4: {
+              cellWidth: 27,
+              halign: 'center',
+              fontStyle: 'bold'
+            },
+
+            5: {
+              cellWidth: 43,
+              halign: 'left'
             }
           },
-          didDrawPage: function() {
+
+          margin: {
+            left: 11,
+            right: 11
+          },
+
+          tableWidth: 188,
+
+          rowPageBreak: 'avoid',
+
+          didParseCell: function (data) {
+
+            // Garante fonte e tamanho únicos em TODAS as células.
+            data.cell.styles.font = PDF_FONT;
+            data.cell.styles.fontSize = PDF_SIZE;
+
+            if (
+              data.section === 'body'
+            ) {
+
+              const status =
+                data.row.raw[4];
+
+              if (
+                status === 'CONSIDERADO'
+              ) {
+
+                if (
+                  data.column.index === 3 ||
+                  data.column.index === 4
+                ) {
+
+                  data.cell.styles.textColor =
+                    [40, 167, 69];
+
+                }
+
+              } else if (
+                status === 'REJEITADO'
+              ) {
+
+                if (
+                  data.column.index === 3 ||
+                  data.column.index === 4
+                ) {
+
+                  data.cell.styles.textColor =
+                    [220, 53, 69];
+
+                }
+
+              }
+
+            }
+
+          },
+
+          didDrawPage: function () {
             desenharCabecalho();
           }
         });
       }
 
-      const totalPaginas = doc.internal.getNumberOfPages();
+      // ========================================================
+      // MARCA D'ÁGUA
+      // ========================================================
+
+      const totalPaginas =
+        doc.internal.getNumberOfPages();
+
       if (watermarkBase64) {
-        for (let p = 1; p <= totalPaginas; p++) {
+
+        for (
+          let p = 1;
+          p <= totalPaginas;
+          p++
+        ) {
+
           doc.setPage(p);
+
           try {
-            doc.addImage(watermarkBase64, 'PNG', 50, 93.5, 110, 110, '', 'FAST', 0);
-          } catch(e) {}
+
+            doc.addImage(
+              watermarkBase64,
+              'PNG',
+              50,
+              93.5,
+              110,
+              110,
+              '',
+              'FAST',
+              0
+            );
+
+          } catch (e) {}
+
         }
+
       }
 
-      return { doc, titular };
+      return {
+        doc,
+        titular
+      };
     }
 
-    function resetarParaNovaAnalise() {
+    
+function resetarParaNovaAnalise() {
       document.getElementById('docInput').value = ''; 
       document.getElementById('extratosInput').value = '';
       
