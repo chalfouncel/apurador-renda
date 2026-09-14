@@ -402,10 +402,11 @@ REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
    - Pai: "${dadosCliente.pai}"
    - Mãe: "${dadosCliente.mae}"
    - Cônjuge: "${dadosCliente.conjuge}"
-   ATENÇÃO: Transferências recebidas de FILHOS ou outros parentes com o mesmo sobrenome (ex: irmãos) SÃO RENDAS VÁLIDAS e devem ser marcadas como CONSIDERADO.
+   ATENÇÃO MÁXIMA: Rejeite também qualquer abreviação (ex: "Jr.", "Junior"), variação de acento, ou erros de digitação óbvios envolvendo esses 3 familiares restritos (ex: se o nome for "Mário", rejeite "Mario", "Mario Challoun", etc.). 
+   -> Filhos ou irmãos com o mesmo sobrenome SÃO RENDAS VÁLIDAS e devem ser CONSIDERADOS.
 3. Estornos, devoluções, reembolsos, aplicações ou resgates de RDB/CDB/investimentos/cofrinho e rendimentos automáticos.
 
-Considere como CONSIDERADO apenas ENTRADAS legítimas e reais vindas de terceiros e familiares não restritos.
+Considere como CONSIDERADO apenas ENTRADAS legítimas e reais vindas de terceiros e familiares permitidos (filhos/irmãos).
 
 Retorne ESTRITAMENTE o JSON no formato:
 {
@@ -550,10 +551,15 @@ Retorne ESTRITAMENTE o JSON no formato:
           let mesAno = t.mes_ano || '';
           if(mesAno.length === 7 && mesAno.includes('/20')) mesAno = mesAno.replace('/20', '/');
           
+          let descricaoLimpa = t.descricao || '';
+          // Encurtador automático via Javascript para poupar espaço
+          descricaoLimpa = descricaoLimpa.replace(/Transferência recebida pelo Pix[\s-]*/gi, 'Transf. via PIX - ');
+          descricaoLimpa = descricaoLimpa.replace(/Transferência Recebida[\s-]*/gi, 'Transf. Recebida - ');
+
           return [
             t.data || '',
             mesAno,
-            t.descricao || '',
+            descricaoLimpa,
             formatMoeda(t.valor || 0),
             t.status || '',
             t.motivo || ''
@@ -562,17 +568,17 @@ Retorne ESTRITAMENTE o JSON no formato:
 
         doc.autoTable({
           startY: currentY + 8,
-          head: [['Data', 'Mês/Ano', 'Descrição do Lançamento', 'Valor', 'Status', 'Motivo da Decisão']],
+          head: [['Data', 'Mês/Ano', 'Descrição', 'Valor', 'Status', 'Motivo']],
           body: rowsTransacoes,
           headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
           bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
           columnStyles: {
             0: { cellWidth: 15 },
-            1: { cellWidth: 12, halign: 'center' },
+            1: { cellWidth: 16, halign: 'center' }, 
             2: { cellWidth: 'auto' }, 
-            3: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }, 
-            4: { cellWidth: 10, halign: 'center' }, 
-            5: { cellWidth: 50 } 
+            3: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }, 
+            4: { cellWidth: 14, halign: 'center' }, 
+            5: { cellWidth: 42 } 
           },
           margin: { top: 38, left: 11, right: 11 },
           tableWidth: 188,
