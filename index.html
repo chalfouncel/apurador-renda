@@ -196,17 +196,20 @@
       }
     });
 
-    async function otimizarFotoBase64(file) {
+    async function otimizarFotoBase64(file, maxDimension = 1000, quality = 0.6) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1200; let w = img.width, h = img.height;
-            if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
+            let w = img.width, h = img.height;
+            if (w > maxDimension || h > maxDimension) { 
+              if (w > h) { h = Math.round(h * maxDimension / w); w = maxDimension; } 
+              else { w = Math.round(w * maxDimension / h); h = maxDimension; } 
+            }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -214,59 +217,31 @@
       });
     }
 
-    async function processarDocumentoParaImagemPura(file) {
-      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let imagens = [];
-
-        // Converte apenas a pág 1 da CNH com alta resolução e força a IGNORAR O TEXTO
-        for (let i = 1; i <= Math.min(pdf.numPages, 1); i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 }); 
-          const canvas = document.createElement('canvas'); 
-          canvas.width = viewport.width; 
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          
-          ctx.fillStyle = '#ffffff'; 
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          await page.render({ canvasContext: ctx, viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
-        }
-        return { texto: "", imagens }; 
-      } else {
-        const img = await otimizarFotoBase64(file);
-        return { texto: "", imagens: [img] };
-      }
-    }
-
-    async function extrairDadosCompletosExtratos(file) {
+    async function processarDocumentosPDF(file, maxPages, scale, quality) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
 
+      // Lê texto puro se existir
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const txt = await page.getTextContent();
         texto += `--- PÁGINA ${i} ---\n` + txt.items.map(it => it.str).join(" ") + "\n";
       }
 
-      if (texto.trim().length < 200) {
-        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.0 });
-          const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await page.render({ canvasContext: ctx, viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
-        }
+      // Converte para imagens (compactadas para evitar erro Vercel 413 Payload Too Large)
+      for (let i = 1; i <= Math.min(pdf.numPages, maxPages); i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: scale }); 
+        const canvas = document.createElement('canvas'); 
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        imagens.push(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
       }
-
-      return { texto: texto.trim(), imagens };
+      return { texto: texto.trim(), imagens }; 
     }
 
     async function chamarApiServidor(payload) {
@@ -275,25 +250,36 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro no servidor de IA da Vercel");
-      return data;
+      const textData = await res.text();
+      try {
+        const data = JSON.parse(textData);
+        if (!res.ok) throw new Error(data.error || "Erro no servidor de IA.");
+        return data;
+      } catch (e) {
+        throw new Error("Erro de servidor (Timeout/Payload): " + textData.substring(0, 80));
+      }
     }
 
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
       if (!file) { alert("Selecione o documento primeiro."); return; }
-      showStatus("Lendo documento (Processamento Óptico Visual)...");
+      showStatus("Lendo documento oficial (IA Visão)...");
       try {
-        const resDoc = await processarDocumentoParaImagemPura(file);
+        let resDoc;
+        if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+            // Documento (CNH): escala menor (1.0) e qualidade 0.6 para prevenir estouro do servidor
+            resDoc = await processarDocumentosPDF(file, 2, 1.0, 0.6);
+        } else {
+            const img = await otimizarFotoBase64(file, 1000, 0.6);
+            resDoc = { texto: "", imagens: [img] };
+        }
         
-        const prompt = `Analise a IMAGEM deste documento brasileiro de identificação.
+        const prompt = `Analise a IMAGEM deste documento de identificação.
 Extraia apenas os nomes próprios nas chaves abaixo. Use letras maiúsculas.
-Deixe vazio ("") se não encontrar. NUNCA retorne descrições como "Nome completo" ou "Não consta".
+Deixe a string exata "" (vazia) se o campo não existir. Não coloque textos como "NOME COMPLETO".
 
 {"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
         
-        // Passando apenas imagens, o audit.js acionará a Rota 1 (Visão)
         const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
         
         const limpar = (str) => {
@@ -329,21 +315,21 @@ Deixe vazio ("") se não encontrar. NUNCA retorne descrições como "Nome comple
         conjuge: document.getElementById('conjugeName').value.trim() 
       };
 
-      showStatus("Auditando todos os meses do extrato...");
+      showStatus("Auditando extratos (Pode levar até 40s)...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await extrairDadosCompletosExtratos(file);
+            const res = await processarDocumentosPDF(file, 10, 1.0, 0.6);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
-            imagens.push(await otimizarFotoBase64(file)); 
+            imagens.push(await otimizarFotoBase64(file, 1000, 0.6)); 
           }
         }
 
         const prompt = `Você é um perito financeiro e auditor contábil judicial.
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, etc.).
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
 Regras de Exclusão (Descarte):
 - Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
 - Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
@@ -367,7 +353,6 @@ Retorne ESTRITAMENTE o JSON no formato:
   ]
 }`;
         
-        // Passando texts ativará a Rota 2 (Extrato de Texto) no backend
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
