@@ -23,12 +23,42 @@
     .section-banner { background: linear-gradient(90deg, #121315, #24272c); border-left: 4px solid var(--accent); color: var(--gold-light); }
     .btn-gold { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; border: 1px solid #b88d1e; font-weight: 700; }
     .btn-gold:hover { filter: brightness(1.05); }
-    .btn-green { background: linear-gradient(135deg, #28a745, #218838); color: #ffffff; border: 1px solid #1e7e34; font-weight: 700; }
-    .btn-green:hover { filter: brightness(1.05); }
     .card-box { background-color: var(--card); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .loader-gold { border-top-color: var(--gold); animation: spinner 0.8s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .app-header-logo { height: 80px; width: auto; max-width: 200px; object-fit: contain; display: block; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+    /* Estado Inicial: Botão Escolher Arquivo Amarelo/Dourado */
+    .file-input-gold::file-selector-button {
+      background: linear-gradient(135deg, #c59b27, #dfba48);
+      color: #121315;
+      border: 1px solid #b88d1e;
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-input-gold::file-selector-button:hover {
+      filter: brightness(1.05);
+    }
+
+    /* Estado Após Seleção: Botão Escolher Arquivo Verde */
+    .file-input-green::file-selector-button {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #ffffff;
+      border: 1px solid #1e7e34;
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      margin-right: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-input-green::file-selector-button:hover {
+      filter: brightness(1.05);
+    }
   </style>
 </head>
 <body class="min-h-screen pb-16">
@@ -56,7 +86,7 @@
         <h2 class="font-bold text-xs tracking-wider uppercase">1. Extratos Bancários</h2>
         <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white" style="background-color: var(--success);">Obrigatório</span>
       </div>
-      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-white file:font-semibold file:bg-gradient-to-r file:from-[#28a745] file:to-[#218838] hover:file:brightness-105 cursor-pointer" />
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
       <div id="fileCounter" class="mt-2 text-[11px]" style="color: #888;">Nenhum arquivo selecionado.</div>
     </div>
 
@@ -68,8 +98,8 @@
       </div>
       
       <div class="flex items-center gap-2">
-        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-white file:font-semibold file:bg-gradient-to-r file:from-[#28a745] file:to-[#218838] hover:file:brightness-105 cursor-pointer" />
-        <button type="button" onclick="lerDocumentoCliente()" class="btn-green text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="file-input-gold block w-full text-xs text-slate-500 cursor-pointer" />
+        <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
       </div>
       
       <div class="space-y-2.5 pt-3 mt-3 border-t" style="border-color: var(--border);">
@@ -104,8 +134,27 @@
     function showStatus(msg) { document.getElementById('statusAlert').classList.remove('hidden'); document.getElementById('statusAlertTxt').innerText = msg; }
     function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
 
+    // Alternância de cores dos botões "Escolher arquivo" (Amarelo -> Verde)
     document.getElementById('extratosInput').addEventListener('change', function(e) {
-      document.getElementById('fileCounter').innerText = e.target.files.length > 0 ? `${e.target.files.length} arquivo(s)` : 'Nenhum arquivo.';
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+        document.getElementById('fileCounter').innerText = `${e.target.files.length} arquivo(s) selecionado(s).`;
+      } else {
+        e.target.classList.remove('file-input-green');
+        e.target.classList.add('file-input-gold');
+        document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
+      }
+    });
+
+    document.getElementById('docInput').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        e.target.classList.remove('file-input-gold');
+        e.target.classList.add('file-input-green');
+      } else {
+        e.target.classList.remove('file-input-green');
+        e.target.classList.add('file-input-gold');
+      }
     });
 
     async function otimizarFotoBase64(file) {
@@ -366,10 +415,21 @@ Retorne ESTRITAMENTE o JSON no formato:
     }
 
     function resetarParaNovaAnalise() {
-      document.getElementById('docInput').value = ''; document.getElementById('extratosInput').value = '';
+      document.getElementById('docInput').value = ''; 
+      document.getElementById('extratosInput').value = '';
+      
+      const extratosEl = document.getElementById('extratosInput');
+      extratosEl.classList.remove('file-input-green');
+      extratosEl.classList.add('file-input-gold');
+
+      const docEl = document.getElementById('docInput');
+      docEl.classList.remove('file-input-green');
+      docEl.classList.add('file-input-gold');
+
       ['titularName', 'paiName', 'maeName', 'conjugeName'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('fileCounter').innerText = 'Nenhum arquivo selecionado.';
-      window.ultimoResultado = null; document.getElementById('resultadoBox').classList.add('hidden');
+      window.ultimoResultado = null; 
+      document.getElementById('resultadoBox').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
