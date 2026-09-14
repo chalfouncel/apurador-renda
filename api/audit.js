@@ -1,438 +1,910 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
+  res.setHeader(
+    'Access-Control-Allow-Credentials',
+    true
+  );
+
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    '*'
+  );
+
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'OPTIONS,POST'
+  );
+
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type'
+  );
+
+
+  if (
+    req.method === 'OPTIONS'
+  ) {
+
+    return res
+      .status(200)
+      .end();
+
   }
 
-  try {
-    const { prompt, texts, images } = req.body;
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (
+    req.method !== 'POST'
+  ) {
 
-    if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-      return res.status(500).json({
-        error: "Chaves de API não configuradas."
+    return res
+      .status(405)
+      .json({
+        error:
+          'Método não permitido'
       });
+
+  }
+
+
+  try {
+
+    const {
+      prompt,
+      texts,
+      images
+    } =
+      req.body || {};
+
+
+    const GEMINI_API_KEY =
+      process.env.GEMINI_API_KEY;
+
+
+    const GROQ_API_KEY =
+      process.env.GROQ_API_KEY;
+
+
+    if (
+      !GEMINI_API_KEY &&
+      !GROQ_API_KEY
+    ) {
+
+      return res
+        .status(500)
+        .json({
+
+          error:
+            'Chaves de API não configuradas.'
+
+        });
+
     }
 
-    const temImagens = Array.isArray(images) && images.length > 0;
 
-    // ============================================================
-    // MODO VISÃO — DOCUMENTOS / CNH / RG / CERTIDÃO
-    // ============================================================
+    const temImagens =
+      Array.isArray(images) &&
+      images.length > 0;
 
-    if (temImagens && GEMINI_API_KEY) {
 
-      const modelosPreferidos = [
-        "gemini-3.6-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-3.5-flash",
-        "gemini-2.5-flash"
-      ];
+    const temTexto =
+      typeof texts === 'string' &&
+      texts.trim().length > 0;
 
-      let modelosDisponiveis = [];
-      let errosLogs = [];
 
-      // Descobre quais modelos a chave realmente possui
+    // ==========================================================
+    // DESCOBRIR MODELOS GEMINI
+    // ==========================================================
+
+    async function obterModelosGemini() {
+
+      if (
+        !GEMINI_API_KEY
+      ) {
+
+        return [];
+
+      }
+
+
       try {
 
-        const listResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-        );
+        const response =
+          await fetch(
 
-        if (listResponse.ok) {
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
 
-          const listData = await listResponse.json();
-
-          const disponiveis = (listData.models || [])
-            .filter(modelo =>
-              Array.isArray(modelo.supportedGenerationMethods) &&
-              modelo.supportedGenerationMethods.includes("generateContent")
-            )
-            .map(modelo =>
-              (modelo.name || "").replace(/^models\//, "")
-            );
-
-          modelosDisponiveis = modelosPreferidos.filter(modelo =>
-            disponiveis.includes(modelo)
           );
 
-          // Fallback para qualquer Gemini atual compatível
-          if (!modelosDisponiveis.length) {
 
-            modelosDisponiveis = disponiveis
-              .filter(modelo =>
-                /^gemini-(3|2\.5)/.test(modelo) &&
-                !/embedding|tts|image|audio|robotics/.test(modelo)
-              )
-              .slice(0, 4);
-          }
+        if (
+          !response.ok
+        ) {
+
+          return [];
+
         }
 
-      } catch (erro) {
 
-        errosLogs.push(
-          `Erro ao consultar modelos Gemini: ${erro.message}`
+        const data =
+          await response.json();
+
+
+        const modelos =
+          (data.models || [])
+
+            .filter(
+              modelo =>
+
+                Array.isArray(
+                  modelo
+                    .supportedGenerationMethods
+                )
+
+                &&
+
+                modelo
+                  .supportedGenerationMethods
+                  .includes(
+                    'generateContent'
+                  )
+
+            )
+
+            .map(
+              modelo =>
+
+                (modelo.name || '')
+                  .replace(
+                    /^models\//,
+                    ''
+                  )
+
+            )
+
+            .filter(
+              modelo =>
+
+                /^gemini-/.test(
+                  modelo
+                )
+
+            );
+
+
+        // ======================================================
+        // PRIORIZAR FLASH
+        // ======================================================
+
+        const flash =
+          modelos.filter(
+            modelo =>
+
+              /flash/i.test(
+                modelo
+              )
+
+          );
+
+
+        const outros =
+          modelos.filter(
+            modelo =>
+
+              !flash.includes(
+                modelo
+              )
+
+          );
+
+
+        return [
+
+          ...flash,
+
+          ...outros
+
+        ].slice(
+          0,
+          5
         );
+
+
+      } catch (_) {
+
+        return [];
+
       }
 
-      // Se não conseguiu consultar a lista,
-      // tenta diretamente os modelos atuais.
-      if (!modelosDisponiveis.length) {
-        modelosDisponiveis = modelosPreferidos;
-      }
+    }
 
-      // ============================================================
-      // TENTA OS MODELOS UM POR UM
-      // ============================================================
 
-      for (const modelo of modelosDisponiveis) {
+    // ==========================================================
+    // MODO VISION
+    //
+    // CNH / RG / CERTIDÃO
+    // e páginas escaneadas.
+    // ==========================================================
+
+    if (
+
+      temImagens &&
+
+      GEMINI_API_KEY
+
+    ) {
+
+      const modelos =
+        await obterModelosGemini();
+
+
+      const erros = [];
+
+
+      for (
+        const modelo of modelos
+      ) {
 
         try {
 
           const parts = [
+
             {
-              text: prompt
+
+              text:
+                prompt || ''
+
             }
+
           ];
 
-          // Inclui texto extraído do PDF quando existir
-          if (texts) {
+
+          // Texto extraído também acompanha
+          // a imagem quando existir.
+
+          if (
+            temTexto
+          ) {
 
             parts.push({
+
               text:
-                "TEXTO EXTRAÍDO DO DOCUMENTO:\n" +
+
+                'TEXTO EXTRAÍDO:\n' +
                 texts
+
             });
+
           }
 
-          // Inclui as imagens
-          images.forEach(img => {
+
+          // ====================================================
+          // IMAGENS
+          // ====================================================
+
+          for (
+            const img of images
+          ) {
 
             parts.push({
+
               inline_data: {
-                mime_type: "image/jpeg",
-                data: img
+
+                mime_type:
+                  'image/jpeg',
+
+                data:
+                  img
+
               }
+
             });
 
-          });
+          }
 
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`,
-            {
-              method: "POST",
 
-              headers: {
-                "Content-Type": "application/json"
-              },
+          const response =
+            await fetch(
 
-              body: JSON.stringify({
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`,
 
-                contents: [
-                  {
-                    parts: parts
-                  }
-                ],
+              {
 
-                generationConfig: {
-                  responseMimeType: "application/json"
-                }
+                method:
+                  'POST',
 
-              })
-            }
-          );
+                headers: {
 
-          const responseText = await response.text();
+                  'Content-Type':
+                    'application/json'
 
-          // ========================================================
-          // SUCESSO
-          // ========================================================
+                },
 
-          if (response.ok) {
+                body:
+                  JSON.stringify({
 
-            const data = JSON.parse(responseText);
+                    contents: [
 
-            const rawText =
-              data.candidates?.[0]?.content?.parts?.[0]?.text;
+                      {
 
-            if (rawText) {
+                        parts:
+                          parts
 
-              const cleanJson = rawText
-                .replace(/^```json\s*/i, "")
-                .replace(/\s*```$/i, "")
-                .trim();
+                      }
 
-              try {
+                    ],
 
-                const resultado = JSON.parse(cleanJson);
+                    generationConfig: {
 
-                return res.status(200).json(resultado);
+                      temperature:
+                        0.1,
 
-              } catch (erroJSON) {
+                      responseMimeType:
+                        'application/json'
 
-                errosLogs.push(
-                  `${modelo}: resposta não é JSON válido`
-                );
+                    }
+
+                  })
+
               }
 
-            } else {
+            );
 
-              errosLogs.push(
-                `${modelo}: resposta vazia`
-              );
-            }
 
-          } else {
+          const responseText =
+            await response.text();
 
-            let mensagem = responseText;
+
+          if (
+            !response.ok
+          ) {
+
+            let msg =
+              responseText;
+
 
             try {
 
-              const erroData =
-                JSON.parse(responseText);
+              msg =
 
-              mensagem =
-                erroData.error?.message ||
+                JSON.parse(
+                  responseText
+                )
+                .error
+                ?.message ||
+
                 responseText;
+
 
             } catch (_) {}
 
-            errosLogs.push(
-              `${modelo}: ${mensagem}`
+
+            erros.push(
+
+              `${modelo}: ${msg}`
+
             );
+
+
+            continue;
+
           }
+
+
+          const data =
+            JSON.parse(
+              responseText
+            );
+
+
+          const raw =
+
+            data
+              .candidates?.[0]
+              ?.content
+              ?.parts
+              ?.map(
+                p =>
+                  p.text || ''
+              )
+              .join('')
+              .trim();
+
+
+          if (
+            !raw
+          ) {
+
+            erros.push(
+
+              `${modelo}: resposta vazia`
+
+            );
+
+
+            continue;
+
+          }
+
+
+          const clean =
+
+            raw
+
+              .replace(
+                /^```json\s*/i,
+                ''
+              )
+
+              .replace(
+                /\s*```$/i,
+                ''
+              )
+
+              .trim();
+
+
+          return res
+            .status(200)
+            .json(
+
+              JSON.parse(
+                clean
+              )
+
+            );
+
 
         } catch (erro) {
 
-          errosLogs.push(
+          erros.push(
+
             `${modelo}: ${erro.message}`
+
           );
+
         }
+
       }
 
-      return res.status(500).json({
 
-        error:
-          "Falha na IA Visual: " +
-          errosLogs.join(" | ")
+      return res
+        .status(500)
+        .json({
 
-      });
+          error:
+
+            'Falha na IA Visual: ' +
+
+            erros.join(
+              ' | '
+            )
+
+        });
+
     }
 
-    // ============================================================
-    // MODO TEXTO — EXTRATOS
-    // ============================================================
 
-    if (!temImagens && texts) {
+    // ==========================================================
+    // MODO TEXTO
+    //
+    // PRINCIPAL PARA EXTRATOS PDF DIGITAIS
+    // ==========================================================
 
-      // ------------------------------------------------------------
-      // GROQ
-      // ------------------------------------------------------------
+    if (
 
-      if (GROQ_API_KEY) {
+      temTexto &&
+
+      GEMINI_API_KEY
+
+    ) {
+
+      const modelos =
+        await obterModelosGemini();
+
+
+      const erros = [];
+
+
+      for (
+        const modelo of modelos
+      ) {
 
         try {
 
-          const listRes = await fetch(
-            "https://api.groq.com/openai/v1/models",
-            {
-              headers: {
-                "Authorization":
-                  `Bearer ${GROQ_API_KEY}`
-              }
-            }
-          );
+          const response =
+            await fetch(
 
-          if (listRes.ok) {
-
-            const listData =
-              await listRes.json();
-
-            const modelosGroq =
-              (listData.data || [])
-                .map(modelo => modelo.id)
-                .filter(id =>
-                  !id.includes("whisper") &&
-                  !id.includes("guard")
-                );
-
-            for (const modelo of modelosGroq) {
-
-              try {
-
-                const response = await fetch(
-                  "https://api.groq.com/openai/v1/chat/completions",
-                  {
-                    method: "POST",
-
-                    headers: {
-                      "Content-Type":
-                        "application/json",
-
-                      "Authorization":
-                        `Bearer ${GROQ_API_KEY}`
-                    },
-
-                    body: JSON.stringify({
-
-                      model: modelo,
-
-                      messages: [
-
-                        {
-                          role: "system",
-
-                          content:
-                            "Retorne ESTRITAMENTE um JSON válido."
-                        },
-
-                        {
-                          role: "user",
-
-                          content:
-                            prompt +
-                            "\n\nCONTEÚDO:\n" +
-                            texts
-                        }
-
-                      ],
-
-                      response_format: {
-                        type: "json_object"
-                      },
-
-                      temperature: 0.1
-
-                    })
-                  }
-                );
-
-                if (response.ok) {
-
-                  const data =
-                    await response.json();
-
-                  return res.status(200).json(
-                    JSON.parse(
-                      data.choices[0].message.content
-                    )
-                  );
-                }
-
-              } catch (_) {}
-            }
-          }
-
-        } catch (_) {}
-      }
-
-      // ------------------------------------------------------------
-      // GEMINI TEXTO
-      // ------------------------------------------------------------
-
-      if (GEMINI_API_KEY) {
-
-        const modelosGeminiText = [
-          "gemini-3.6-flash",
-          "gemini-3.5-flash-lite",
-          "gemini-3.5-flash",
-          "gemini-2.5-flash"
-        ];
-
-        for (const modelo of modelosGeminiText) {
-
-          try {
-
-            const response = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`,
+
               {
-                method: "POST",
+
+                method:
+                  'POST',
 
                 headers: {
-                  "Content-Type":
-                    "application/json"
+
+                  'Content-Type':
+                    'application/json'
+
                 },
 
-                body: JSON.stringify({
+                body:
+                  JSON.stringify({
 
-                  contents: [
+                    contents: [
 
-                    {
-                      parts: [
+                      {
 
-                        {
-                          text:
-                            prompt +
-                            "\n\nTEXTO:\n" +
-                            texts
-                        }
+                        parts: [
 
-                      ]
+                          {
+
+                            text:
+
+                              (prompt || '') +
+
+                              '\n\nCONTEÚDO DOS EXTRATOS:\n' +
+
+                              texts
+
+                          }
+
+                        ]
+
+                      }
+
+                    ],
+
+                    generationConfig: {
+
+                      temperature:
+                        0.1,
+
+                      responseMimeType:
+                        'application/json'
+
                     }
 
-                  ],
+                  })
 
-                  generationConfig: {
-                    responseMimeType:
-                      "application/json"
-                  }
-
-                })
               }
+
             );
 
-            if (response.ok) {
 
-              const data =
-                await response.json();
+          const responseText =
+            await response.text();
 
-              const raw =
-                data.candidates?.[0]
-                  ?.content
-                  ?.parts?.[0]
-                  ?.text;
 
-              if (raw) {
+          if (
+            !response.ok
+          ) {
 
-                const clean =
-                  raw
-                    .replace(/^```json\s*/i, "")
-                    .replace(/\s*```$/i, "")
-                    .trim();
+            let msg =
+              responseText;
 
-                return res.status(200).json(
-                  JSON.parse(clean)
-                );
-              }
-            }
 
-          } catch (_) {}
+            try {
+
+              msg =
+
+                JSON.parse(
+                  responseText
+                )
+                .error
+                ?.message ||
+
+                responseText;
+
+
+            } catch (_) {}
+
+
+            erros.push(
+
+              `${modelo}: ${msg}`
+
+            );
+
+
+            continue;
+
+          }
+
+
+          const data =
+            JSON.parse(
+              responseText
+            );
+
+
+          const raw =
+
+            data
+              .candidates?.[0]
+              ?.content
+              ?.parts
+              ?.map(
+                p =>
+                  p.text || ''
+              )
+              .join('')
+              .trim();
+
+
+          if (
+            !raw
+          ) {
+
+            continue;
+
+          }
+
+
+          const clean =
+
+            raw
+
+              .replace(
+                /^```json\s*/i,
+                ''
+              )
+
+              .replace(
+                /\s*```$/i,
+                ''
+              )
+
+              .trim();
+
+
+          return res
+            .status(200)
+            .json(
+
+              JSON.parse(
+                clean
+              )
+
+            );
+
+
+        } catch (erro) {
+
+          erros.push(
+
+            `${modelo}: ${erro.message}`
+
+          );
+
         }
+
       }
+
     }
 
-    return res.status(500).json({
 
-      error:
-        "Não foi possível processar a requisição com as IAs ativas."
+    // ==========================================================
+    // FALLBACK GROQ
+    //
+    // Somente texto.
+    // ==========================================================
 
-    });
+    if (
+
+      temTexto &&
+
+      GROQ_API_KEY
+
+    ) {
+
+      try {
+
+        const listRes =
+          await fetch(
+
+            'https://api.groq.com/openai/v1/models',
+
+            {
+
+              headers: {
+
+                Authorization:
+                  `Bearer ${GROQ_API_KEY}`
+
+              }
+
+            }
+
+          );
+
+
+        if (
+          listRes.ok
+        ) {
+
+          const listData =
+            await listRes.json();
+
+
+          const modelos =
+
+            (listData.data || [])
+
+              .map(
+                modelo =>
+                  modelo.id
+              )
+
+              .filter(
+
+                id =>
+
+                  !id.includes(
+                    'whisper'
+                  )
+
+                  &&
+
+                  !id.includes(
+                    'guard'
+                  )
+
+              );
+
+
+          for (
+            const modelo of modelos
+          ) {
+
+            try {
+
+              const response =
+                await fetch(
+
+                  'https://api.groq.com/openai/v1/chat/completions',
+
+                  {
+
+                    method:
+                      'POST',
+
+                    headers: {
+
+                      'Content-Type':
+                        'application/json',
+
+                      Authorization:
+                        `Bearer ${GROQ_API_KEY}`
+
+                    },
+
+                    body:
+                      JSON.stringify({
+
+                        model:
+                          modelo,
+
+                        messages: [
+
+                          {
+
+                            role:
+                              'system',
+
+                            content:
+
+                              'Retorne ESTRITAMENTE um JSON válido.'
+
+                          },
+
+                          {
+
+                            role:
+                              'user',
+
+                            content:
+
+                              (prompt || '') +
+
+                              '\n\nCONTEÚDO DOS EXTRATOS:\n' +
+
+                              texts
+
+                          }
+
+                        ],
+
+                        response_format: {
+
+                          type:
+                            'json_object'
+
+                        },
+
+                        temperature:
+                          0.1
+
+                      })
+
+                  }
+
+                );
+
+
+              if (
+                response.ok
+              ) {
+
+                const data =
+                  await response.json();
+
+
+                const content =
+
+                  data
+                    .choices?.[0]
+                    ?.message
+                    ?.content;
+
+
+                if (
+                  content
+                ) {
+
+                  return res
+                    .status(200)
+                    .json(
+
+                      JSON.parse(
+                        content
+                      )
+
+                    );
+
+                }
+
+              }
+
+            } catch (_) {}
+
+          }
+
+        }
+
+      } catch (_) {}
+
+    }
+
+
+    // ==========================================================
+    // ERRO FINAL
+    // ==========================================================
+
+    return res
+      .status(500)
+      .json({
+
+        error:
+
+          'Não foi possível processar a requisição com as IAs ativas.'
+
+      });
+
 
   } catch (error) {
 
-    return res.status(500).json({
+    return res
+      .status(500)
+      .json({
 
-      error:
-        "Erro interno: " +
-        error.message
+        error:
 
-    });
+          'Erro interno: ' +
+          error.message
+
+      });
+
   }
+
 }
