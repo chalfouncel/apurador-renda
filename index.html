@@ -206,7 +206,7 @@
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -225,10 +225,19 @@
           const txt = await page.getTextContent();
           texto += txt.items.map(it => it.str).join(" ") + "\n";
 
-          const viewport = page.getViewport({ scale: 1.0 });
-          const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
+          // Escala dobrada para capturar letras miúdas com perfeição
+          const viewport = page.getViewport({ scale: 2.0 }); 
+          const canvas = document.createElement('canvas'); 
+          canvas.width = viewport.width; 
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          
+          // Fundo branco obrigatório (evita que a CNH-e transparente fique preta e ilegível)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
         }
         return { texto: texto.trim(), imagens };
       } else {
@@ -251,9 +260,15 @@
       if (texto.trim().length < 200) {
         for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.0 });
+          const viewport = page.getViewport({ scale: 1.5 });
           const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const ctx = canvas.getContext('2d');
+          
+          // Fundo branco também nos extratos
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
           imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
         }
       }
@@ -279,34 +294,25 @@
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
         
-        const prompt = `Extraia os nomes próprios contidos neste documento brasileiro de identificação (CNH, RG ou Certidão).
-Campos obrigatórios a preencher:
-- titular: Nome da pessoa dona do documento.
-- pai: Nome do pai que consta na filiação.
-- mae: Nome da mãe que consta na filiação.
-- conjuge: Nome do cônjuge apenas se for Certidão de Casamento.
+        const prompt = `Você é um perito em extração de dados. 
+Analise a imagem deste documento de identificação (CNH, RG ou Certidão).
+Extraia APENAS os nomes próprios exatos que estão no documento para os campos abaixo. 
+Se um campo não existir, retorne vazio "". NUNCA retorne textos explicativos.
 
-REGRAS:
-1. Retorne APENAS os nomes próprios das pessoas em letras maiúsculas.
-2. Se o dado não existir, deixe vazio "".
-3. NUNCA escreva frases explicativas como "Nome completo", "Nome do pai", "Filiação", etc.
-
-Responda SOMENTE o JSON:
-{"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
+Retorne EXCLUSIVAMENTE este formato JSON:
+{
+  "titular": "NOME DO TITULAR AQUI",
+  "pai": "NOME DO PAI AQUI",
+  "mae": "NOME DA MAE AQUI",
+  "conjuge": "NOME DO CONJUGE AQUI"
+}`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
         
-        const descartarExplicacao = (txt) => {
-          if (!txt) return "";
-          const t = String(txt).trim();
-          if (t.toLowerCase().includes("nome") || t.toLowerCase().includes("filiação") || t.toLowerCase().includes("cônjuge") || t.includes("...")) return "";
-          return t;
-        };
-
-        if (json.titular) document.getElementById('titularName').value = descartarExplicacao(json.titular);
-        if (json.pai) document.getElementById('paiName').value = descartarExplicacao(json.pai);
-        if (json.mae) document.getElementById('maeName').value = descartarExplicacao(json.mae);
-        if (json.conjuge) document.getElementById('conjugeName').value = descartarExplicacao(json.conjuge);
+        if (json.titular && !json.titular.includes("NOME")) document.getElementById('titularName').value = json.titular;
+        if (json.pai && !json.pai.includes("NOME")) document.getElementById('paiName').value = json.pai;
+        if (json.mae && !json.mae.includes("NOME")) document.getElementById('maeName').value = json.mae;
+        if (json.conjuge && !json.conjuge.includes("NOME")) document.getElementById('conjugeName').value = json.conjuge;
       } catch (err) { 
         alert("Erro ao ler documento: " + err.message); 
       } finally { 
@@ -342,13 +348,13 @@ Responda SOMENTE o JSON:
           }
         }
 
-        const prompt = `Você é um perito financeiro e auditor contábil.
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes (ex: 03/2026, 04/2026, 05/2026, etc.).
+        const prompt = `Você é um perito financeiro e auditor contábil judicial.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato para TODOS OS MESES presentes.
 Regras de Exclusão (Descarte):
 - Transferências da mesma titularidade do cliente: "${dadosCliente.titular}".
 - Transferências entre familiares: Pai: "${dadosCliente.pai}", Mãe: "${dadosCliente.mae}", Cônjuge: "${dadosCliente.conjuge}".
 - Estornos, devoluções, reembolsos, aplicações ou resgates de CDB/investimentos/cofrinho e rendimentos automáticos de conta.
-- Considere apenas ENTRADAS legítimas como renda.
+- Considere apenas ENTRADAS (Pix recebidos, vendas em cartão crédito/débito líquidas, depósitos e transferências de terceiros válidas como renda).
 
 Retorne ESTRITAMENTE o JSON no formato:
 {
