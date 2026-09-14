@@ -201,7 +201,6 @@
         e.target.classList.add('file-input-green');
         document.getElementById('fileCounter').innerText = `${e.target.files.length} arquivo(s) selecionado(s).`;
         
-        // Mantém as etapas bloqueadas até validação
         document.getElementById('step2Container').classList.add('locked-section');
         document.getElementById('finalidadeContainer').classList.add('locked-section');
         document.getElementById('btnProcessar').classList.add('locked-section');
@@ -291,14 +290,12 @@
       }
     }
 
-    // NOVA FUNÇÃO: VALIDAÇÃO DE TITULARIDADE DOS EXTRATOS
     async function validarTitularidadeExtratos(files) {
       showStatus("Validando titularidade dos extratos em segundo plano...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            // Extrai as 2 primeiras páginas para ler o cabeçalho rapidamente
             const res = await processarDocumentosPDF(file, 2, 1.0, 0.5);
             textoGeral += res.texto + "\n";
           } else { 
@@ -310,8 +307,8 @@
 Verifique detalhadamente se TODOS os extratos pertencem estritamente à MESMA PESSOA (mesmo nome completo).
 Retorne EXCLUSIVAMENTE um objeto JSON:
 {
-  "mesma_pessoa": true, // ou false caso exista extratos de pessoas diferentes
-  "titular_unico": "NOME COMPLETO" // preencha apenas se for a mesma pessoa
+  "mesma_pessoa": true,
+  "titular_unico": "NOME COMPLETO"
 }`;
 
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
@@ -323,7 +320,6 @@ Retorne EXCLUSIVAMENTE um objeto JSON:
           return;
         }
 
-        // Sucesso: Preenche o titular e desbloqueia o resto
         const titularValidado = String(json.titular_unico).toUpperCase().trim();
         document.getElementById('titularName').value = titularValidado;
         dadosCliente.titular = titularValidado;
@@ -379,7 +375,6 @@ Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe
       const files = document.getElementById('extratosInput').files;
       if (!files.length) { alert("Adicione os extratos bancários."); return; }
 
-      // Atualiza os dados finais de parentesco
       dadosCliente.pai = document.getElementById('paiName').value.trim();
       dadosCliente.mae = document.getElementById('maeName').value.trim();
       dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
@@ -414,11 +409,11 @@ Retorne ESTRITAMENTE o JSON no formato:
     "renda_media_mensal": 0.00
   },
   "apuracao_mensal": [
-    { "mes_ano": "03/2026", "somatorio_entradas": 0.00 }
+    { "mes_ano": "03/26", "somatorio_entradas": 0.00 }
   ],
   "transacoes": [
-    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
-    { "data": "DD/MM/AAAA", "mes_ano": "MM/AAAA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Familiar / Rendimento" }
   ]
 }`;
         
@@ -500,7 +495,11 @@ Retorne ESTRITAMENTE o JSON no formato:
       doc.autoTable({
         startY: 70, 
         head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
-        body: consolidadoMeses.map(m => [m.mes_ano, formatMoeda(m.somatorio_entradas)]),
+        body: consolidadoMeses.map(m => {
+          let mes = m.mes_ano || '';
+          if(mes.length === 7 && mes.includes('/20')) mes = mes.replace('/20', '/');
+          return [mes, formatMoeda(m.somatorio_entradas)];
+        }),
         headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
         bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
         columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
@@ -540,14 +539,19 @@ Retorne ESTRITAMENTE o JSON no formato:
         doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
         doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
 
-        const rowsTransacoes = transacoesDetalhadas.map(t => [
-          t.data || '',
-          t.mes_ano || '',
-          t.descricao || '',
-          formatMoeda(t.valor || 0),
-          t.status || '',
-          t.motivo || ''
-        ]);
+        const rowsTransacoes = transacoesDetalhadas.map(t => {
+          let mesAno = t.mes_ano || '';
+          if(mesAno.length === 7 && mesAno.includes('/20')) mesAno = mesAno.replace('/20', '/');
+          
+          return [
+            t.data || '',
+            mesAno,
+            t.descricao || '',
+            formatMoeda(t.valor || 0),
+            t.status || '',
+            t.motivo || ''
+          ];
+        });
 
         doc.autoTable({
           startY: currentY + 8,
@@ -556,26 +560,32 @@ Retorne ESTRITAMENTE o JSON no formato:
           headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
           bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
           columnStyles: {
-            0: { width: 18 },
-            1: { width: 16 },
-            2: { width: 62 },
-            3: { width: 24, halign: 'right', fontStyle: 'bold' },
-            4: { width: 26, fontStyle: 'bold' },
-            5: { width: 42 }
+            0: { cellWidth: 15 },
+            1: { cellWidth: 12, halign: 'center' },
+            2: { cellWidth: 'auto' }, 
+            3: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }, // Evita quebra de linha no valor
+            4: { cellWidth: 10, halign: 'center' }, 
+            5: { cellWidth: 50 } 
           },
           margin: { left: 11, right: 11 },
           tableWidth: 188,
           didParseCell: function(data) {
             if (data.section === 'body') {
               const status = data.row.raw[4];
-              if (status === 'CONSIDERADO') {
-                if (data.column.index === 3 || data.column.index === 4) {
-                  data.cell.styles.textColor = [40, 167, 69];
-                }
-              } else if (status === 'REJEITADO') {
-                if (data.column.index === 3 || data.column.index === 4) {
-                  data.cell.styles.textColor = [220, 53, 69];
-                }
+              if (data.column.index === 3) {
+                  data.cell.styles.textColor = status === 'CONSIDERADO' ? [40, 167, 69] : [220, 53, 69];
+              }
+              if (data.column.index === 4) {
+                  data.cell.text = ['']; // Remove o texto para desenhar o círculo
+              }
+            }
+          },
+          didDrawCell: function(data) {
+            if (data.section === 'body' && data.column.index === 4) {
+              const status = data.row.raw[4];
+              if (status === 'CONSIDERADO' || status === 'REJEITADO') {
+                doc.setFillColor(status === 'CONSIDERADO' ? 40 : 220, status === 'CONSIDERADO' ? 167 : 53, status === 'CONSIDERADO' ? 69 : 69);
+                doc.circle(data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, 1.5, 'F');
               }
             }
           },
@@ -583,6 +593,25 @@ Retorne ESTRITAMENTE o JSON no formato:
             desenharCabecalho();
           }
         });
+        
+        // Legenda ao final da tabela
+        let legendY = doc.lastAutoTable.finalY + 5;
+        if (legendY > 275) {
+          doc.addPage();
+          desenharCabecalho();
+          legendY = 35;
+        }
+        
+        doc.setFillColor(40, 167, 69); 
+        doc.circle(14, legendY, 1.5, 'F');
+        doc.setFontSize(7); 
+        doc.setTextColor(110, 110, 110); 
+        doc.setFont("helvetica", "normal");
+        doc.text("Considerado", 17, legendY + 1);
+        
+        doc.setFillColor(220, 53, 69); 
+        doc.circle(38, legendY, 1.5, 'F');
+        doc.text("Rejeitado", 41, legendY + 1);
       }
 
       const totalPaginas = doc.internal.getNumberOfPages();
