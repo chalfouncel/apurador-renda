@@ -12,16 +12,22 @@ export default async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   if (!GEMINI_API_KEY && !GROQ_API_KEY) {
-    return res.status(500).json({ error: "Nenhuma chave configurada na Vercel." });
+    return res.status(500).json({ error: "Nenhuma chave de API configurada na Vercel." });
   }
 
-  // Se tem imagem (foto de documento/CNH/RG), DEVE rodar no Gemini Multimodal
-  if (images && Array.isArray(images) && images.length > 0 && GEMINI_API_KEY) {
-    const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"];
+  let errosLogs = [];
+
+  // ==========================================
+  // MODO 1: VISÃO (Documentos CNH/RG com imagem)
+  // ==========================================
+  if (images && images.length > 0 && GEMINI_API_KEY) {
+    // Tenta primeiro o flash, se falhar por limite de cota, tenta o PRO
+    const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    
     for (const mod of modelosGemini) {
       try {
         const parts = [{ text: prompt }];
-        if (texts) parts.push({ text: "TEXTO DO ARQUIVO:\n" + texts });
+        // Adiciona imagens otimizadas
         images.forEach(img => {
           parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
         });
@@ -34,19 +40,27 @@ export default async function handler(req, res) {
 
         if (geminiRes.ok) {
           const data = await geminiRes.json();
-          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (raw) {
-            const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-            return res.status(200).json(JSON.parse(clean));
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            return res.status(200).json(JSON.parse(cleanJson));
           }
+        } else {
+          const errData = await geminiRes.json();
+          errosLogs.push(`[${mod}]: ${errData.error?.message}`);
         }
-      } catch (e) {}
+      } catch (e) {
+        errosLogs.push(`[${mod}] Catch: ${e.message}`);
+      }
     }
+    return res.status(500).json({ error: "Falha na Leitura Visual. Erros: " + errosLogs.join(" | ") });
   }
 
-  // Se for análise puramente textual volumosa (extratos) ou fallback
-  if (texts && texts.length > 30) {
-    // 1. Tenta Groq
+  // ==========================================
+  // MODO 2: TEXTO (Extratos longos)
+  // ==========================================
+  if (texts && texts.length > 10) {
+    // Tenta Groq Primeiro (Rápido e gratuito para texto)
     if (GROQ_API_KEY) {
       try {
         const listRes = await fetch("https://api.groq.com/openai/v1/models", {
@@ -86,7 +100,7 @@ export default async function handler(req, res) {
       } catch (err) {}
     }
 
-    // 2. Tenta Gemini Texto
+    // Fallback para Gemini (Texto)
     if (GEMINI_API_KEY) {
       const modelosGemini = ["gemini-1.5-flash", "gemini-2.0-flash"];
       for (const mod of modelosGemini) {
@@ -109,5 +123,5 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(500).json({ error: "Não foi possível extrair os dados do documento. Tente novamente." });
+  return res.status(500).json({ error: "Falha geral no processamento do servidor." });
 }
