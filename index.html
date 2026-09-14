@@ -23,8 +23,6 @@
     .section-banner { background: linear-gradient(90deg, #121315, #24272c); border-left: 4px solid var(--accent); color: var(--gold-light); }
     .btn-gold { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; border: 1px solid #b88d1e; font-weight: 700; }
     .btn-gold:hover { filter: brightness(1.05); }
-    .btn-green { background: linear-gradient(135deg, #28a745, #218838); color: #ffffff; border: 1px solid #1e7e34; font-weight: 700; }
-    .btn-green:hover { filter: brightness(1.05); }
     .card-box { background-color: var(--card); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .loader-gold { border-top-color: var(--gold); animation: spinner 0.8s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -56,7 +54,7 @@
         <h2 class="font-bold text-xs tracking-wider uppercase">1. Extratos Bancários</h2>
         <span class="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white" style="background-color: var(--success);">Obrigatório</span>
       </div>
-      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-white file:font-semibold file:bg-gradient-to-r file:from-[#28a745] file:to-[#218838] hover:file:brightness-105 cursor-pointer" />
+      <input type="file" id="extratosInput" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
       <div id="fileCounter" class="mt-2 text-[11px]" style="color: #888;">Nenhum arquivo selecionado.</div>
     </div>
 
@@ -68,8 +66,8 @@
       </div>
       
       <div class="flex items-center gap-2">
-        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-white file:font-semibold file:bg-gradient-to-r file:from-[#28a745] file:to-[#218838] hover:file:brightness-105 cursor-pointer" />
-        <button type="button" onclick="lerDocumentoCliente()" class="btn-green text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
+        <input type="file" id="docInput" accept="image/*,application/pdf" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100" />
+        <button type="button" onclick="lerDocumentoCliente()" class="btn-gold text-xs px-3.5 py-2 rounded-lg whitespace-nowrap shadow-sm">Ler Foto/Doc</button>
       </div>
       
       <div class="space-y-2.5 pt-3 mt-3 border-t" style="border-color: var(--border);">
@@ -126,28 +124,7 @@
       });
     }
 
-    async function processarDocumentoIdentificacao(file) {
-      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let imagens = [], texto = "";
-        for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
-          const page = await pdf.getPage(i);
-          const txt = await page.getTextContent();
-          texto += txt.items.map(it => it.str).join(" ") + "\n";
-          const viewport = page.getViewport({ scale: 1.2 });
-          const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
-        }
-        return { texto: texto.trim(), imagens };
-      } else {
-        const img = await otimizarFotoBase64(file);
-        return { texto: "", imagens: [img] };
-      }
-    }
-
-    async function extrairDadosCompletosExtratos(file) {
+    async function extrairDadosCompletosPDF(file) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
@@ -155,7 +132,8 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const txt = await page.getTextContent();
-        texto += `--- PÁGINA ${i} ---\n` + txt.items.map(it => it.str).join(" ") + "\n";
+        const pageStr = txt.items.map(it => it.str).join(" ");
+        texto += `--- PÁGINA ${i} ---\n` + pageStr + "\n";
       }
 
       if (texto.trim().length < 200) {
@@ -187,20 +165,11 @@
       if (!file) { alert("Selecione o documento."); return; }
       showStatus("Lendo documento...");
       try {
-        const resDoc = await processarDocumentoIdentificacao(file);
+        const resPdf = file.type.includes('pdf') || file.name.endsWith('.pdf') ? await extrairDadosCompletosPDF(file) : { texto: "", imagens: [await otimizarFotoBase64(file)] };
         const titularExtrato = document.getElementById('titularName').value.trim();
-        const prompt = `Você é um perito em análise documental.
-Analise com atenção a imagem ou texto anexo deste documento oficial brasileiro (CNH, RG, Identidade ou Certidão de Casamento).
-Extraia os nomes com precisão cirúrgica:
-- Titular: O nome da pessoa do documento (se for certidão, cruze com o titular sugerido "${titularExtrato}")
-- Pai: Nome do pai / filiação paterna
-- Mãe: Nome da mãe / filiação materna
-- Cônjuge: Nome do cônjuge / parceiro (caso seja Certidão de Casamento)
-
-Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
-{"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
+        const prompt = `Analise este documento de identificação (CNH, RG ou Certidão). Titular do extrato sugerido: "${titularExtrato}". Retorne EXCLUSIVAMENTE um JSON: {"titular": "...", "pai": "...", "mae": "...", "conjuge": "..."}`;
         
-        const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
+        const json = await chamarApiServidor({ prompt, texts: resPdf.texto, images: resPdf.imagens });
         if (json.titular) document.getElementById('titularName').value = json.titular;
         if (json.pai) document.getElementById('paiName').value = json.pai;
         if (json.mae) document.getElementById('maeName').value = json.mae;
@@ -217,7 +186,7 @@ Retorne EXCLUSIVAMENTE um JSON sem texto explicativo:
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await extrairDadosCompletosExtratos(file);
+            const res = await extrairDadosCompletosPDF(file);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
