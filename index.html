@@ -210,7 +210,9 @@
     </div>
 
 
-    <!-- PASSO 1: EXTRATOS -->
+    <!-- ========================================================
+         PASSO 1 — EXTRATOS
+         ======================================================== -->
 
     <div class="card-box p-4">
 
@@ -250,7 +252,9 @@
     </div>
 
 
-    <!-- PASSO 2: DOCUMENTO -->
+    <!-- ========================================================
+         PASSO 2 — DOCUMENTO DO CLIENTE
+         ======================================================== -->
 
     <div class="card-box p-4">
 
@@ -377,7 +381,9 @@
     </div>
 
 
-    <!-- SELEÇÃO DA FINALIDADE -->
+    <!-- ========================================================
+         FINALIDADE
+         ======================================================== -->
 
     <div class="card-box p-3.5">
 
@@ -405,12 +411,14 @@
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
+
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
               d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
             />
+
           </svg>
 
           <span>Aluguel</span>
@@ -431,12 +439,14 @@
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
+
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011 1h2a1 1 0 011 1v5m-4 0h4"
             />
+
           </svg>
 
           <span>Financiamento</span>
@@ -448,7 +458,9 @@
     </div>
 
 
-    <!-- BOTÃO PRINCIPAL -->
+    <!-- ========================================================
+         EXECUTAR
+         ======================================================== -->
 
     <button
       id="btnProcessar"
@@ -466,18 +478,22 @@
         stroke="currentColor"
         viewBox="0 0 24 24"
       >
+
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
           stroke-width="2"
           d="M14 5l7 7m0 0l-7 7m7-7H3"
         />
+
       </svg>
 
     </button>
 
 
-    <!-- RESULTADO -->
+    <!-- ========================================================
+         RESULTADO
+         ======================================================== -->
 
     <div
       id="resultadoBox"
@@ -518,15 +534,19 @@
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
+
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
               d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
             />
+
           </svg>
 
-          <span>Compartilhar</span>
+          <span>
+            Compartilhar
+          </span>
 
         </button>
 
@@ -544,15 +564,19 @@
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
+
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
             />
+
           </svg>
 
-          <span>Baixar PDF</span>
+          <span>
+            Baixar PDF
+          </span>
 
         </button>
 
@@ -579,6 +603,10 @@
     let modoSelecionado = null;
 
 
+    // ==========================================================
+    // MODO
+    // ==========================================================
+
     function selecionarModo(modo) {
 
       modoSelecionado = modo;
@@ -586,15 +614,25 @@
       document
         .getElementById('btnAluguel')
         .classList
-        .toggle('active', modo === 'aluguel');
+        .toggle(
+          'active',
+          modo === 'aluguel'
+        );
 
       document
         .getElementById('btnFinanciamento')
         .classList
-        .toggle('active', modo === 'financiamento');
+        .toggle(
+          'active',
+          modo === 'financiamento'
+        );
 
     }
 
+
+    // ==========================================================
+    // STATUS
+    // ==========================================================
 
     function showStatus(msg) {
 
@@ -620,61 +658,95 @@
     }
 
 
-    // ============================================================
-    // CONTROLE DOS EXTRATOS
-    // ============================================================
+    // ==========================================================
+    // EXTRATOS
+    // ==========================================================
 
     document
       .getElementById('extratosInput')
-      .addEventListener('change', function(e) {
+      .addEventListener(
+        'change',
+        function(e) {
 
-        if (e.target.files.length > 0) {
+          if (
+            e.target.files.length > 0
+          ) {
 
-          e.target.classList.remove('file-input-gold');
-          e.target.classList.add('file-input-green');
+            e.target.classList.remove(
+              'file-input-gold'
+            );
 
-          document.getElementById('fileCounter').innerText =
-            `${e.target.files.length} arquivo(s) selecionado(s).`;
+            e.target.classList.add(
+              'file-input-green'
+            );
 
-        } else {
+            document
+              .getElementById('fileCounter')
+              .innerText =
+              `${e.target.files.length} arquivo(s) selecionado(s).`;
 
-          e.target.classList.remove('file-input-green');
-          e.target.classList.add('file-input-gold');
+          } else {
 
-          document.getElementById('fileCounter').innerText =
-            'Nenhum arquivo selecionado.';
+            e.target.classList.remove(
+              'file-input-green'
+            );
+
+            e.target.classList.add(
+              'file-input-gold'
+            );
+
+            document
+              .getElementById('fileCounter')
+              .innerText =
+              'Nenhum arquivo selecionado.';
+
+          }
 
         }
+      );
 
-      });
 
-
-    // ============================================================
-    // CONTROLE DO DOCUMENTO
-    // ============================================================
+    // ==========================================================
+    // DOCUMENTO
+    // ==========================================================
 
     document
       .getElementById('docInput')
-      .addEventListener('change', function(e) {
+      .addEventListener(
+        'change',
+        function(e) {
 
-        if (e.target.files.length > 0) {
+          if (
+            e.target.files.length > 0
+          ) {
 
-          e.target.classList.remove('file-input-gold');
-          e.target.classList.add('file-input-green');
+            e.target.classList.remove(
+              'file-input-gold'
+            );
 
-        } else {
+            e.target.classList.add(
+              'file-input-green'
+            );
 
-          e.target.classList.remove('file-input-green');
-          e.target.classList.add('file-input-gold');
+          } else {
+
+            e.target.classList.remove(
+              'file-input-green'
+            );
+
+            e.target.classList.add(
+              'file-input-gold'
+            );
+
+          }
 
         }
+      );
 
-      });
 
-
-    // ============================================================
-    // OTIMIZAÇÃO DE IMAGEM
-    // ============================================================
+    // ==========================================================
+    // OTIMIZAÇÃO DE FOTO
+    // ==========================================================
 
     async function otimizarFotoBase64(
       file,
@@ -682,82 +754,314 @@
       quality = 0.6
     ) {
 
-      return new Promise((resolve) => {
+      return new Promise(
+        (resolve) => {
 
-        const reader = new FileReader();
+          const reader =
+            new FileReader();
 
-        reader.onload = (e) => {
+          reader.onload =
+            (e) => {
 
-          const img = new Image();
+              const img =
+                new Image();
 
-          img.onload = () => {
+              img.onload =
+                () => {
 
-            let w = img.width;
-            let h = img.height;
+                  let w =
+                    img.width;
 
-            if (
-              w > maxDimension ||
-              h > maxDimension
-            ) {
+                  let h =
+                    img.height;
 
-              if (w > h) {
 
-                h = Math.round(
-                  h * maxDimension / w
-                );
+                  if (
+                    w > maxDimension ||
+                    h > maxDimension
+                  ) {
 
-                w = maxDimension;
+                    if (
+                      w > h
+                    ) {
 
-              } else {
+                      h =
+                        Math.round(
+                          h *
+                          maxDimension /
+                          w
+                        );
 
-                w = Math.round(
-                  w * maxDimension / h
-                );
+                      w =
+                        maxDimension;
 
-                h = maxDimension;
+                    } else {
 
-              }
+                      w =
+                        Math.round(
+                          w *
+                          maxDimension /
+                          h
+                        );
 
-            }
+                      h =
+                        maxDimension;
 
-            const canvas =
-              document.createElement('canvas');
+                    }
 
-            canvas.width = w;
-            canvas.height = h;
+                  }
 
-            canvas
-              .getContext('2d')
-              .drawImage(
-                img,
-                0,
-                0,
-                w,
-                h
-              );
 
-            resolve(
-              canvas
-                .toDataURL('image/jpeg', quality)
-                .split(',')[1]
-            );
+                  const canvas =
+                    document.createElement(
+                      'canvas'
+                    );
 
-          };
+                  canvas.width =
+                    w;
 
-          img.src = e.target.result;
+                  canvas.height =
+                    h;
 
-        };
 
-        reader.readAsDataURL(file);
+                  canvas
+                    .getContext('2d')
+                    .drawImage(
+                      img,
+                      0,
+                      0,
+                      w,
+                      h
+                    );
 
-      });
+
+                  resolve(
+                    canvas
+                      .toDataURL(
+                        'image/jpeg',
+                        quality
+                      )
+                      .split(',')[1]
+                  );
+
+                };
+
+
+              img.src =
+                e.target.result;
+
+            };
+
+
+          reader.readAsDataURL(
+            file
+          );
+
+        }
+      );
 
     }
 
 
-    // ============================================================
-    // PROCESSAMENTO DE PDF
-    // ============================================================
+    // ==========================================================
+    // PDF INTELIGENTE PARA EXTRATOS
+    //
+    // PDF digital:
+    //      texto
+    //
+    // PDF escaneado:
+    //      somente páginas sem texto -> Vision
+    // ==========================================================
+
+    async function processarPDFInteligente(
+      file,
+      maxPagesVision = 4
+    ) {
+
+      const arrayBuffer =
+        await file.arrayBuffer();
+
+
+      const pdf =
+        await pdfjsLib
+          .getDocument({
+            data: arrayBuffer
+          })
+          .promise;
+
+
+      let texto = "";
+
+      const paginasSemTexto = [];
+
+
+      // ----------------------------------------------------------
+      // PRIMEIRO: extrair texto
+      // ----------------------------------------------------------
+
+      for (
+        let i = 1;
+        i <= pdf.numPages;
+        i++
+      ) {
+
+        const page =
+          await pdf.getPage(i);
+
+
+        const txt =
+          await page.getTextContent();
+
+
+        const paginaTexto =
+          txt.items
+            .map(
+              it =>
+                it.str || ""
+            )
+            .join(" ")
+            .replace(
+              /\s+/g,
+              " "
+            )
+            .trim();
+
+
+        texto +=
+          `--- PÁGINA ${i} ---\n` +
+          paginaTexto +
+          "\n";
+
+
+        // Se a página praticamente não possui
+        // texto selecionável, provavelmente é
+        // uma página escaneada.
+
+        if (
+          paginaTexto.length < 40
+        ) {
+
+          paginasSemTexto.push(
+            i
+          );
+
+        }
+
+      }
+
+
+      const imagens = [];
+
+
+      // ----------------------------------------------------------
+      // SEGUNDO: Vision somente onde necessário
+      // ----------------------------------------------------------
+
+      for (
+        const numeroPagina of
+        paginasSemTexto.slice(
+          0,
+          maxPagesVision
+        )
+      ) {
+
+        const page =
+          await pdf.getPage(
+            numeroPagina
+          );
+
+
+        const viewport =
+          page.getViewport({
+            scale: 0.85
+          });
+
+
+        const canvas =
+          document.createElement(
+            'canvas'
+          );
+
+
+        canvas.width =
+          Math.round(
+            viewport.width
+          );
+
+        canvas.height =
+          Math.round(
+            viewport.height
+          );
+
+
+        const ctx =
+          canvas.getContext(
+            '2d'
+          );
+
+
+        ctx.fillStyle =
+          '#ffffff';
+
+
+        ctx.fillRect(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+
+        await page.render({
+
+          canvasContext:
+            ctx,
+
+          viewport:
+            viewport
+
+        }).promise;
+
+
+        imagens.push(
+
+          canvas
+            .toDataURL(
+              'image/jpeg',
+              0.55
+            )
+            .split(',')[1]
+
+        );
+
+      }
+
+
+      return {
+
+        texto:
+          texto.trim(),
+
+        imagens:
+          imagens,
+
+        paginasSemTexto:
+          paginasSemTexto.length,
+
+        totalPaginas:
+          pdf.numPages
+
+      };
+
+    }
+
+
+    // ==========================================================
+    // PDF DO DOCUMENTO DO CLIENTE
+    //
+    // CNH / RG / CERTIDÃO
+    // Continua usando Vision.
+    // ==========================================================
 
     async function processarDocumentosPDF(
       file,
@@ -769,6 +1073,7 @@
       const arrayBuffer =
         await file.arrayBuffer();
 
+
       const pdf =
         await pdfjsLib
           .getDocument({
@@ -776,11 +1081,13 @@
           })
           .promise;
 
+
       let imagens = [];
+
       let texto = "";
 
 
-      // Lê texto puro se existir
+      // Extrai texto
 
       for (
         let i = 1;
@@ -791,48 +1098,72 @@
         const page =
           await pdf.getPage(i);
 
+
         const txt =
           await page.getTextContent();
+
 
         texto +=
           `--- PÁGINA ${i} ---\n` +
           txt.items
-            .map(it => it.str)
+            .map(
+              it => it.str
+            )
             .join(" ") +
           "\n";
 
       }
 
 
-      // Converte páginas em imagens
+      // Renderiza somente as primeiras páginas
+      // necessárias para a CNH/RG.
 
       for (
         let i = 1;
-        i <= Math.min(pdf.numPages, maxPages);
+        i <= Math.min(
+          pdf.numPages,
+          maxPages
+        );
         i++
       ) {
 
         const page =
           await pdf.getPage(i);
 
+
         const viewport =
           page.getViewport({
-            scale: scale
+            scale:
+              scale
           });
 
+
         const canvas =
-          document.createElement('canvas');
+          document.createElement(
+            'canvas'
+          );
+
 
         canvas.width =
-          viewport.width;
+          Math.round(
+            viewport.width
+          );
 
         canvas.height =
-          viewport.height;
+          Math.round(
+            viewport.height
+          );
+
 
         const ctx =
-          canvas.getContext('2d');
+          canvas.getContext(
+            '2d'
+          );
 
-        ctx.fillStyle = '#ffffff';
+
+        ctx.fillStyle =
+          '#ffffff';
+
 
         ctx.fillRect(
           0,
@@ -841,47 +1172,100 @@
           canvas.height
         );
 
+
         await page.render({
-          canvasContext: ctx,
-          viewport: viewport
+
+          canvasContext:
+            ctx,
+
+          viewport:
+            viewport
+
         }).promise;
 
+
         imagens.push(
+
           canvas
-            .toDataURL('image/jpeg', quality)
+            .toDataURL(
+              'image/jpeg',
+              quality
+            )
             .split(',')[1]
+
         );
 
       }
 
 
       return {
-        texto: texto.trim(),
-        imagens: imagens
+
+        texto:
+          texto.trim(),
+
+        imagens:
+          imagens
+
       };
 
     }
 
 
-    // ============================================================
-    // CHAMADA DA API
-    // ============================================================
+    // ==========================================================
+    // COMPACTAR TEXTO
+    // ==========================================================
 
-    async function chamarApiServidor(payload) {
+    function compactarTextoExtrato(
+      texto
+    ) {
+
+      return String(
+        texto || ""
+      )
+
+        .replace(
+          /[ \t]+/g,
+          " "
+        )
+
+        .replace(
+          /\n{3,}/g,
+          "\n\n"
+        )
+
+        .trim();
+
+    }
+
+
+    // ==========================================================
+    // API
+    // ==========================================================
+
+    async function chamarApiServidor(
+      payload
+    ) {
 
       const res =
         await fetch(
           '/api/audit',
           {
-            method: 'POST',
+
+            method:
+              'POST',
 
             headers: {
+
               'Content-Type':
                 'application/json'
+
             },
 
             body:
-              JSON.stringify(payload)
+              JSON.stringify(
+                payload
+              )
+
           }
         );
 
@@ -893,9 +1277,14 @@
       try {
 
         const data =
-          JSON.parse(textData);
+          JSON.parse(
+            textData
+          );
 
-        if (!res.ok) {
+
+        if (
+          !res.ok
+        ) {
 
           throw new Error(
             data.error ||
@@ -904,13 +1293,20 @@
 
         }
 
+
         return data;
+
 
       } catch (e) {
 
         throw new Error(
+
           "Erro de servidor (Timeout/Payload): " +
-          textData.substring(0, 300)
+          textData.substring(
+            0,
+            200
+          )
+
         );
 
       }
@@ -918,15 +1314,17 @@
     }
 
 
-    // ============================================================
-    // LEITURA DO DOCUMENTO DO CLIENTE
-    // ============================================================
+    // ==========================================================
+    // LER DOCUMENTO DO CLIENTE
+    // ==========================================================
 
     async function lerDocumentoCliente() {
 
       const file =
         document
-          .getElementById('docInput')
+          .getElementById(
+            'docInput'
+          )
           .files[0];
 
 
@@ -952,8 +1350,15 @@
 
 
         if (
-          file.type.includes('pdf') ||
-          file.name.toLowerCase().endsWith('.pdf')
+
+          file.type.includes(
+            'pdf'
+          ) ||
+
+          file.name
+            .toLowerCase()
+            .endsWith('.pdf')
+
         ) {
 
           resDoc =
@@ -973,15 +1378,22 @@
               0.6
             );
 
+
           resDoc = {
-            texto: "",
-            imagens: [img]
+
+            texto:
+              "",
+
+            imagens:
+              [img]
+
           };
 
         }
 
 
         const prompt = `
+
 Analise a IMAGEM deste documento de identificação.
 
 Extraia apenas os nomes próprios nas chaves abaixo.
@@ -1013,97 +1425,128 @@ Regras:
 - Não use RG.
 - Não use datas.
 - Não use endereços.
+
 `;
 
 
-        /*
-         * CORREÇÃO PRINCIPAL:
-         *
-         * Antes estava:
-         *
-         * texts: ""
-         *
-         * Agora enviamos o texto extraído do PDF:
-         */
+        // IMPORTANTE:
+        // O texto extraído do PDF também é enviado.
 
         const json =
           await chamarApiServidor({
-            prompt: prompt,
-            texts: resDoc.texto || "",
-            images: resDoc.imagens
+
+            prompt:
+              prompt,
+
+            texts:
+              resDoc.texto || "",
+
+            images:
+              resDoc.imagens
+
           });
 
 
-        const limpar = (str) => {
+        const limpar =
+          (str) => {
 
-          if (!str) {
-            return "";
-          }
+            if (!str) {
+              return "";
+            }
 
-          const limpo =
-            String(str)
-              .replace(/[\.\*]/g, '')
-              .trim();
 
-          if (
-            limpo
-              .toLowerCase()
-              .includes("nome")
-          ) {
+            const limpo =
+              String(str)
+                .replace(
+                  /[\.\*]/g,
+                  ''
+                )
+                .trim();
 
-            return "";
 
-          }
+            if (
+              limpo
+                .toLowerCase()
+                .includes(
+                  "nome"
+                )
+            ) {
 
-          return limpo.toUpperCase();
+              return "";
 
-        };
+            }
+
+
+            return limpo
+              .toUpperCase();
+
+          };
 
 
         if (
-          json.titular !== undefined
+          json.titular !==
+          undefined
         ) {
 
           document
-            .getElementById('titularName')
+            .getElementById(
+              'titularName'
+            )
             .value =
-            limpar(json.titular);
+            limpar(
+              json.titular
+            );
 
         }
 
 
         if (
-          json.pai !== undefined
+          json.pai !==
+          undefined
         ) {
 
           document
-            .getElementById('paiName')
+            .getElementById(
+              'paiName'
+            )
             .value =
-            limpar(json.pai);
+            limpar(
+              json.pai
+            );
 
         }
 
 
         if (
-          json.mae !== undefined
+          json.mae !==
+          undefined
         ) {
 
           document
-            .getElementById('maeName')
+            .getElementById(
+              'maeName'
+            )
             .value =
-            limpar(json.mae);
+            limpar(
+              json.mae
+            );
 
         }
 
 
         if (
-          json.conjuge !== undefined
+          json.conjuge !==
+          undefined
         ) {
 
           document
-            .getElementById('conjugeName')
+            .getElementById(
+              'conjugeName'
+            )
             .value =
-            limpar(json.conjuge);
+            limpar(
+              json.conjuge
+            );
 
         }
 
@@ -1124,9 +1567,9 @@ Regras:
     }
 
 
-    // ============================================================
+    // ==========================================================
     // APURAÇÃO DE RENDA
-    // ============================================================
+    // ==========================================================
 
     async function executarApuracaoRenda() {
 
@@ -1143,7 +1586,9 @@ Regras:
 
       const files =
         document
-          .getElementById('extratosInput')
+          .getElementById(
+            'extratosInput'
+          )
           .files;
 
 
@@ -1162,25 +1607,33 @@ Regras:
 
         titular:
           document
-            .getElementById('titularName')
+            .getElementById(
+              'titularName'
+            )
             .value
             .trim(),
 
         pai:
           document
-            .getElementById('paiName')
+            .getElementById(
+              'paiName'
+            )
             .value
             .trim(),
 
         mae:
           document
-            .getElementById('maeName')
+            .getElementById(
+              'maeName'
+            )
             .value
             .trim(),
 
         conjuge:
           document
-            .getElementById('conjugeName')
+            .getElementById(
+              'conjugeName'
+            )
             .value
             .trim()
 
@@ -1188,87 +1641,182 @@ Regras:
 
 
       showStatus(
-        "Auditando extratos (Pode levar até 40s)..."
+        "Preparando extratos..."
       );
 
 
       try {
 
         let imagens = [];
+
         let textoGeral = "";
 
+        let paginasVision = 0;
+
+
+        // ======================================================
+        // PROCESSAMENTO INTELIGENTE
+        // ======================================================
 
         for (
-          let file of Array.from(files)
+          const file of
+          Array.from(files)
         ) {
 
+
+          // ----------------------------------------------------
+          // PDF
+          // ----------------------------------------------------
+
           if (
-            file.type.includes('pdf') ||
-            file.name.toLowerCase().endsWith('.pdf')
+
+            file.type.includes(
+              'pdf'
+            ) ||
+
+            file.name
+              .toLowerCase()
+              .endsWith('.pdf')
+
           ) {
 
+
             const res =
-              await processarDocumentosPDF(
+              await processarPDFInteligente(
                 file,
-                10,
-                1.0,
-                0.6
+                4
               );
 
+
             textoGeral +=
+
+              `\n===== ARQUIVO: ${file.name} =====\n` +
+
               res.texto +
+
               "\n";
+
 
             res.imagens.forEach(
               img =>
-                imagens.push(img)
+                imagens.push(
+                  img
+                )
             );
 
-          } else {
+
+            paginasVision +=
+              res.imagens.length;
+
+
+          }
+
+
+          // ----------------------------------------------------
+          // IMAGEM
+          // ----------------------------------------------------
+
+          else {
 
             imagens.push(
+
               await otimizarFotoBase64(
                 file,
                 1000,
-                0.6
+                0.55
               )
+
             );
+
+
+            paginasVision++;
 
           }
 
         }
 
 
+        // ======================================================
+        // STATUS
+        // ======================================================
+
+        if (
+          paginasVision > 0
+        ) {
+
+          showStatus(
+
+            `Analisando extratos: texto + ${paginasVision} página(s) visual(is)...`
+
+          );
+
+        } else {
+
+          showStatus(
+            "Analisando extratos em modo texto (mais rápido)..."
+          );
+
+        }
+
+
+        // ======================================================
+        // PROMPT
+        // ======================================================
+
         const prompt = `
+
 Você é um perito financeiro e auditor contábil judicial.
 
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
+Audite rigorosamente TODAS as entradas financeiras contidas em todo o período dos extratos.
 
 REGRAS DE EXCLUSÃO:
 
-- Transferências da mesma titularidade do cliente:
-"${dadosCliente.titular}".
+1. Transferências da mesma titularidade do cliente:
 
-- Transferências entre familiares:
-Pai: "${dadosCliente.pai}"
+"${dadosCliente.titular}"
 
-Mãe: "${dadosCliente.mae}"
+2. Transferências entre familiares:
+
+Pai:
+"${dadosCliente.pai}"
+
+Mãe:
+"${dadosCliente.mae}"
 
 Cônjuge:
 "${dadosCliente.conjuge}"
 
-- Estornos.
-- Devoluções.
-- Reembolsos.
-- Aplicações.
-- Resgates de CDB.
-- Investimentos.
-- Cofrinho.
-- Rendimentos automáticos de conta.
+3. Estornos.
+
+4. Devoluções.
+
+5. Reembolsos.
+
+6. Aplicações.
+
+7. Resgates de CDB.
+
+8. Investimentos.
+
+9. Cofrinho.
+
+10. Rendimentos automáticos de conta.
 
 Considere apenas ENTRADAS legítimas como renda.
 
-Retorne ESTRITAMENTE JSON no formato:
+IMPORTANTE:
+
+- Analise todos os meses encontrados.
+- Não ignore entradas apenas porque a descrição parece incompleta.
+- Não invente transações.
+- Não invente valores.
+- Não transforme saída em entrada.
+- Preserve os valores encontrados nos extratos.
+- Agrupe corretamente por mês e ano.
+- Use o valor efetivamente recebido.
+- Transferências internas não são renda.
+
+Retorne ESTRITAMENTE JSON válido neste formato:
 
 {
   "resumo_geral": {
@@ -1305,31 +1853,53 @@ Retorne ESTRITAMENTE JSON no formato:
     }
   ]
 }
+
 `;
 
 
+        // ======================================================
+        // CHAMADA
+        // ======================================================
+
         const json =
           await chamarApiServidor({
-            prompt: prompt,
-            texts: textoGeral,
-            images: imagens
+
+            prompt:
+              prompt,
+
+            texts:
+              compactarTextoExtrato(
+                textoGeral
+              ),
+
+            images:
+              imagens
+
           });
 
 
         window.ultimoResultado =
           json;
 
+
         consolidadoMeses =
-          json.apuracao_mensal || [];
+          json.apuracao_mensal ||
+          [];
+
 
         transacoesDetalhadas =
-          json.transacoes || [];
+          json.transacoes ||
+          [];
 
 
         document
-          .getElementById('resultadoBox')
+          .getElementById(
+            'resultadoBox'
+          )
           .classList
-          .remove('hidden');
+          .remove(
+            'hidden'
+          );
 
 
       } catch (err) {
@@ -1348,28 +1918,40 @@ Retorne ESTRITAMENTE JSON no formato:
     }
 
 
-    // ============================================================
-    // FORMATAÇÃO
-    // ============================================================
+    // ==========================================================
+    // MOEDA
+    // ==========================================================
 
-    function formatMoeda(val) {
+    function formatMoeda(
+      val
+    ) {
 
       return (
+
         Number(val) || 0
+
       ).toLocaleString(
+
         'pt-BR',
+
         {
-          style: 'currency',
-          currency: 'BRL'
+
+          style:
+            'currency',
+
+          currency:
+            'BRL'
+
         }
+
       );
 
     }
 
 
-    // ============================================================
+    // ==========================================================
     // LOGO TRANSPARENTE
-    // ============================================================
+    // ==========================================================
 
     function carregarLogoTransparente(
       url,
@@ -1381,6 +1963,7 @@ Retorne ESTRITAMENTE JSON no formato:
 
           const img =
             new Image();
+
 
           img.crossOrigin =
             'Anonymous';
@@ -1394,8 +1977,10 @@ Retorne ESTRITAMENTE JSON no formato:
                   'canvas'
                 );
 
+
               canvas.width =
                 img.width;
+
 
               canvas.height =
                 img.height;
@@ -1405,6 +1990,7 @@ Retorne ESTRITAMENTE JSON no formato:
                 canvas.getContext(
                   '2d'
                 );
+
 
               ctx.drawImage(
                 img,
@@ -1420,6 +2006,7 @@ Retorne ESTRITAMENTE JSON no formato:
                   canvas.width,
                   canvas.height
                 );
+
 
               const data =
                 imgData.data;
@@ -1495,21 +2082,30 @@ Retorne ESTRITAMENTE JSON no formato:
     }
 
 
-    // ============================================================
-    // GERAÇÃO DO PDF
-    // ============================================================
+    // ==========================================================
+    // GERAR PDF
+    // ==========================================================
 
     async function gerarDocumentoPDF() {
 
-      const { jsPDF } =
+      const {
+        jsPDF
+      } =
         window.jspdf;
 
 
       const doc =
         new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
+
+          orientation:
+            'portrait',
+
+          unit:
+            'mm',
+
+          format:
+            'a4'
+
         });
 
 
@@ -1571,7 +2167,9 @@ Retorne ESTRITAMENTE JSON no formato:
           );
 
 
-          if (logoBase64) {
+          if (
+            logoBase64
+          ) {
 
             try {
 
@@ -1594,9 +2192,11 @@ Retorne ESTRITAMENTE JSON no formato:
             "bold"
           );
 
+
           doc.setFontSize(
             11
           );
+
 
           doc.setTextColor(
             212,
@@ -1616,10 +2216,12 @@ Retorne ESTRITAMENTE JSON no formato:
             7.5
           );
 
+
           doc.setFont(
             "helvetica",
             "normal"
           );
+
 
           doc.setTextColor(
             207,
@@ -1641,7 +2243,10 @@ Retorne ESTRITAMENTE JSON no formato:
 
           doc.text(
             `Emissão: ${
-              new Date().toLocaleDateString('pt-BR')
+              new Date()
+                .toLocaleDateString(
+                  'pt-BR'
+                )
             }`,
             162,
             19
@@ -1653,15 +2258,16 @@ Retorne ESTRITAMENTE JSON no formato:
       desenharCabecalho();
 
 
-      // ============================================================
+      // ========================================================
       // IDENTIFICAÇÃO
-      // ============================================================
+      // ========================================================
 
       doc.setFillColor(
         18,
         19,
         21
       );
+
 
       doc.rect(
         11,
@@ -1678,6 +2284,7 @@ Retorne ESTRITAMENTE JSON no formato:
         39
       );
 
+
       doc.rect(
         11,
         33,
@@ -1691,10 +2298,12 @@ Retorne ESTRITAMENTE JSON no formato:
         8
       );
 
+
       doc.setFont(
         "helvetica",
         "bold"
       );
+
 
       doc.setTextColor(
         223,
@@ -1716,6 +2325,7 @@ Retorne ESTRITAMENTE JSON no formato:
         224
       );
 
+
       doc.setFillColor(
         255,
         255,
@@ -1736,10 +2346,12 @@ Retorne ESTRITAMENTE JSON no formato:
         7.5
       );
 
+
       doc.setFont(
         "helvetica",
         "normal"
       );
+
 
       doc.setTextColor(
         26,
@@ -1757,9 +2369,11 @@ Retorne ESTRITAMENTE JSON no formato:
 
       doc.text(
         `Filiação Registrada: ${
-          dadosCliente.pai || 'N/I'
+          dadosCliente.pai ||
+          'N/I'
         } e ${
-          dadosCliente.mae || 'N/I'
+          dadosCliente.mae ||
+          'N/I'
         }`,
         15,
         50
@@ -1768,22 +2382,24 @@ Retorne ESTRITAMENTE JSON no formato:
 
       doc.text(
         `Cônjuge / Vínculo Cadastrado: ${
-          dadosCliente.conjuge || 'N/I'
+          dadosCliente.conjuge ||
+          'N/I'
         }`,
         15,
         55
       );
 
 
-      // ============================================================
+      // ========================================================
       // CONSOLIDADO
-      // ============================================================
+      // ========================================================
 
       doc.setFillColor(
         18,
         19,
         21
       );
+
 
       doc.rect(
         11,
@@ -1800,6 +2416,7 @@ Retorne ESTRITAMENTE JSON no formato:
         39
       );
 
+
       doc.rect(
         11,
         62,
@@ -1813,10 +2430,12 @@ Retorne ESTRITAMENTE JSON no formato:
         8
       );
 
+
       doc.setFont(
         "helvetica",
         "bold"
       );
+
 
       doc.setTextColor(
         223,
@@ -1834,93 +2453,141 @@ Retorne ESTRITAMENTE JSON no formato:
 
       doc.autoTable({
 
-        startY: 70,
+        startY:
+          70,
 
         head: [
+
           [
             'Mês / Ano',
             'Somatório das Entradas Consideradas'
           ]
+
         ],
 
         body:
+
           consolidadoMeses.map(
             m => [
+
               m.mes_ano,
+
               formatMoeda(
                 m.somatorio_entradas
               )
+
             ]
           ),
 
         headStyles: {
-          fillColor: [
-            250,
-            246,
-            236
-          ],
-          textColor: [
-            115,
-            87,
-            14
-          ],
-          fontSize: 7.5,
-          fontStyle: 'bold',
-          lineColor: [
-            204,
-            204,
-            204
-          ],
-          lineWidth: 0.2
+
+          fillColor:
+            [
+              250,
+              246,
+              236
+            ],
+
+          textColor:
+            [
+              115,
+              87,
+              14
+            ],
+
+          fontSize:
+            7.5,
+
+          fontStyle:
+            'bold',
+
+          lineColor:
+            [
+              204,
+              204,
+              204
+            ],
+
+          lineWidth:
+            0.2
+
         },
 
         bodyStyles: {
-          fontSize: 7.2,
-          textColor: [
-            26,
-            26,
-            26
-          ],
-          lineColor: [
-            224,
-            224,
-            224
-          ],
-          lineWidth: 0.2
+
+          fontSize:
+            7.2,
+
+          textColor:
+            [
+              26,
+              26,
+              26
+            ],
+
+          lineColor:
+            [
+              224,
+              224,
+              224
+            ],
+
+          lineWidth:
+            0.2
+
         },
 
         columnStyles: {
 
           0: {
-            fontStyle: 'bold',
-            width: 60
+
+            fontStyle:
+              'bold',
+
+            width:
+              60
+
           },
 
           1: {
-            halign: 'right',
-            fontStyle: 'bold',
-            textColor: [
-              40,
-              167,
-              69
-            ]
+
+            halign:
+              'right',
+
+            fontStyle:
+              'bold',
+
+            textColor:
+              [
+                40,
+                167,
+                69
+              ]
+
           }
 
         },
 
         margin: {
-          left: 11,
-          right: 11
+
+          left:
+            11,
+
+          right:
+            11
+
         },
 
-        tableWidth: 188,
+        tableWidth:
+          188,
 
         didDrawPage:
           function() {
 
             if (
               doc.internal
-                .getNumberOfPages() > 1
+                .getNumberOfPages()
+              > 1
             ) {
 
               desenharCabecalho();
@@ -1945,20 +2612,22 @@ Retorne ESTRITAMENTE JSON no formato:
 
         desenharCabecalho();
 
-        currentY = 35;
+        currentY =
+          35;
 
       }
 
 
-      // ============================================================
+      // ========================================================
       // RESUMO
-      // ============================================================
+      // ========================================================
 
       doc.setFillColor(
         244,
         245,
         247
       );
+
 
       doc.setDrawColor(
         197,
@@ -1982,10 +2651,12 @@ Retorne ESTRITAMENTE JSON no formato:
         8
       );
 
+
       doc.setFont(
         "helvetica",
         "bold"
       );
+
 
       doc.setTextColor(
         18,
@@ -2021,6 +2692,7 @@ Retorne ESTRITAMENTE JSON no formato:
         "normal"
       );
 
+
       doc.setTextColor(
         110,
         110,
@@ -2048,14 +2720,19 @@ Retorne ESTRITAMENTE JSON no formato:
       );
 
 
-      // ============================================================
+      // ========================================================
       // TRANSAÇÕES
-      // ============================================================
+      // ========================================================
 
       if (
-        modoSelecionado === 'financiamento' &&
+
+        modoSelecionado ===
+        'financiamento' &&
+
         transacoesDetalhadas &&
+
         transacoesDetalhadas.length > 0
+
       ) {
 
         currentY =
@@ -2070,7 +2747,8 @@ Retorne ESTRITAMENTE JSON no formato:
 
           desenharCabecalho();
 
-          currentY = 35;
+          currentY =
+            35;
 
         }
 
@@ -2080,6 +2758,7 @@ Retorne ESTRITAMENTE JSON no formato:
           19,
           21
         );
+
 
         doc.rect(
           11,
@@ -2096,6 +2775,7 @@ Retorne ESTRITAMENTE JSON no formato:
           39
         );
 
+
         doc.rect(
           11,
           currentY,
@@ -2109,10 +2789,12 @@ Retorne ESTRITAMENTE JSON no formato:
           8
         );
 
+
         doc.setFont(
           "helvetica",
           "bold"
         );
+
 
         doc.setTextColor(
           223,
@@ -2132,19 +2814,25 @@ Retorne ESTRITAMENTE JSON no formato:
           transacoesDetalhadas.map(
             t => [
 
-              t.data || '',
+              t.data ||
+                '',
 
-              t.mes_ano || '',
+              t.mes_ano ||
+                '',
 
-              t.descricao || '',
+              t.descricao ||
+                '',
 
               formatMoeda(
-                t.valor || 0
+                t.valor ||
+                0
               ),
 
-              t.status || '',
+              t.status ||
+                '',
 
-              t.motivo || ''
+              t.motivo ||
+                ''
 
             ]
           );
@@ -2156,6 +2844,7 @@ Retorne ESTRITAMENTE JSON no formato:
             currentY + 8,
 
           head: [
+
             [
               'Data',
               'Mês/Ano',
@@ -2164,80 +2853,121 @@ Retorne ESTRITAMENTE JSON no formato:
               'Status',
               'Motivo da Decisão'
             ]
+
           ],
 
           body:
             rowsTransacoes,
 
           headStyles: {
-            fillColor: [
-              18,
-              19,
-              21
-            ],
-            textColor: [
-              212,
-              175,
-              55
-            ],
-            fontSize: 6.8,
-            fontStyle: 'bold'
+
+            fillColor:
+              [
+                18,
+                19,
+                21
+              ],
+
+            textColor:
+              [
+                212,
+                175,
+                55
+              ],
+
+            fontSize:
+              6.8,
+
+            fontStyle:
+              'bold'
+
           },
 
           bodyStyles: {
-            fontSize: 6.5,
-            lineColor: [
-              224,
-              224,
-              224
-            ],
-            lineWidth: 0.1
+
+            fontSize:
+              6.5,
+
+            lineColor:
+              [
+                224,
+                224,
+                224
+              ],
+
+            lineWidth:
+              0.1
+
           },
 
           columnStyles: {
 
             0: {
-              width: 18
+              width:
+                18
             },
 
             1: {
-              width: 16
+              width:
+                16
             },
 
             2: {
-              width: 62
+              width:
+                62
             },
 
             3: {
-              width: 24,
-              halign: 'right',
-              fontStyle: 'bold'
+
+              width:
+                24,
+
+              halign:
+                'right',
+
+              fontStyle:
+                'bold'
+
             },
 
             4: {
-              width: 26,
-              fontStyle: 'bold'
+
+              width:
+                26,
+
+              fontStyle:
+                'bold'
+
             },
 
             5: {
-              width: 42
+
+              width:
+                42
+
             }
 
           },
 
           margin: {
-            left: 11,
-            right: 11
+
+            left:
+              11,
+
+            right:
+              11
+
           },
 
-          tableWidth: 188,
-
+          tableWidth:
+            188,
 
           didParseCell:
             function(data) {
 
               if (
-                data.section === 'body'
+                data.section ===
+                'body'
               ) {
 
                 const status =
@@ -2245,36 +2975,53 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
                 if (
-                  status === 'CONSIDERADO'
+                  status ===
+                  'CONSIDERADO'
                 ) {
 
                   if (
-                    data.column.index === 3 ||
-                    data.column.index === 4
+
+                    data.column.index ===
+                    3 ||
+
+                    data.column.index ===
+                    4
+
                   ) {
 
-                    data.cell.styles.textColor = [
-                      40,
-                      167,
-                      69
-                    ];
+                    data.cell.styles.textColor =
+                      [
+                        40,
+                        167,
+                        69
+                      ];
 
                   }
 
-                } else if (
-                  status === 'REJEITADO'
+                }
+
+
+                else if (
+                  status ===
+                  'REJEITADO'
                 ) {
 
                   if (
-                    data.column.index === 3 ||
-                    data.column.index === 4
+
+                    data.column.index ===
+                    3 ||
+
+                    data.column.index ===
+                    4
+
                   ) {
 
-                    data.cell.styles.textColor = [
-                      220,
-                      53,
-                      69
-                    ];
+                    data.cell.styles.textColor =
+                      [
+                        220,
+                        53,
+                        69
+                      ];
 
                   }
 
@@ -2283,7 +3030,6 @@ Retorne ESTRITAMENTE JSON no formato:
               }
 
             },
-
 
           didDrawPage:
             function() {
@@ -2297,15 +3043,18 @@ Retorne ESTRITAMENTE JSON no formato:
       }
 
 
-      // ============================================================
+      // ========================================================
       // MARCA D'ÁGUA
-      // ============================================================
+      // ========================================================
 
       const totalPaginas =
-        doc.internal.getNumberOfPages();
+        doc.internal
+          .getNumberOfPages();
 
 
-      if (watermarkBase64) {
+      if (
+        watermarkBase64
+      ) {
 
         for (
           let p = 1;
@@ -2313,7 +3062,10 @@ Retorne ESTRITAMENTE JSON no formato:
           p++
         ) {
 
-          doc.setPage(p);
+          doc.setPage(
+            p
+          );
+
 
           try {
 
@@ -2337,32 +3089,45 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
       return {
-        doc,
-        titular
+
+        doc:
+          doc,
+
+        titular:
+          titular
+
       };
 
     }
 
 
-    // ============================================================
+    // ==========================================================
     // RESET
-    // ============================================================
+    // ==========================================================
 
     function resetarParaNovaAnalise() {
 
       document
-        .getElementById('docInput')
-        .value = '';
+        .getElementById(
+          'docInput'
+        )
+        .value =
+        '';
 
 
       document
-        .getElementById('extratosInput')
-        .value = '';
+        .getElementById(
+          'extratosInput'
+        )
+        .value =
+        '';
 
 
       const extratosEl =
         document
-          .getElementById('extratosInput');
+          .getElementById(
+            'extratosInput'
+          );
 
 
       extratosEl
@@ -2381,7 +3146,9 @@ Retorne ESTRITAMENTE JSON no formato:
 
       const docEl =
         document
-          .getElementById('docInput');
+          .getElementById(
+            'docInput'
+          );
 
 
       docEl
@@ -2399,20 +3166,33 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
       [
+
         'titularName',
+
         'paiName',
+
         'maeName',
+
         'conjugeName'
+
       ].forEach(
+
         id =>
+
           document
-            .getElementById(id)
-            .value = ''
+            .getElementById(
+              id
+            )
+            .value =
+            ''
+
       );
 
 
       document
-        .getElementById('fileCounter')
+        .getElementById(
+          'fileCounter'
+        )
         .innerText =
         'Nenhum arquivo selecionado.';
 
@@ -2422,15 +3202,23 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
       document
-        .getElementById('btnAluguel')
+        .getElementById(
+          'btnAluguel'
+        )
         .classList
-        .remove('active');
+        .remove(
+          'active'
+        );
 
 
       document
-        .getElementById('btnFinanciamento')
+        .getElementById(
+          'btnFinanciamento'
+        )
         .classList
-        .remove('active');
+        .remove(
+          'active'
+        );
 
 
       window.ultimoResultado =
@@ -2438,22 +3226,31 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
       document
-        .getElementById('resultadoBox')
+        .getElementById(
+          'resultadoBox'
+        )
         .classList
-        .add('hidden');
+        .add(
+          'hidden'
+        );
 
 
       window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
+
+        top:
+          0,
+
+        behavior:
+          'smooth'
+
       });
 
     }
 
 
-    // ============================================================
+    // ==========================================================
     // DOWNLOAD PDF
-    // ============================================================
+    // ==========================================================
 
     function baixarPDFLocal() {
 
@@ -2468,15 +3265,20 @@ Retorne ESTRITAMENTE JSON no formato:
 
       gerarDocumentoPDF()
         .then(
-          ({ doc, titular }) => {
+          ({
+            doc,
+            titular
+          }) => {
 
             doc.save(
+
               `Laudo_Renda_${
                 titular.replace(
                   /\s+/g,
                   '_'
                 )
               }.pdf`
+
             );
 
           }
@@ -2485,9 +3287,9 @@ Retorne ESTRITAMENTE JSON no formato:
     }
 
 
-    // ============================================================
+    // ==========================================================
     // COMPARTILHAR PDF
-    // ============================================================
+    // ==========================================================
 
     async function gerarECompartilharPDF() {
 
@@ -2508,29 +3310,42 @@ Retorne ESTRITAMENTE JSON no formato:
 
 
       const pdfBlob =
-        doc.output('blob');
+        doc.output(
+          'blob'
+        );
 
 
       const pdfFile =
         new File(
-          [pdfBlob],
+
+          [
+            pdfBlob
+          ],
+
           `Laudo_Renda_${
             titular.replace(
               /\s+/g,
               '_'
             )
           }.pdf`,
+
           {
-            type: 'application/pdf'
+            type:
+              'application/pdf'
           }
+
         );
 
 
       if (
+
         navigator.canShare &&
+
         navigator.canShare({
-          files: [pdfFile]
+          files:
+            [pdfFile]
         })
+
       ) {
 
         try {
@@ -2540,11 +3355,11 @@ Retorne ESTRITAMENTE JSON no formato:
             title:
               'Laudo de Apuração de Renda',
 
-            files: [
-              pdfFile
-            ]
+            files:
+              [pdfFile]
 
           });
+
 
         } catch (e) {
 
