@@ -20,16 +20,9 @@ export default async function handler(req, res) {
 
     // MODO VISÃO (Documentos e CNH com imagens)
     if (temImagens && GEMINI_API_KEY) {
-      // Sequência de contingência de modelos
-      const modelosGemini = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-2.0-flash",
-        "gemini-2.5-flash",
-        "gemini-pro-vision"
-      ];
-      
-      let lastError = "";
+      // Usando apenas os modelos ativos oficialmente suportados
+      const modelosGemini = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      let errosLogs = [];
 
       for (const modelo of modelosGemini) {
         try {
@@ -54,20 +47,19 @@ export default async function handler(req, res) {
             }
           } else {
             const errData = await response.json();
-            lastError = errData.error?.message || `Erro no modelo ${modelo}`;
+            errosLogs.push(`${modelo}: ${errData.error?.message}`);
           }
         } catch (err) {
-          lastError = err.message;
+          errosLogs.push(`${modelo}: ${err.message}`);
         }
       }
-      return res.status(500).json({ error: "Nenhuma IA Visual respondeu. Último erro: " + lastError });
+      return res.status(500).json({ error: "Falha na IA Visual: " + errosLogs.join(" | ") });
     }
 
     // MODO TEXTO (Apenas texto, sem imagens)
     if (!temImagens && texts) {
       if (GROQ_API_KEY) {
         try {
-          // Descoberta dinâmica de modelos na Groq para evitar erros de versão
           const listRes = await fetch("https://api.groq.com/openai/v1/models", {
             headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
           });
@@ -107,7 +99,7 @@ export default async function handler(req, res) {
       }
 
       if (GEMINI_API_KEY) {
-        const modelosGeminiText = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash"];
+        const modelosGeminiText = ["gemini-1.5-flash", "gemini-1.5-pro"];
         for (const mod of modelosGeminiText) {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
