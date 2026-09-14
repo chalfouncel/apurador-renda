@@ -214,34 +214,33 @@
       });
     }
 
-    // FORÇANDO RENDERIZAÇÃO DE IMAGEM MESMO EM PDF DIGITAL PARA GARANTIR LEITURA CORRETA DO LAYOUT DA CNH
     async function processarDocumentoIdentificacao(file) {
       if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let imagens = [];
+        let imagens = [], texto = "";
 
         for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
           const page = await pdf.getPage(i);
-          // Escala alta para a IA enxergar letras pequenas
-          const viewport = page.getViewport({ scale: 2.0 }); 
+          const txt = await page.getTextContent();
+          texto += txt.items.map(it => it.str).join(" ") + "\n";
+
+          const viewport = page.getViewport({ scale: 1.5 }); 
           const canvas = document.createElement('canvas'); 
           canvas.width = viewport.width; 
           canvas.height = viewport.height;
           const ctx = canvas.getContext('2d');
           
-          // Fundo branco obrigatório
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           await page.render({ canvasContext: ctx, viewport }).promise;
           imagens.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
         }
-        // Retorna APENAS as imagens, forçando a IA a ler o layout visual
-        return { texto: "Documento oficial brasileiro anexado via imagem.", imagens };
+        return { texto: texto.trim(), imagens };
       } else {
         const img = await otimizarFotoBase64(file);
-        return { texto: "Documento oficial brasileiro anexado via imagem.", imagens: [img] };
+        return { texto: "", imagens: [img] };
       }
     }
 
@@ -290,34 +289,30 @@
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
         
-        const prompt = `Extraia os nomes próprios contidos nesta IMAGEM de documento brasileiro de identificação (CNH, RG ou Certidão).
-Campos obrigatórios a preencher:
-- titular: Nome da pessoa dona do documento.
-- pai: Nome do pai que consta na filiação.
-- mae: Nome da mãe que consta na filiação.
-- conjuge: Nome do cônjuge apenas se for Certidão de Casamento.
+        const prompt = `Analise os dados extraídos do documento oficial de identificação anexo (texto e imagem).
+Extraia os nomes reais e completos. NUNCA use frases explicativas (como "nome do titular"). Use apenas os nomes próprios reais em letras maiúsculas. Se um dado não constar na imagem/texto, preencha com null.
 
-REGRAS RÍGIDAS:
-1. Retorne APENAS os nomes próprios das pessoas em letras maiúsculas.
-2. Se o dado não existir, ou não for legível, deixe exatamente vazio "".
-3. NUNCA preencha com frases explicativas como "Nome do titular", "Nome completo do titular", "Filiação", etc. Se fizer isso, a automação irá falhar.
-
-Responda SOMENTE o JSON:
-{"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
+Retorne EXCLUSIVAMENTE este JSON e mais nada:
+{
+  "titular": null,
+  "pai": null,
+  "mae": null,
+  "conjuge": null
+}`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
         
-        const descartarExplicacao = (txt) => {
-          if (!txt) return "";
-          const t = String(txt).trim();
-          if (t.toLowerCase().includes("nome") || t.toLowerCase().includes("titular") || t.includes("...")) return "";
-          return t;
+        const validarNome = (val) => {
+          if (!val || String(val).toLowerCase() === "null") return "";
+          const limpo = String(val).replace(/[\.\*]/g, '').trim();
+          if (limpo.toLowerCase().includes("nome da") || limpo.toLowerCase().includes("nome do") || limpo.length < 3) return "";
+          return limpo.toUpperCase();
         };
 
-        if (json.titular) document.getElementById('titularName').value = descartarExplicacao(json.titular);
-        if (json.pai) document.getElementById('paiName').value = descartarExplicacao(json.pai);
-        if (json.mae) document.getElementById('maeName').value = descartarExplicacao(json.mae);
-        if (json.conjuge) document.getElementById('conjugeName').value = descartarExplicacao(json.conjuge);
+        if (json.titular !== undefined) document.getElementById('titularName').value = validarNome(json.titular);
+        if (json.pai !== undefined) document.getElementById('paiName').value = validarNome(json.pai);
+        if (json.mae !== undefined) document.getElementById('maeName').value = validarNome(json.mae);
+        if (json.conjuge !== undefined) document.getElementById('conjugeName').value = validarNome(json.conjuge);
       } catch (err) { 
         alert("Erro ao ler documento: " + err.message); 
       } finally { 
