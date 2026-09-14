@@ -120,7 +120,7 @@
       </div>
     </div>
 
-    <!-- SELEÇÃO OBRIGATÓRIA DA FINALIDADE -->
+    <!-- SELEÇÃO DA FINALIDADE -->
     <div class="card-box p-3.5">
       <label class="block text-[11px] font-bold uppercase tracking-wider text-center mb-2" style="color: var(--secondary);">
         Finalidade da Análise <span class="text-red-500">*</span>
@@ -137,17 +137,15 @@
       </div>
     </div>
 
-    <!-- Botão Principal CTA -->
     <button id="btnProcessar" onclick="executarApuracaoRenda()" class="w-full btn-gold py-3.5 px-4 rounded-xl shadow-md text-sm uppercase tracking-wider flex items-center justify-center gap-2">
       <span>Executar Apuração Visual via IA</span>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
     </button>
 
-    <!-- Card 3: Sucesso e Ações do Laudo PDF -->
     <div id="resultadoBox" class="hidden space-y-3 pt-1">
       <div class="card-box p-4 text-center space-y-2 border" style="border-color: var(--accent);">
         <h3 class="font-bold text-sm tracking-wider uppercase">Apuração Concluída com Sucesso</h3>
-        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto para download ou compartilhamento.</p>
+        <p class="text-[11px]" style="color: #666;">O Laudo Pericial A4 foi gerado e está pronto.</p>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
         <button onclick="gerarECompartilharPDF()" class="btn-gold py-3 px-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
@@ -284,23 +282,22 @@
       showStatus("Lendo documento oficial...");
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
-        const titularExtrato = document.getElementById('titularName').value.trim();
         
-        const prompt = `Você é um auditor documental pericial. Analise o documento oficial brasileiro (CNH, RG ou Certidão).
-Extraia os nomes reais encontrados:
-- titular: Nome completo do titular do documento
-- pai: Nome do pai registrado na filiação
-- mae: Nome da mãe registrada na filiação
-- conjuge: Nome do cônjuge/esposo(a) se for certidão de casamento
+        const prompt = `Analise este documento de identificação oficial (CNH, RG ou Certidão).
+Extraia os nomes reais e completos das pessoas presentes no documento:
+- titular: Nome completo da pessoa a quem pertence o documento.
+- pai: Nome do pai registrado no campo de filiação (se houver).
+- mae: Nome da mãe registrado no campo de filiação (se houver).
+- conjuge: Nome do cônjuge/esposo(a) se for certidão de casamento.
 
-IMPORTANTE: Se algum campo não existir ou não estiver legível, preencha com string vazia "". NUNCA retorne reticências ("...") ou caracteres de exemplo.
+Caso algum dado não conste ou não seja aplicável, deixe a chave com valor de string vazia "". Não invente nomes e não retorne reticências.
 
-Retorne EXCLUSIVAMENTE um JSON válido no formato:
+Formato esperado de retorno (apenas o JSON):
 {
-  "titular": "NOME COMPLETO",
-  "pai": "NOME DO PAI",
-  "mae": "NOME DA MAE",
-  "conjuge": "NOME DO CONJUGE"
+  "titular": "",
+  "pai": "",
+  "mae": "",
+  "conjuge": ""
 }`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
