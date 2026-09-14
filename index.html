@@ -214,29 +214,28 @@
       });
     }
 
-    // NOVA FUNÇÃO PURA PARA LEITURA VISUAL DO DOCUMENTO (IGNORA O TEXTO DO PDF)
-    async function processarDocumentoIdentificacao(file) {
+    async function processarDocumentoParaImagemPura(file) {
       if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let imagens = [];
 
-        // Lemos só a primeira página com resolução alta para o OCR visual funcionar
+        // Converte apenas a pág 1 da CNH com alta resolução e força a IGNORAR O TEXTO
         for (let i = 1; i <= Math.min(pdf.numPages, 1); i++) {
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.5 }); 
+          const viewport = page.getViewport({ scale: 2.0 }); 
           const canvas = document.createElement('canvas'); 
           canvas.width = viewport.width; 
           canvas.height = viewport.height;
           const ctx = canvas.getContext('2d');
           
-          ctx.fillStyle = '#ffffff'; // Fundo branco forçado
+          ctx.fillStyle = '#ffffff'; 
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           await page.render({ canvasContext: ctx, viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]); // 70% compressão previne erro 413 Payload Too Large
+          imagens.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
         }
-        return { texto: "", imagens };
+        return { texto: "", imagens }; 
       } else {
         const img = await otimizarFotoBase64(file);
         return { texto: "", imagens: [img] };
@@ -284,17 +283,17 @@
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
       if (!file) { alert("Selecione o documento primeiro."); return; }
-      showStatus("Lendo documento oficial (IA Visão)...");
+      showStatus("Lendo documento (Processamento Óptico Visual)...");
       try {
-        const resDoc = await processarDocumentoIdentificacao(file);
+        const resDoc = await processarDocumentoParaImagemPura(file);
         
-        const prompt = `Analise a IMAGEM do documento de identificação em anexo. 
-Extraia EXATAMENTE E APENAS os nomes próprios das pessoas nos campos indicados. 
-Não invente, não use "Nome completo do...", "Nome da...", e deixe a string perfeitamente vazia "" caso o dado não esteja na imagem.
+        const prompt = `Analise a IMAGEM deste documento brasileiro de identificação.
+Extraia apenas os nomes próprios nas chaves abaixo. Use letras maiúsculas.
+Deixe vazio ("") se não encontrar. NUNCA retorne descrições como "Nome completo" ou "Não consta".
 
-Retorne EXCLUSIVAMENTE o JSON:
 {"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
         
+        // Passando apenas imagens, o audit.js acionará a Rota 1 (Visão)
         const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
         
         const limpar = (str) => {
@@ -368,6 +367,7 @@ Retorne ESTRITAMENTE o JSON no formato:
   ]
 }`;
         
+        // Passando texts ativará a Rota 2 (Extrato de Texto) no backend
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
