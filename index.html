@@ -214,6 +214,7 @@
       });
     }
 
+    // Leitor de documento: converte em imagem leve e extrai o texto ao mesmo tempo
     async function processarDocumentoIdentificacao(file) {
       if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -224,16 +225,7 @@
           const page = await pdf.getPage(i);
           const txt = await page.getTextContent();
           texto += txt.items.map(it => it.str).join(" ") + "\n";
-        }
 
-        // Se o PDF tem texto direto (como CNH-e digital), não enviamos imagem pesada
-        if (texto.trim().length > 50) {
-          return { texto: texto.trim(), imagens: [] };
-        }
-
-        // Se for PDF escaneado (sem texto vetorial), renderiza imagem compacta
-        for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
-          const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.0 });
           const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
@@ -283,8 +275,8 @@
 
     function limparTextoExtraido(val) {
       if (!val) return "";
-      const limpo = String(val).replace(/\.+/g, '').trim();
-      return limpo.length > 1 ? String(val).trim() : "";
+      const str = String(val).replace(/\.+/g, '').trim();
+      return str.length > 1 ? String(val).trim() : "";
     }
 
     async function lerDocumentoCliente() {
@@ -294,17 +286,15 @@
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
         
-        const prompt = `Você é um auditor documental. Analise o documento oficial brasileiro (CNH, RG ou Certidão).
-Identifique com atenção os seguintes nomes:
-1. TITULAR: Nome completo da pessoa a quem pertence a CNH ou RG.
-2. PAI: Nome do pai registrado na filiação.
-3. MÃE: Nome da mãe registrada na filiação.
-4. CÔNJUGE: Nome do cônjuge/esposo(a) somente se for Certidão de Casamento.
+        const prompt = `Analise atentamente o documento oficial de identificação anexo (CNH, RG, Identidade ou Certidão de Casamento).
+Extraia os seguintes nomes com precisão:
+- titular: Nome completo do titular do documento
+- pai: Nome do pai registrado na filiação
+- mae: Nome da mãe registrada na filiação
+- conjuge: Nome do cônjuge/esposo(a) se for certidão de casamento
 
-Atenção rigorosa:
-- NUNCA preencha com reticências ou valores padrão.
-- Se o campo não existir, preencha com string vazia "".
-- Retorne estritamente um JSON válido:
+Importante: se não houver filiação ou cônjuge, retorne "". Nunca retorne reticências ou nomes fictícios.
+Retorne EXCLUSIVAMENTE um JSON:
 {"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
