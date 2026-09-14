@@ -202,11 +202,11 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1600; let w = img.width, h = img.height;
+            const maxDim = 1200; let w = img.width, h = img.height;
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; } }
             const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+            resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
           };
           img.src = e.target.result;
         };
@@ -219,14 +219,25 @@
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let imagens = [], texto = "";
+
         for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
           const page = await pdf.getPage(i);
           const txt = await page.getTextContent();
           texto += txt.items.map(it => it.str).join(" ") + "\n";
-          const viewport = page.getViewport({ scale: 1.5 });
+        }
+
+        // Se o PDF tem texto direto (como CNH-e digital), não enviamos imagem pesada
+        if (texto.trim().length > 50) {
+          return { texto: texto.trim(), imagens: [] };
+        }
+
+        // Se for PDF escaneado (sem texto vetorial), renderiza imagem compacta
+        for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.0 });
           const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          imagens.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+          imagens.push(canvas.toDataURL('image/jpeg', 0.70).split(',')[1]);
         }
         return { texto: texto.trim(), imagens };
       } else {
@@ -283,22 +294,18 @@
       try {
         const resDoc = await processarDocumentoIdentificacao(file);
         
-        const prompt = `Analise este documento de identificação oficial (CNH, RG ou Certidão).
-Extraia os nomes reais e completos das pessoas presentes no documento:
-- titular: Nome completo da pessoa a quem pertence o documento.
-- pai: Nome do pai registrado no campo de filiação (se houver).
-- mae: Nome da mãe registrado no campo de filiação (se houver).
-- conjuge: Nome do cônjuge/esposo(a) se for certidão de casamento.
+        const prompt = `Você é um auditor documental. Analise o documento oficial brasileiro (CNH, RG ou Certidão).
+Identifique com atenção os seguintes nomes:
+1. TITULAR: Nome completo da pessoa a quem pertence a CNH ou RG.
+2. PAI: Nome do pai registrado na filiação.
+3. MÃE: Nome da mãe registrada na filiação.
+4. CÔNJUGE: Nome do cônjuge/esposo(a) somente se for Certidão de Casamento.
 
-Caso algum dado não conste ou não seja aplicável, deixe a chave com valor de string vazia "". Não invente nomes e não retorne reticências.
-
-Formato esperado de retorno (apenas o JSON):
-{
-  "titular": "",
-  "pai": "",
-  "mae": "",
-  "conjuge": ""
-}`;
+Atenção rigorosa:
+- NUNCA preencha com reticências ou valores padrão.
+- Se o campo não existir, preencha com string vazia "".
+- Retorne estritamente um JSON válido:
+{"titular": "", "pai": "", "mae": "", "conjuge": ""}`;
         
         const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
         
