@@ -171,7 +171,7 @@
   </main>
 
   <script>
-    let consolidadoMeses = [], transacoesDetalhadas = [], dadosCliente = {}, modoSelecionado = null;
+    let consolidadoMeses = [], transacoesDetalhadas = [], dadosCliente = { titular: '', cpf: '', pai: '', mae: '', conjuge: '' }, modoSelecionado = null;
 
     function selecionarModo(modo) {
       modoSelecionado = modo;
@@ -192,7 +192,7 @@
       document.getElementById('finalidadeContainer').classList.add('locked-section');
       document.getElementById('btnProcessar').classList.add('locked-section');
       document.getElementById('titularName').value = '';
-      dadosCliente.titular = '';
+      dadosCliente = { titular: '', cpf: '', pai: '', mae: '', conjuge: '' };
     }
 
     document.getElementById('extratosInput').addEventListener('change', async function(e) {
@@ -291,7 +291,7 @@
     }
 
     async function validarTitularidadeExtratos(files) {
-      showStatus("Validando titularidade dos extratos em segundo plano...");
+      showStatus("Validando titularidade dos extratos (Verificando CPF)...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
@@ -304,25 +304,30 @@
         }
 
         const prompt = `Analise os cabeçalhos destes extratos bancários.
-Verifique detalhadamente se TODOS os extratos pertencem estritamente à MESMA PESSOA (mesmo nome completo).
+Verifique detalhadamente se TODOS os extratos pertencem estritamente à MESMA PESSOA. 
+Procure pelo Nome impresso e, PRINCIPALMENTE, pelo número do CPF (mesmo que venha mascarado com asteriscos, ex: ***.123.456-**).
+
 Retorne EXCLUSIVAMENTE um objeto JSON:
 {
   "mesma_pessoa": true,
-  "titular_unico": "NOME COMPLETO"
+  "nome_impresso": "NOME COMO ESTÁ NO EXTRATO",
+  "cpf_impresso": "CPF COMO ESTÁ NO EXTRATO"
 }`;
 
         const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
 
-        if (json.mesma_pessoa === false || !json.titular_unico) {
-          alert("um ou mais extratos não pertencem a mesma pessoa");
+        if (json.mesma_pessoa === false || (!json.nome_impresso && !json.cpf_impresso)) {
+          alert("Erro: Um ou mais extratos não pertencem à mesma pessoa ou os dados não puderam ser lidos.");
           resetExtratosUI();
           hideStatus();
           return;
         }
 
-        const titularValidado = String(json.titular_unico).toUpperCase().trim();
-        document.getElementById('titularName').value = titularValidado;
-        dadosCliente.titular = titularValidado;
+        // Guarda o CPF e o nome para a próxima etapa (a leitura do documento)
+        dadosCliente.cpf = String(json.cpf_impresso || '').trim();
+        dadosCliente.titular = String(json.nome_impresso || '').toUpperCase().trim();
+        
+        document.getElementById('titularName').value = dadosCliente.titular + " (Aguardando Documento Oficial...)";
 
         document.getElementById('step2Container').classList.remove('locked-section');
         document.getElementById('finalidadeContainer').classList.remove('locked-section');
@@ -339,14 +344,21 @@ Retorne EXCLUSIVAMENTE um objeto JSON:
     async function lerDocumentoCliente() {
       const file = document.getElementById('docInput').files[0];
       if (!file) { alert("Selecione o documento primeiro."); return; }
-      showStatus("Lendo documento oficial (IA Visão)...");
+      showStatus("Lendo documento (Cruzando CPF com Extrato)...");
       try {
         const resDoc = await processarDocumentoParaImagemPura(file);
-        const prompt = `Analise a IMAGEM deste documento de identificação.
-O titular identificado nos extratos foi: "${dadosCliente.titular}".
-Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe vazio ("") se o campo não existir.
+        
+        // Agora enviamos o CPF mascarado e o nome do banco como CHAVE de busca
+        const prompt = `Analise a IMAGEM deste documento oficial.
+O cliente principal deste processo possui as seguintes referências no extrato bancário: 
+- Nome bancário: "${dadosCliente.titular}"
+- CPF (pode estar mascarado): "${dadosCliente.cpf}"
 
-{"pai": "", "mae": "", "conjuge": ""}`;
+SUA TAREFA: Localize esta exata pessoa no documento e extraia o NOME COMPLETO OFICIAL dela (titular). Em seguida, identifique também os pais e o cônjuge dela (se houver).
+Extraia apenas os nomes próprios em letras maiúsculas. Deixe vazio ("") se o campo não existir.
+
+Retorne EXCLUSIVAMENTE este JSON:
+{"titular": "NOME COMPLETO OFICIAL AQUI", "pai": "", "mae": "", "conjuge": ""}`;
         
         const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
         
@@ -356,6 +368,15 @@ Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe
           if (limpo.toLowerCase().includes("nome")) return "";
           return limpo.toUpperCase();
         };
+
+        // Atualiza o titular com o nome COMPLETO oficial do documento, sobrescrevendo o do banco
+        if (json.titular && json.titular.length > 5) {
+            dadosCliente.titular = limpar(json.titular);
+            document.getElementById('titularName').value = dadosCliente.titular;
+        } else {
+            // Fallback: remove o aviso de "Aguardando Documento" se a IA falhar no titular
+            document.getElementById('titularName').value = dadosCliente.titular;
+        }
 
         if (json.pai !== undefined) document.getElementById('paiName').value = limpar(json.pai);
         if (json.mae !== undefined) document.getElementById('maeName').value = limpar(json.mae);
@@ -375,6 +396,8 @@ Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe
       const files = document.getElementById('extratosInput').files;
       if (!files.length) { alert("Adicione os extratos bancários."); return; }
 
+      // Se o usuário digitou/corrigiu o nome manualmente antes de processar, pegamos o valor atual
+      dadosCliente.titular = document.getElementById('titularName').value.replace(" (Aguardando Documento Oficial...)", "").trim();
       dadosCliente.pai = document.getElementById('paiName').value.trim();
       dadosCliente.mae = document.getElementById('maeName').value.trim();
       dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
@@ -396,13 +419,13 @@ Extraia apenas os nomes próprios nas chaves abaixo em letras maiúsculas. Deixe
 Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
 
 REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
-1. Transferências da PRÓPRIA titularidade do cliente: Identifique variações do nome de casada/solteira ou partes do nome de "${dadosCliente.titular}" (ex: se o titular for "Maria Silva Costa", bloqueie transferências vindas de "Maria Silva").
-2. Transferências Familiares RESTRITAS: 
-   Rejeite APENAS transferências recebidas das seguintes pessoas (se cadastradas):
+1. Transferências da PRÓPRIA titularidade do cliente: Identifique variações do nome de casada/solteira ou partes do nome de "${dadosCliente.titular}".
+2. Transferências Familiares RESTRITAS (Cônjuge e Pais): 
+   Rejeite OBRIGATORIAMENTE transferências de:
    - Pai: "${dadosCliente.pai}"
    - Mãe: "${dadosCliente.mae}"
    - Cônjuge: "${dadosCliente.conjuge}"
-   ATENÇÃO MÁXIMA: Rejeite também qualquer abreviação (ex: "Jr.", "Junior"), variação de acento, ou erros de digitação óbvios envolvendo esses 3 familiares restritos (ex: se o nome for "Mário", rejeite "Mario", "Mario Challoun", etc.). 
+   CRÍTICO: Você DEVE REJEITAR qualquer variação de nome, erro de digitação ou abreviação desses 3 familiares restritos. Se o nome for "Mario Chalfoun Junior", REJEITE "Mário Chalfoun Jr", "Mario Challoun Junior", etc.
    -> Filhos ou irmãos com o mesmo sobrenome SÃO RENDAS VÁLIDAS e devem ser CONSIDERADOS.
 3. Estornos, devoluções, reembolsos, aplicações ou resgates de RDB/CDB/investimentos/cofrinho e rendimentos automáticos.
 
@@ -552,8 +575,8 @@ Retorne ESTRITAMENTE o JSON no formato:
           if(mesAno.length === 7 && mesAno.includes('/20')) mesAno = mesAno.replace('/20', '/');
           
           let descricaoLimpa = t.descricao || '';
-          // Encurtador automático via Javascript para poupar espaço
           descricaoLimpa = descricaoLimpa.replace(/Transferência recebida pelo Pix[\s-]*/gi, 'Transf. via PIX - ');
+          descricaoLimpa = descricaoLimpa.replace(/Transferência enviada pelo Pix[\s-]*/gi, 'Transf. enviada PIX - ');
           descricaoLimpa = descricaoLimpa.replace(/Transferência Recebida[\s-]*/gi, 'Transf. Recebida - ');
 
           return [
@@ -573,12 +596,12 @@ Retorne ESTRITAMENTE o JSON no formato:
           headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
           bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
           columnStyles: {
-            0: { cellWidth: 15 },
-            1: { cellWidth: 16, halign: 'center' }, 
+            0: { cellWidth: 14 },
+            1: { cellWidth: 18, halign: 'center' }, 
             2: { cellWidth: 'auto' }, 
             3: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }, 
-            4: { cellWidth: 14, halign: 'center' }, 
-            5: { cellWidth: 42 } 
+            4: { cellWidth: 15, halign: 'center' }, 
+            5: { cellWidth: 40 } 
           },
           margin: { top: 38, left: 11, right: 11 },
           tableWidth: 188,
