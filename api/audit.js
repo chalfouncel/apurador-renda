@@ -23,7 +23,8 @@ export default async function handler(req, res) {
     // MODO VISÃO (Documentos e CNH com imagens)
     // ==========================================
     if (temImagens && GEMINI_API_KEY) {
-      const modelosGemini = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      // Usando os modelos atualizados e recomendados pela API
+      const modelosGemini = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
       let errosLogs = [];
 
       for (const modelo of modelosGemini) {
@@ -132,7 +133,7 @@ export default async function handler(req, res) {
 
       // 3. Fallback final para Gemini Texto
       if (GEMINI_API_KEY) {
-        const modelosGeminiText = ["gemini-1.5-flash", "gemini-1.5-pro"];
+        const modelosGeminiText = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest"];
         for (const mod of modelosGeminiText) {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
