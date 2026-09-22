@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 60, // Permite maior tempo de execução para processamento de IA
+  maxDuration: 60,
 };
 
 export default async function handler(req, res) {
@@ -27,12 +27,11 @@ export default async function handler(req, res) {
     // MODO VISÃO (Documentos e CNH com imagens)
     // ==========================================
     if (temImagens && GEMINI_API_KEY) {
-      // Modelos oficiais, rápidos e com suporte a visão estável
+      // Modelos ativos e recomendados pela Google AI
       const modelosGemini = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash"
       ];
       let errosLogs = [];
 
@@ -41,7 +40,12 @@ export default async function handler(req, res) {
           const parts = [{ text: prompt }];
           if (texts) parts.push({ text: "TEXTOS ADICIONAIS:\n" + texts });
           images.forEach(img => {
-            parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
+            parts.push({
+              inline_data: {
+                mime_type: "image/jpeg",
+                data: img
+              }
+            });
           });
 
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
@@ -146,9 +150,9 @@ export default async function handler(req, res) {
         } catch (err) {}
       }
 
-      // 3. Fallback final para Gemini Texto
+      // 3. Fallback para Gemini Texto
       if (GEMINI_API_KEY) {
-        const modelosGeminiText = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+        const modelosGeminiText = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
         for (const mod of modelosGeminiText) {
           try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
