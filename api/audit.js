@@ -1,11 +1,11 @@
 export const config = {
-  maxDuration: 300, // Limite de 5 minutos da Vercel
+  maxDuration: 120, // 2 minutos configurados
 };
 
 /**
  * Utilitário: Chamada para a API do Google Gemini
  */
-async function callGemini(prompt, timeoutMs = 60000) {
+async function callGemini(prompt, timeoutMs = 110000) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY não configurada na Vercel.");
 
@@ -42,7 +42,7 @@ async function callGemini(prompt, timeoutMs = 60000) {
 /**
  * Utilitário: Chamada para a API da Groq
  */
-async function callGroq(prompt, timeoutMs = 60000) {
+async function callGroq(prompt, timeoutMs = 110000) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY não configurada na Vercel.");
 
@@ -83,8 +83,7 @@ async function callGroq(prompt, timeoutMs = 60000) {
 /**
  * Utilitário: Chamada para a API da SambaNova
  */
-async function callSambaNova(prompt, timeoutMs = 60000) {
-  // Pega SAMBA_API_KEY conforme está no seu print da Vercel
+async function callSambaNova(prompt, timeoutMs = 110000) {
   const apiKey = process.env.SAMBA_API_KEY || process.env.SAMBANOVA_API_KEY;
   if (!apiKey) throw new Error("SAMBA_API_KEY não configurada na Vercel.");
 
@@ -123,10 +122,10 @@ async function callSambaNova(prompt, timeoutMs = 60000) {
 }
 
 /**
- * Handler principal
+ * Handler principal da rota Serverless
  */
 export default async function handler(req, res) {
-  // Headers de CORS
+  // CORS liberado
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -143,7 +142,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método não permitido. Use POST." });
+    return res.status(405).json({ error: "Método não permitido. Utilize POST." });
   }
 
   const { prompt, content } = req.body || {};
@@ -156,7 +155,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Corrida de IAs: a mais rápida responde
+    // Dispara Gemini, Groq e SambaNova simultaneamente
+    // O primeiro a retornar com sucesso é entregue
     const winner = await Promise.any([
       callGemini(queryPrompt),
       callGroq(queryPrompt),
@@ -178,7 +178,7 @@ export default async function handler(req, res) {
 
     return res.status(502).json({
       success: false,
-      error: "Nenhum provedor de IA respondeu com sucesso a tempo.",
+      error: "Todos os provedores falharam ou atingiram o tempo limite.",
       details: errors,
     });
   }
