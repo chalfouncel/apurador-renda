@@ -3,11 +3,11 @@ export const config = {
 };
 
 /**
- * Função utilitária para chamar a API do Google Gemini
+ * Utilitário: Chamada para a API do Google Gemini
  */
 async function callGemini(prompt, timeoutMs = 60000) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada.");
+  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada na Vercel.");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -40,11 +40,11 @@ async function callGemini(prompt, timeoutMs = 60000) {
 }
 
 /**
- * Função utilitária para chamar a API da Groq
+ * Utilitário: Chamada para a API da Groq
  */
 async function callGroq(prompt, timeoutMs = 60000) {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY não configurada.");
+  if (!apiKey) throw new Error("GROQ_API_KEY não configurada na Vercel.");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -81,11 +81,12 @@ async function callGroq(prompt, timeoutMs = 60000) {
 }
 
 /**
- * Função utilitária para chamar a API da SambaNova
+ * Utilitário: Chamada para a API da SambaNova
  */
 async function callSambaNova(prompt, timeoutMs = 60000) {
-  const apiKey = process.env.SAMBANOVA_API_KEY;
-  if (!apiKey) throw new Error("SAMBANOVA_API_KEY não configurada.");
+  // Pega SAMBA_API_KEY conforme está no seu print da Vercel
+  const apiKey = process.env.SAMBA_API_KEY || process.env.SAMBANOVA_API_KEY;
+  if (!apiKey) throw new Error("SAMBA_API_KEY não configurada na Vercel.");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -122,10 +123,10 @@ async function callSambaNova(prompt, timeoutMs = 60000) {
 }
 
 /**
- * Handler principal da rota de auditoria
+ * Handler principal
  */
 export default async function handler(req, res) {
-  // Liberação de CORS
+  // Headers de CORS
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -155,7 +156,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Dispara todas em paralelo: a primeira que resolver com sucesso entrega o resultado
+    // Corrida de IAs: a mais rápida responde
     const winner = await Promise.any([
       callGemini(queryPrompt),
       callGroq(queryPrompt),
@@ -168,7 +169,7 @@ export default async function handler(req, res) {
       data: winner.result,
     });
   } catch (error) {
-    console.error("Falha em todos os provedores:", error);
+    console.error("Erro em todos os provedores:", error);
 
     const errors =
       error instanceof AggregateError
@@ -177,7 +178,7 @@ export default async function handler(req, res) {
 
     return res.status(502).json({
       success: false,
-      error: "Nenhum dos provedores de IA conseguiu responder a tempo.",
+      error: "Nenhum provedor de IA respondeu com sucesso a tempo.",
       details: errors,
     });
   }
