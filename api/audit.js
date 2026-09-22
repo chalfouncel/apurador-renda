@@ -1,3 +1,7 @@
+export const config = {
+  maxDuration: 60, // Permite maior tempo de execução para processamento de IA
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,8 +27,13 @@ export default async function handler(req, res) {
     // MODO VISÃO (Documentos e CNH com imagens)
     // ==========================================
     if (temImagens && GEMINI_API_KEY) {
-      // Usando os modelos atualizados e recomendados pela API
-      const modelosGemini = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
+      // Modelos oficiais, rápidos e com suporte a visão estável
+      const modelosGemini = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro"
+      ];
       let errosLogs = [];
 
       for (const modelo of modelosGemini) {
@@ -38,7 +47,13 @@ export default async function handler(req, res) {
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts }] })
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json"
+              }
+            })
           });
 
           if (response.ok) {
@@ -49,8 +64,8 @@ export default async function handler(req, res) {
               return res.status(200).json(JSON.parse(cleanJson));
             }
           } else {
-            const errData = await response.json();
-            errosLogs.push(`${modelo}: ${errData.error?.message}`);
+            const errData = await response.json().catch(() => ({}));
+            errosLogs.push(`${modelo}: ${errData.error?.message || response.statusText}`);
           }
         } catch (err) {
           errosLogs.push(`${modelo}: ${err.message}`);
@@ -133,23 +148,29 @@ export default async function handler(req, res) {
 
       // 3. Fallback final para Gemini Texto
       if (GEMINI_API_KEY) {
-        const modelosGeminiText = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest"];
+        const modelosGeminiText = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
         for (const mod of modelosGeminiText) {
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
-                });
-                if (response.ok) {
-                const data = await response.json();
-                const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (raw) {
-                    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-                    return res.status(200).json(JSON.parse(clean));
+          try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }],
+                generationConfig: {
+                  temperature: 0.1,
+                  responseMimeType: "application/json"
                 }
-                }
-            } catch(e) {}
+              })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (raw) {
+                const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+                return res.status(200).json(JSON.parse(clean));
+              }
+            }
+          } catch(e) {}
         }
       }
     }
