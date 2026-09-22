@@ -221,7 +221,7 @@
       }
     });
 
-    async function otimizarFotoBase64(file, maxDimension = 1000, quality = 0.6) {
+    async function otimizarFotoBase64(file, maxDimension = 900, quality = 0.5) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -242,7 +242,7 @@
       });
     }
 
-    async function processarDocumentosPDF(file, maxPages, scale, quality) {
+    async function processarDocumentosPDF(file, maxPages, scale = 0.8, quality = 0.5) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let imagens = [], texto = "";
@@ -266,7 +266,7 @@
 
     async function processarDocumentoParaImagemPura(file) {
       if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-        const res = await processarDocumentosPDF(file, 1, 2.0, 0.8);
+        const res = await processarDocumentosPDF(file, 1, 1.4, 0.7);
         return { texto: "", imagens: res.imagens }; 
       } else {
         const img = await otimizarFotoBase64(file, 1000, 0.6);
@@ -280,14 +280,19 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       const textData = await res.text();
+      let data;
       try {
-        const data = JSON.parse(textData);
-        if (!res.ok) throw new Error(data.error || "Erro no servidor de IA.");
-        return data;
+        data = JSON.parse(textData);
       } catch (e) {
-        throw new Error("Erro de servidor (Timeout/Payload): " + textData.substring(0, 80));
+        throw new Error("Resposta inesperada do servidor: " + textData.substring(0, 200));
       }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erro retornado pela API de IA.");
+      }
+      return data;
     }
 
     async function validarTitularidadeExtratos(files) {
@@ -296,10 +301,10 @@
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await processarDocumentosPDF(file, 2, 1.0, 0.5);
+            const res = await processarDocumentosPDF(file, 2, 0.8, 0.4);
             textoGeral += res.texto + "\n";
           } else { 
-            imagens.push(await otimizarFotoBase64(file, 800, 0.5)); 
+            imagens.push(await otimizarFotoBase64(file, 800, 0.4)); 
           }
         }
 
@@ -323,7 +328,6 @@ Retorne EXCLUSIVAMENTE um objeto JSON:
           return;
         }
 
-        // Guarda o CPF e o nome para a próxima etapa (a leitura do documento)
         dadosCliente.cpf = String(json.cpf_impresso || '').trim();
         dadosCliente.titular = String(json.nome_impresso || '').toUpperCase().trim();
         
@@ -348,7 +352,6 @@ Retorne EXCLUSIVAMENTE um objeto JSON:
       try {
         const resDoc = await processarDocumentoParaImagemPura(file);
         
-        // Agora enviamos o CPF mascarado e o nome do banco como CHAVE de busca
         const prompt = `Analise a IMAGEM deste documento oficial.
 O cliente principal deste processo possui as seguintes referências no extrato bancário: 
 - Nome bancário: "${dadosCliente.titular}"
@@ -369,12 +372,10 @@ Retorne EXCLUSIVAMENTE este JSON:
           return limpo.toUpperCase();
         };
 
-        // Atualiza o titular com o nome COMPLETO oficial do documento, sobrescrevendo o do banco
         if (json.titular && json.titular.length > 5) {
             dadosCliente.titular = limpar(json.titular);
             document.getElementById('titularName').value = dadosCliente.titular;
         } else {
-            // Fallback: remove o aviso de "Aguardando Documento" se a IA falhar no titular
             document.getElementById('titularName').value = dadosCliente.titular;
         }
 
@@ -396,22 +397,22 @@ Retorne EXCLUSIVAMENTE este JSON:
       const files = document.getElementById('extratosInput').files;
       if (!files.length) { alert("Adicione os extratos bancários."); return; }
 
-      // Se o usuário digitou/corrigiu o nome manualmente antes de processar, pegamos o valor atual
       dadosCliente.titular = document.getElementById('titularName').value.replace(" (Aguardando Documento Oficial...)", "").trim();
       dadosCliente.pai = document.getElementById('paiName').value.trim();
       dadosCliente.mae = document.getElementById('maeName').value.trim();
       dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
 
-      showStatus("Auditando extratos (Pode levar até 40s)...");
+      showStatus("Auditando extratos (Pode levar até 30s)...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await processarDocumentosPDF(file, 10, 1.0, 0.6);
+            // Escala 0.8 e limite de 6 páginas para manter payload leve
+            const res = await processarDocumentosPDF(file, 6, 0.8, 0.45);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
-            imagens.push(await otimizarFotoBase64(file, 1000, 0.6)); 
+            imagens.push(await otimizarFotoBase64(file, 850, 0.45)); 
           }
         }
 
@@ -425,7 +426,7 @@ REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
    - Pai: "${dadosCliente.pai}"
    - Mãe: "${dadosCliente.mae}"
    - Cônjuge: "${dadosCliente.conjuge}"
-   CRÍTICO: Você DEVE REJEITAR qualquer variação de nome, erro de digitação ou abreviação desses 3 familiares restritos. Se o nome for "Mario Chalfoun Junior", REJEITE "Mário Chalfoun Jr", "Mario Challoun Junior", etc.
+   CRÍTICO: Você DEVE REJEITAR qualquer variação de nome, erro de digitação ou abreviação desses 3 familiares restritos.
    -> Filhos ou irmãos com o mesmo sobrenome SÃO RENDAS VÁLIDAS e devem ser CONSIDERADOS.
 3. Estornos, devoluções, reembolsos, aplicações ou resgates de RDB/CDB/investimentos/cofrinho e rendimentos automáticos.
 
