@@ -15,8 +15,9 @@ export default async function handler(req, res) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     const SAMBA_API_KEY = process.env.SAMBA_API_KEY;
+    const RENDA_OPEN_API_KEY = process.env.RENDA_OPEN_API_KEY;
 
-    if (!GEMINI_API_KEY && !GROQ_API_KEY && !SAMBA_API_KEY) {
+    if (!GEMINI_API_KEY && !GROQ_API_KEY && !SAMBA_API_KEY && !RENDA_OPEN_API_KEY) {
       return res.status(500).json({ error: "Nenhuma chave de API configurada." });
     }
 
@@ -82,6 +83,34 @@ export default async function handler(req, res) {
     // MODO TEXTO (Extratos puros)
     // ==========================================
     if (!temImagens && texts) {
+
+      // --- RENDA OPEN (OpenAI-compatible) — PRINCIPAL ---
+      if (RENDA_OPEN_API_KEY) {
+        try {
+          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${RENDA_OPEN_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: "Retorne ESTRITAMENTE um JSON válido." },
+                { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
+              ],
+              response_format: { type: "json_object" },
+              temperature: 0.1
+            })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return res.status(200).json(JSON.parse(data.choices[0].message.content));
+          }
+        } catch (e) {}
+      }
+
+      // --- GROQ (Fallback 1) ---
       if (GROQ_API_KEY) {
         try {
           const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -107,6 +136,7 @@ export default async function handler(req, res) {
         } catch (e) {}
       }
 
+      // --- SAMBA (Fallback 2) ---
       if (SAMBA_API_KEY) {
         try {
           const response = await fetch("https://api.sambanova.ai/v1/chat/completions", {
