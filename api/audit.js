@@ -23,7 +23,8 @@ export default async function handler(req, res) {
     // MODO VISÃO (Documentos e CNH com imagens)
     // ==========================================
     if (temImagens && GEMINI_API_KEY) {
-      const modelosGemini = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-pro"];
+      // Usando os modelos atualizados e recomendados pela API
+      const modelosGemini = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
       let errosLogs = [];
 
       for (const modelo of modelosGemini) {
@@ -59,10 +60,11 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // MODO TEXTO (Extratos longos - Rodízio)
+    // MODO TEXTO (Extratos longos)
     // ==========================================
     if (!temImagens && texts) {
-      // 1. Tenta SambaNova
+      
+      // 1. Tenta SambaNova (Llama 3.1 70B)
       if (SAMBA_API_KEY) {
         try {
           const response = await fetch("https://api.sambanova.ai/v1/chat/completions", {
@@ -88,59 +90,73 @@ export default async function handler(req, res) {
         } catch (err) {}
       }
 
-      // 2. Tenta Groq (Chamada direta e otimizada, sem busca prévia de modelos)
+      // 2. Tenta Groq
       if (GROQ_API_KEY) {
         try {
-          const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: "llama-3.1-70b-versatile",
-              messages: [
-                { role: "system", content: "Retorne ESTRITAMENTE um JSON válido." },
-                { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
-              ],
-              response_format: { type: "json_object" },
-              temperature: 0.1
-            })
+          const listRes = await fetch("https://api.groq.com/openai/v1/models", {
+            headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
           });
-          if (response.ok) {
-            const data = await response.json();
-            return res.status(200).json(JSON.parse(data.choices[0].message.content));
+          
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            const modelosGroq = (listData.data || [])
+              .map(m => m.id)
+              .filter(id => !id.includes("whisper") && !id.includes("guard"));
+
+            for (const mod of modelosGroq) {
+              try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${GROQ_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                    model: mod,
+                    messages: [
+                      { role: "system", content: "Retorne ESTRITAMENTE um JSON válido." },
+                      { role: "user", content: prompt + "\n\nCONTEÚDO:\n" + texts }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.1
+                  })
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  return res.status(200).json(JSON.parse(data.choices[0].message.content));
+                }
+              } catch (err) {}
+            }
           }
         } catch (err) {}
       }
 
-      // 3. Fallback Final para Gemini Texto
+      // 3. Fallback final para Gemini Texto
       if (GEMINI_API_KEY) {
-        const modelosText = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro-latest"];
-        for (const mod of modelosText) {
-          try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
-            });
-            if (response.ok) {
-              const data = await response.json();
-              const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (raw) {
-                const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-                return res.status(200).json(JSON.parse(clean));
-              }
-            }
-          } catch(e) {}
+        const modelosGeminiText = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest"];
+        for (const mod of modelosGeminiText) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
+                });
+                if (response.ok) {
+                const data = await response.json();
+                const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (raw) {
+                    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return res.status(200).json(JSON.parse(clean));
+                }
+                }
+            } catch(e) {}
         }
       }
-      return res.status(500).json({ error: "Todos os provedores de IA falharam no processamento de texto." });
     }
 
-    return res.status(500).json({ error: "Payload inválido ou vazio." });
+    return res.status(500).json({ error: "Não foi possível processar a requisição com as IAs ativas." });
 
   } catch (error) {
-    return res.status(500).json({ error: "Erro interno no servidor: " + error.message });
+    return res.status(500).json({ error: "Erro interno: " + error.message });
   }
 }
