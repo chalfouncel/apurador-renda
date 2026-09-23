@@ -1,185 +1,50 @@
-export const config = {
-  maxDuration: 120, // 2 minutos configurados
-};
+// Aumenta o tempo limite da Vercel para 120s
+export const maxDuration = 120; 
 
-/**
- * Utilitário: Chamada para a API do Google Gemini
- */
-async function callGemini(prompt, timeoutMs = 110000) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada na Vercel.");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Gemini erro ${response.status}: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Gemini retornou resposta vazia.");
-
-    return { provider: "Gemini", result: text };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * Utilitário: Chamada para a API da Groq
- */
-async function callGroq(prompt, timeoutMs = 110000) {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY não configurada na Vercel.");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Groq erro ${response.status}: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("Groq retornou resposta vazia.");
-
-    return { provider: "Groq", result: text };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * Utilitário: Chamada para a API da SambaNova
- */
-async function callSambaNova(prompt, timeoutMs = 110000) {
-  const apiKey = process.env.SAMBA_API_KEY || process.env.SAMBANOVA_API_KEY;
-  if (!apiKey) throw new Error("SAMBA_API_KEY não configurada na Vercel.");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(
-      "https://api.sambanova.ai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: "Meta-Llama-3.1-70B-Instruct",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`SambaNova erro ${response.status}: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("SambaNova retornou resposta vazia.");
-
-    return { provider: "SambaNova", result: text };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * Handler principal da rota Serverless
- */
 export default async function handler(req, res) {
-  // CORS liberado
-  res.setHeader("Access-Control-Allow-Credentials", true);
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET,OPTIONS,PATCH,DELETE,POST,PUT"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-  );
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método não permitido. Utilize POST." });
-  }
-
-  const { prompt, content } = req.body || {};
-  const queryPrompt = prompt || content;
-
-  if (!queryPrompt) {
-    return res.status(400).json({
-      error: "O campo 'prompt' ou 'content' é obrigatório no corpo da requisição.",
-    });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
   try {
-    // Dispara Gemini, Groq e SambaNova simultaneamente
-    // O primeiro a retornar com sucesso é entregue
-    const winner = await Promise.any([
-      callGemini(queryPrompt),
-      callGroq(queryPrompt),
-      callSambaNova(queryPrompt),
-    ]);
+    const { prompt, texts, images } = req.body;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    const SAMBA_API_KEY = process.env.SAMBA_API_KEY;
 
-    return res.status(200).json({
-      success: true,
-      provider: winner.provider,
-      data: winner.result,
-    });
-  } catch (error) {
-    console.error("Erro em todos os provedores:", error);
+    if (!GEMINI_API_KEY && !GROQ_API_KEY && !SAMBA_API_KEY) {
+      return res.status(500).json({ error: "Nenhuma chave de API configurada." });
+    }
 
-    const errors =
-      error instanceof AggregateError
-        ? error.errors.map((e) => e.message)
-        : [error.message];
+    const temImagens = Array.isArray(images) && images.length > 0;
 
-    return res.status(502).json({
-      success: false,
-      error: "Todos os provedores falharam ou atingiram o tempo limite.",
-      details: errors,
-    });
-  }
-}
+    // ==========================================
+    // MODO VISÃO (Documentos e CNH com imagens)
+    // ==========================================
+    if (temImagens && GEMINI_API_KEY) {
+      const modelosGemini = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      let errosLogs = [];
+
+      for (const modelo of modelosGemini) {
+        try {
+          const parts = [{ text: prompt }];
+          if (texts) parts.push({ text: "TEXTOS ADICIONAIS:\n" + texts });
+          images.forEach(img => {
+            parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
+          });
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts }] })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleanJson = rawText.replace(/```json/g, '').replace(/
