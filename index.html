@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Apurador de Renda IA — M&IC</title>
+  <link rel="icon" type="image/png" href="logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -296,7 +297,7 @@
     }
 
     async function validarTitularidadeExtratos(files) {
-      showStatus("Validando titularidade dos extratos (Verificando CPF)...");
+      showStatus("Validando titularidade dos extratos em segundo plano...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
@@ -407,7 +408,6 @@ Retorne EXCLUSIVAMENTE este JSON:
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            // Escala 0.8 e limite de 6 páginas para manter payload leve
             const res = await processarDocumentosPDF(file, 6, 0.8, 0.45);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
