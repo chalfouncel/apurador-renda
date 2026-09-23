@@ -305,8 +305,9 @@
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await processarDocumentosPDF(file, 2, 0.8, 0.4);
+            const res = await processarDocumentosPDF(file, 1, 0.8, 0.4);
             textoGeral += res.texto + "\n";
+            res.imagens.forEach(img => imagens.push(img)); 
           } else { 
             imagens.push(await otimizarFotoBase64(file, 800, 0.4)); 
           }
