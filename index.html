@@ -278,25 +278,41 @@
       }
     }
 
-    async function chamarApiServidor(payload) {
-      const res = await fetch('/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const textData = await res.text();
-      let data;
-      try {
-        data = JSON.parse(textData);
-      } catch (e) {
-        throw new Error("Resposta inesperada do servidor: " + textData.substring(0, 200));
-      }
+    // MOTOR DE AUTO-RETRY: Se houver corte de rede ("Failed to fetch"), tenta até 3 vezes
+    async function chamarApiServidor(payload, maxTentativas = 3) {
+      let erroFinal;
+      for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+        try {
+          if (tentativa > 1) {
+            showStatus(`Oscilação detectada. Tentando novamente (${tentativa}/${maxTentativas})...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
 
-      if (!res.ok) {
-        throw new Error(data.error || "Erro retornado pela API de IA.");
+          const res = await fetch('/api/audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          
+          const textData = await res.text();
+          let data;
+          try {
+            data = JSON.parse(textData);
+          } catch (e) {
+            throw new Error("Resposta inesperada do servidor: " + textData.substring(0, 200));
+          }
+
+          if (!res.ok) {
+            throw new Error(data.error || "Erro retornado pela API de IA.");
+          }
+          return data;
+
+        } catch (err) {
+          erroFinal = err;
+          // Se for erro de rede / Failed to fetch, continua o loop para a próxima tentativa
+        }
       }
-      return data;
+      throw erroFinal;
     }
 
     async function validarTitularidadeExtratos(files) {
@@ -407,16 +423,16 @@ Retorne EXCLUSIVAMENTE este JSON:
       dadosCliente.mae = document.getElementById('maeName').value.trim();
       dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
 
-      showStatus("Auditando extratos (Pode levar até 30s)...");
+      showStatus("Auditando extratos (Comprimindo arquivos para envio rápido)...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await processarDocumentosPDF(file, 6, 0.8, 0.45);
+            const res = await processarDocumentosPDF(file, 6, 0.5, 0.35);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
-            imagens.push(await otimizarFotoBase64(file, 850, 0.45)); 
+            imagens.push(await otimizarFotoBase64(file, 700, 0.35)); 
           }
         }
 
