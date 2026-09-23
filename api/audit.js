@@ -1,3 +1,6 @@
+// Limite máximo exato do plano gratuito da Vercel
+export const maxDuration = 60; 
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,47 +23,52 @@ export default async function handler(req, res) {
     const temImagens = Array.isArray(images) && images.length > 0;
 
     // ==========================================
-    // MODO VISÃO (Documentos e CNH com imagens)
+    // MODO VISÃO: CORRIDA PARALELA DE IAS
     // ==========================================
     if (temImagens && GEMINI_API_KEY) {
-      // Usando os modelos atualizados e recomendados pela API
-      const modelosGemini = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
-      let errosLogs = [];
+      // Modelos oficiais e universais
+      const modelosGemini = ["gemini-1.5-flash", "gemini-pro-vision"];
+      
+      const parts = [{ text: prompt }];
+      if (texts) parts.push({ text: "TEXTOS ADICIONAIS:\n" + texts });
+      images.forEach(img => {
+        parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
+      });
 
-      for (const modelo of modelosGemini) {
-        try {
-          const parts = [{ text: prompt }];
-          if (texts) parts.push({ text: "TEXTOS ADICIONAIS:\n" + texts });
-          images.forEach(img => {
-            parts.push({ inline_data: { mime_type: "image/jpeg", data: img } });
-          });
-
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts }] })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-              return res.status(200).json(JSON.parse(cleanJson));
-            }
-          } else {
-            const errData = await response.json();
-            errosLogs.push(`${modelo}: ${errData.error?.message}`);
-          }
-        } catch (err) {
-          errosLogs.push(`${modelo}: ${err.message}`);
+      // Função que faz a chamada para um único modelo
+      const tentarModeloVisao = async (modelo) => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts }] })
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(`${modelo}: ${errData.error?.message || 'Falhou'}`);
         }
+        
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error(`${modelo}: Resposta vazia`);
+        
+        const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+      };
+
+      try {
+        // Promise.any dispara as requisições em PARALELO. A primeira que der sucesso é retornada.
+        const jsonResultado = await Promise.any(modelosGemini.map(modelo => tentarModeloVisao(modelo)));
+        return res.status(200).json(jsonResultado);
+      } catch (aggregateError) {
+        // Se todos os modelos da corrida falharem, captura os erros
+        const errosLogs = aggregateError.errors ? aggregateError.errors.map(e => e.message) : [aggregateError.message];
+        return res.status(500).json({ error: "Falha na IA Visual (Todos falharam): " + errosLogs.join(" | ") });
       }
-      return res.status(500).json({ error: "Falha na IA Visual: " + errosLogs.join(" | ") });
     }
 
     // ==========================================
-    // MODO TEXTO (Extratos longos)
+    // MODO TEXTO (Extratos longos - Fallbacks)
     // ==========================================
     if (!temImagens && texts) {
       
@@ -131,26 +139,28 @@ export default async function handler(req, res) {
         } catch (err) {}
       }
 
-      // 3. Fallback final para Gemini Texto
+      // 3. Fallback final para Gemini Texto (Também em Corrida Paralela)
       if (GEMINI_API_KEY) {
-        const modelosGeminiText = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-1.5-flash-latest"];
-        for (const mod of modelosGeminiText) {
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
-                });
-                if (response.ok) {
-                const data = await response.json();
-                const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (raw) {
-                    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-                    return res.status(200).json(JSON.parse(clean));
-                }
-                }
-            } catch(e) {}
-        }
+        const modelosGeminiText = ["gemini-1.5-flash", "gemini-pro"];
+        
+        const tentarModeloTexto = async (modelo) => {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt + "\n\nTEXTO:\n" + texts }] }] })
+          });
+          if (!response.ok) throw new Error();
+          const data = await response.json();
+          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!raw) throw new Error();
+          const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+          return JSON.parse(clean);
+        };
+
+        try {
+          const jsonResultado = await Promise.any(modelosGeminiText.map(mod => tentarModeloTexto(mod)));
+          return res.status(200).json(jsonResultado);
+        } catch (e) {}
       }
     }
 
