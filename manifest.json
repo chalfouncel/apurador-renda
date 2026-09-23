@@ -1,0 +1,20 @@
+{
+  "name": "Apurador de Renda M&IC",
+  "short_name": "Apurador M&IC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121315",
+  "theme_color": "#c59b27",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
