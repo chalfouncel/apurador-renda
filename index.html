@@ -84,7 +84,7 @@
 
   <header class="main-header shadow-md sticky top-0 z-30">
     <div class="mx-auto flex flex-row items-center justify-center w-full" style="max-width: 650px;">
-      <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mr-3.5">
+      <img src="logo.png" alt="M&IC Corretores" class="app-header-logo mr-3.5" onerror="this.style.display='none'">
       <div class="text-left">
         <h1 class="font-bold text-sm leading-tight tracking-wide" style="color: var(--gold);">APURAÇÃO DE RENDA POR IA</h1>
         <p class="text-[9px] uppercase tracking-wider mt-0.5" style="color: var(--silver);">M&IC Corretores de Imóveis</p>
@@ -259,7 +259,7 @@
         const txt = await page.getTextContent();
         texto += `--- PÁGINA ${i} ---\n` + txt.items.map(it => it.str).join(" ") + "\n";
         
-        // GERA IMAGEM APENAS DAS 3 PRIMEIRAS PÁGINAS (Evita travar o navegador)
+        // GERA IMAGEM APENAS DAS 3 PRIMEIRAS PÁGINAS (Evita travar o navegador, e engloba CNH frente e verso)
         if (i <= 3) {
           const viewport = page.getViewport({ scale: scale }); 
           const canvas = document.createElement('canvas'); 
@@ -346,7 +346,10 @@ Retorne EXCLUSIVAMENTE um objeto JSON:
   "cpf_impresso": "CPF COMO ESTÁ NO EXTRATO"
 }`;
 
-        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
+        // Truque do Pixel Invisível caso o Extrato não tenha gerado imagens (garante o uso do Gemini no backend)
+        let imgsParaEnvio = (imagens && imagens.length > 0) ? imagens : ["/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="];
+
+        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imgsParaEnvio });
 
         if (json.mesma_pessoa === false || (!json.nome_impresso && !json.cpf_impresso)) {
           alert("Erro: Um ou mais extratos não pertencem à mesma pessoa ou os dados não puderam ser lidos.");
@@ -385,6 +388,7 @@ O cliente principal deste processo possui as seguintes referências no extrato b
 - CPF (pode estar mascarado): "${dadosCliente.cpf}"
 
 SUA TAREFA: Localize esta exata pessoa no documento e extraia o NOME COMPLETO OFICIAL dela (titular). Em seguida, identifique também os pais e o cônjuge dela (se houver).
+Atenção: Procure atentamente a Filiação (Pai e Mãe). Muitas vezes estão na parte de trás / verso do documento. Leia todas as informações com cuidado.
 Extraia apenas os nomes próprios em letras maiúsculas. Deixe vazio ("") se o campo não existir.
 
 Retorne EXCLUSIVAMENTE este JSON:
@@ -429,12 +433,13 @@ Retorne EXCLUSIVAMENTE este JSON:
       dadosCliente.mae = document.getElementById('maeName').value.trim();
       dadosCliente.conjuge = document.getElementById('conjugeName').value.trim();
 
-      showStatus("Auditando extratos (Comprimindo arquivos para envio rápido)...");
+      showStatus("Auditando extratos (Lendo todas as páginas e comprimindo)...");
       try {
         let imagens = [], textoGeral = "";
         for (let file of Array.from(files)) {
           if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-            const res = await processarDocumentosPDF(file, 6, 0.5, 0.35);
+            // CORREÇÃO CRÍTICA: Aumentado para 1000 páginas para garantir que lê meses inteiros
+            const res = await processarDocumentosPDF(file, 1000, 0.5, 0.35);
             textoGeral += res.texto + "\n";
             res.imagens.forEach(img => imagens.push(img));
           } else { 
@@ -443,36 +448,43 @@ Retorne EXCLUSIVAMENTE este JSON:
         }
 
         const prompt = `Você é um perito financeiro e auditor contábil judicial.
-Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
+O texto enviado é um extrato bancário longo de MÚLTIPLOS MESES.
+SUA TAREFA: Audite rigorosamente TODAS as entradas de TODOS OS MESES presentes no texto inteiro. NÃO PARE no primeiro mês! 
 
 REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
 1. Transferências da PRÓPRIA titularidade: Variações do nome "${dadosCliente.titular}".
 2. Transferências Familiares RESTRITAS (Cônjuge e Pais): 
-   Rejeite OBRIGATORIAMENTE:
+   Rejeite OBRIGATORIAMENTE qualquer transferência recebida de:
    - Pai: "${dadosCliente.pai}"
    - Mãe: "${dadosCliente.mae}"
    - Cônjuge: "${dadosCliente.conjuge}"
 3. Estornos, devoluções, resgates de investimentos e rendimentos.
 
 Retorne ESTRITAMENTE um JSON válido no formato abaixo.
-CRÍTICO PARA NÃO EXCEDER O LIMITE DE TOKENS: Na array "transacoes", liste APENAS as entradas que foram REJEITADAS. NÃO liste as consideradas, apenas faça o somatório delas nos resumos.
+CRÍTICO PARA O SUCESSO DA TAREFA: 
+- Na array "apuracao_mensal", OBRIGATORIAMENTE crie um item para CADA mês encontrado no extrato inteiro. Some o total considerado de cada um deles.
+- Na array "transacoes", liste APENAS as entradas que foram REJEITADAS (para economizar limite de resposta).
 
 {
   "resumo_geral": {
     "total_entradas_consideradas": 0.00,
     "total_entradas_descartadas": 0.00,
-    "quantidade_meses": 0,
+    "quantidade_meses": 12,
     "renda_media_mensal": 0.00
   },
   "apuracao_mensal": [
-    { "mes_ano": "03/26", "somatorio_entradas": 0.00 }
+    { "mes_ano": "10/25", "somatorio_entradas": 0.00 },
+    { "mes_ano": "11/25", "somatorio_entradas": 0.00 }
   ],
   "transacoes": [
     { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Motivo da exclusão" }
   ]
 }`;
         
-        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imagens });
+        // Truque do Pixel Invisível aplicado na hora da Apuração também
+        let imgsParaEnvio = (imagens && imagens.length > 0) ? imagens : ["/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="];
+
+        const json = await chamarApiServidor({ prompt, texts: textoGeral, images: imgsParaEnvio });
         window.ultimoResultado = json;
         consolidadoMeses = json.apuracao_mensal || [];
         transacoesDetalhadas = json.transacoes || [];
