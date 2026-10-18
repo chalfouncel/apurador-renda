@@ -446,19 +446,17 @@ Retorne EXCLUSIVAMENTE este JSON:
 Audite rigorosamente TODAS as entradas financeiras contidas em todo o período deste extrato.
 
 REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
-1. Transferências da PRÓPRIA titularidade do cliente: Identifique variações do nome de casada/solteira ou partes do nome de "${dadosCliente.titular}".
+1. Transferências da PRÓPRIA titularidade: Variações do nome "${dadosCliente.titular}".
 2. Transferências Familiares RESTRITAS (Cônjuge e Pais): 
-   Rejeite OBRIGATORIAMENTE transferências de:
+   Rejeite OBRIGATORIAMENTE:
    - Pai: "${dadosCliente.pai}"
    - Mãe: "${dadosCliente.mae}"
    - Cônjuge: "${dadosCliente.conjuge}"
-   CRÍTICO: Você DEVE REJEITAR qualquer variação de nome, erro de digitação ou abreviação desses 3 familiares restritos.
-   -> Filhos ou irmãos com o mesmo sobrenome SÃO RENDAS VÁLIDAS e devem ser CONSIDERADOS.
-3. Estornos, devoluções, reembolsos, aplicações ou resgates de RDB/CDB/investimentos/cofrinho e rendimentos automáticos.
+3. Estornos, devoluções, resgates de investimentos e rendimentos.
 
-Considere como CONSIDERADO apenas ENTRADAS legítimas e reais vindas de terceiros e familiares permitidos (filhos/irmãos).
+Retorne ESTRITAMENTE um JSON válido no formato abaixo.
+CRÍTICO PARA NÃO EXCEDER O LIMITE DE TOKENS: Na array "transacoes", liste APENAS as entradas que foram REJEITADAS. NÃO liste as consideradas, apenas faça o somatório delas nos resumos.
 
-Retorne ESTRITAMENTE o JSON no formato:
 {
   "resumo_geral": {
     "total_entradas_consideradas": 0.00,
@@ -470,8 +468,7 @@ Retorne ESTRITAMENTE o JSON no formato:
     { "mes_ano": "03/26", "somatorio_entradas": 0.00 }
   ],
   "transacoes": [
-    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "CONSIDERADO", "motivo": "Renda válida" },
-    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Mesma titularidade / Restrição Familiar / Rendimento" }
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Motivo da exclusão" }
   ]
 }`;
         
