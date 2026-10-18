@@ -490,23 +490,28 @@ Retorne ESTRITAMENTE o JSON no formato:
         const img = new Image();
         img.crossOrigin = 'Anonymous';
         img.onload = function() {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width; canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imgData.data;
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i], g = data[i+1], b = data[i+2];
-            if (r < 35 && g < 35 && b < 35) {
-              data[i+3] = 0; 
-            } else if (opacidade < 1.0) {
-              data[i+3] = Math.round(data[i+3] * opacidade);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i+1], b = data[i+2];
+              if (r < 35 && g < 35 && b < 35) {
+                data[i+3] = 0; 
+              } else if (opacidade < 1.0) {
+                data[i+3] = Math.round(data[i+3] * opacidade);
+              }
             }
+            ctx.putImageData(imgData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            console.warn("Imagem bloqueada pelo navegador.");
+            resolve(null);
           }
-          ctx.putImageData(imgData, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
         };
         img.onerror = () => resolve(null);
         img.src = encodeURI(url);
@@ -516,7 +521,8 @@ Retorne ESTRITAMENTE o JSON no formato:
     async function gerarDocumentoPDF() {
       const { jsPDF } = window.jspdf; 
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const resumo = window.ultimoResultado.resumo_geral, titular = dadosCliente.titular || "Não especificado";
+      const resumo = window.ultimoResultado.resumo_geral || { total_entradas_consideradas: 0, total_entradas_descartadas: 0, quantidade_meses: 0, renda_media_mensal: 0 };
+      const titular = dadosCliente.titular || "Não especificado";
 
       const watermarkBase64 = await carregarLogoTransparente('Marca dagua nova.png', 0.25);
       const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
@@ -709,17 +715,25 @@ Retorne ESTRITAMENTE o JSON no formato:
 
     function baixarPDFLocal() {
       if (!window.ultimoResultado) return;
-      gerarDocumentoPDF().then(({ doc, titular }) => { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); });
+      gerarDocumentoPDF().then(({ doc, titular }) => { 
+        doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); 
+      }).catch(err => {
+        alert("Erro ao montar o PDF. Detalhe: " + err.message);
+      });
     }
 
     async function gerarECompartilharPDF() {
       if (!window.ultimoResultado) return;
-      const { doc, titular } = await gerarDocumentoPDF();
-      const pdfBlob = doc.output('blob');
-      const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        try { await navigator.share({ title: 'Laudo de Apuração de Renda', files: [pdfFile] }); } catch (e) { if (e.name !== 'AbortError') doc.save(); }
-      } else { doc.save(); }
+      try {
+        const { doc, titular } = await gerarDocumentoPDF();
+        const pdfBlob = doc.output('blob');
+        const pdfFile = new File([pdfBlob], `Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          try { await navigator.share({ title: 'Laudo de Apuração de Renda', files: [pdfFile] }); } catch (e) { if (e.name !== 'AbortError') doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
+        } else { doc.save(`Laudo_Renda_${titular.replace(/\s+/g, '_')}.pdf`); }
+      } catch (err) {
+        alert("Erro ao compartilhar o PDF. Detalhe: " + err.message);
+      }
     }
   </script>
   <script>
