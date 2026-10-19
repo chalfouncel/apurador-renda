@@ -451,6 +451,10 @@ Retorne EXCLUSIVAMENTE este JSON:
 O texto enviado é um extrato bancário longo de MÚLTIPLOS MESES.
 SUA TAREFA: Audite rigorosamente TODAS as entradas de TODOS OS MESES presentes no texto inteiro. NÃO PARE no primeiro mês! 
 
+const prompt = `Você é um perito financeiro e auditor contábil judicial.
+O texto enviado é um extrato bancário longo de MÚLTIPLOS MESES.
+SUA TAREFA: Audite rigorosamente TODAS as entradas de TODOS OS MESES presentes no texto inteiro. NÃO PARE no primeiro mês! 
+
 REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
 1. Transferências da PRÓPRIA titularidade: Variações do nome "${dadosCliente.titular}".
 2. Transferências Familiares RESTRITAS (Cônjuge e Pais): 
@@ -463,7 +467,7 @@ REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
 Retorne ESTRITAMENTE um JSON válido no formato abaixo.
 CRÍTICO PARA O SUCESSO DA TAREFA: 
 - Na array "apuracao_mensal", OBRIGATORIAMENTE crie um item para CADA mês encontrado no extrato inteiro. Some o total considerado de cada um deles.
-- Na array "transacoes", liste TODAS as entradas (CONSIDERADAS e REJEITADAS). Para as entradas consideradas, defina o status como "CONSIDERADO" e deixe o campo motivo em branco.
+- Na array "transacoes", liste TODAS as entradas (tanto as CONSIDERADAS quanto as REJEITADAS).
 
 {
   "resumo_geral": {
@@ -477,7 +481,8 @@ CRÍTICO PARA O SUCESSO DA TAREFA:
     { "mes_ano": "11/25", "somatorio_entradas": 0.00 }
   ],
   "transacoes": [
-    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "texto", "valor": 0.00, "status": "REJEITADO", "motivo": "Motivo da exclusão" }
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "Exemplo Entrada Valida", "valor": 5000.00, "status": "CONSIDERADO", "motivo": "" },
+    { "data": "DD/MM/AA", "mes_ano": "MM/AA", "descricao": "Exemplo Transferencia", "valor": 100.00, "status": "REJEITADO", "motivo": "Transferência da própria titularidade" }
   ]
 }`;
         
