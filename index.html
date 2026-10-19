@@ -463,7 +463,7 @@ REGRAS RÍGIDAS DE EXCLUSÃO (Status REJEITADO):
 Retorne ESTRITAMENTE um JSON válido no formato abaixo.
 CRÍTICO PARA O SUCESSO DA TAREFA: 
 - Na array "apuracao_mensal", OBRIGATORIAMENTE crie um item para CADA mês encontrado no extrato inteiro. Some o total considerado de cada um deles.
-- Na array "transacoes", liste APENAS as entradas que foram REJEITADAS (para economizar limite de resposta).
+- Na array "transacoes", liste TODAS as entradas (CONSIDERADAS e REJEITADAS). Para as entradas consideradas, defina o status como "CONSIDERADO" e deixe o campo motivo em branco.
 
 {
   "resumo_geral": {
