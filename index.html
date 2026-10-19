@@ -276,10 +276,12 @@
 
     async function processarDocumentoParaImagemPura(file) {
       if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-           const res = await processarDocumentosPDF(file, 500, 0.5, 0.35);
-        return { texto: "", imagens: res.imagens }; 
+        // Escala aumentada para 1.5 e qualidade para 0.8 (alta nitidez para ler filiação)
+        const res = await processarDocumentosPDF(file, 5, 1.5, 0.8);
+        return { texto: res.texto, imagens: res.imagens }; 
       } else {
-        const img = await otimizarFotoBase64(file, 1000, 0.6);
+        // Resolução aumentada para 1400px e qualidade para 0.8
+        const img = await otimizarFotoBase64(file, 1400, 0.8);
         return { texto: "", imagens: [img] };
       }
     }
@@ -394,7 +396,7 @@ Extraia apenas os nomes próprios em letras maiúsculas. Deixe vazio ("") se o c
 Retorne EXCLUSIVAMENTE este JSON:
 {"titular": "NOME COMPLETO OFICIAL AQUI", "pai": "", "mae": "", "conjuge": ""}`;
         
-        const json = await chamarApiServidor({ prompt, texts: "", images: resDoc.imagens });
+        const json = await chamarApiServidor({ prompt, texts: resDoc.texto, images: resDoc.imagens });
         
         const limpar = (str) => {
           if (!str) return "";
