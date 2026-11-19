@@ -207,6 +207,88 @@ async function usarTexto(pedido, operacao, prazo) {
   throw Error(falhas.join(" ") || "Nenhum motor de texto disponível para esta solicitação.");
 }
 
+import { randomBytes, createHmac } from "node:crypto";
+
+const dominio = "apurador.miccorretores.com.br";
+const origem = "https://" + dominio;
+const cookieSessao = "__Host-apurador-sessao";
+const cookieDesafio = "__Host-apurador-desafio";
+const codigo = () => randomBytes(32).toString("base64url");
+
+function cookie(req, nome) {
+  const valor = (req.headers.cookie || "").split(";").map(x=>x.trim()).find(x=>x.startsWith(nome+"="))?.slice(nome.length+1);
+  return /^[A-Za-z0-9_-]{43}$/.test(valor || "") ? valor : "";
+}
+function definirCookie(nome, valor, segundos) {
+  return nome+"="+valor+"; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age="+segundos;
+}
+function chave(tipo, id) {
+  return "apurador:v1:"+tipo+":"+createHmac("sha256",process.env.APURADOR_SENHA).update(tipo+":"+id).digest("hex");
+}
+async function redis(...args) {
+  const url=process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token=process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if(!url || !token) throw new Error("Redis não configurado.");
+  const r=await fetch(url,{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(args),signal:AbortSignal.timeout(8000)});
+  if(!r.ok) throw new Error("Armazenamento indisponível.");
+  const j=await r.json();
+  if(j.error) throw new Error("Operação indisponível.");
+  return j.result;
+}
+async function sessaoValida(req) {
+  const id=cookie(req,cookieSessao);
+  return Boolean(id && req.headers.origin===origem && await redis("GET",chave("sessao",id))==="1");
+}
+async function acessoCelular(req,res,senhaCorreta) {
+  if(req.headers.origin!==origem) return res.status(403).json({error:"Abra o domínio do Apurador para usar a chave de acesso."});
+  const {acao,resposta}=req.body;
+  if(!["cadastrar","entrar","concluirCadastro","concluirEntrada","sair"].includes(acao)) return res.status(400).json({error:"Ação inválida."});
+  const cadastro=acao==="cadastrar" || acao==="concluirCadastro";
+  if(cadastro && !senhaCorreta) return res.status(401).json({error:"Senha do Apurador incorreta."});
+  if(acao==="sair") {
+    const id=cookie(req,cookieSessao);
+    if(id) await redis("DEL",chave("sessao",id));
+    res.setHeader("Set-Cookie",definirCookie(cookieSessao,"",0));
+    return res.json({ok:true});
+  }
+  const web=await import("@simplewebauthn/server");
+  if(acao==="cadastrar" || acao==="entrar") {
+    const opcoes=cadastro ? await web.generateRegistrationOptions({
+      rpName:"Apurador M&IC",rpID:dominio,userName:"Apurador M&IC",userID:randomBytes(32),
+      attestationType:"none",authenticatorSelection:{authenticatorAttachment:"platform",residentKey:"required",userVerification:"required"}
+    }) : await web.generateAuthenticationOptions({rpID:dominio,userVerification:"required"});
+    const id=codigo();
+    await redis("SET",chave("desafio",id),JSON.stringify({cadastro,challenge:opcoes.challenge}),"EX",180);
+    res.setHeader("Set-Cookie",definirCookie(cookieDesafio,id,180));
+    return res.json(opcoes);
+  }
+  const id=cookie(req,cookieDesafio);
+  const desafio=id && JSON.parse(await redis("GETDEL",chave("desafio",id)));
+  if(!desafio || desafio.cadastro!==cadastro || !resposta?.id || resposta.id.length>2048) return res.status(401).json({error:"Solicite o desbloqueio novamente."});
+  const comum={response:resposta,expectedOrigin:origem,expectedRPID:dominio,expectedChallenge:desafio.challenge,requireUserVerification:true};
+  const key=chave("credencial",resposta.id);
+  try {
+    if(cadastro){
+      const v=await web.verifyRegistrationResponse(comum);
+      if(!v.verified) throw Error();
+      const c=v.registrationInfo.credential;
+      if(!await redis("SET",key,JSON.stringify({id:c.id,publicKey:Buffer.from(c.publicKey).toString("base64url"),counter:c.counter}),"NX")) throw Error();
+    }else{
+      const raw=await redis("GET",key);
+      if(!raw) throw Error();
+      const stored=JSON.parse(raw);
+      const v=await web.verifyAuthenticationResponse({...comum,credential:{...stored,publicKey:Buffer.from(stored.publicKey,"base64url")}});
+      if(!v.verified) throw Error();
+      const atualizado=JSON.stringify({...stored,counter:v.authenticationInfo.newCounter});
+      if(!await redis("EVAL","if redis.call('get', KEYS[1]) == ARGV[1] then redis.call('set', KEYS[1], ARGV[2]); return 1 end return 0",1,key,raw,atualizado)) throw Error();
+    }
+  }catch{return res.status(401).json({error:"Chave de acesso não validada. Tente novamente ou use a senha do Apurador."});}
+  const sessao=codigo();
+  await redis("SET",chave("sessao",sessao),"1","EX",28800);
+  res.setHeader("Set-Cookie",[definirCookie(cookieSessao,sessao,28800),definirCookie(cookieDesafio,"",0)]);
+  return res.json({ok:true});
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -217,8 +299,12 @@ export default async function handler(req, res) {
 
   const senha = process.env.APURADOR_SENHA;
   if (!senha) return res.status(503).json({ error: "Configure APURADOR_SENHA na Vercel." });
-  if (req.headers.authorization !== `Bearer ${senha}`) {
-    return res.status(401).json({ error: "Senha de acesso incorreta." });
+  const senhaCorreta=req.headers.authorization === `Bearer ${senha}`;
+  try {
+    if(req.body?.operacao==="acessoCelular") return await acessoCelular(req,res,senhaCorreta);
+    if(!senhaCorreta && !await sessaoValida(req)) return res.status(401).json({error:"Entre com o celular ou use a senha do Apurador."});
+  } catch {
+    return res.status(503).json({error:"Acesso pelo celular indisponível. Confira a configuração do Redis ou entre com a senha do Apurador."});
   }
 
   const { operacao, texto = "", imagem = "", referencia = {} } = req.body || {};
