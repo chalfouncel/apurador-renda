@@ -26,7 +26,14 @@ th{background:#f4f1e9}td select{min-width:140px}.aviso{color:#824a00}.grupo{bord
 .grupo label{display:flex;align-items:flex-start;gap:8px}.opcional{margin-top:12px}
 #status{white-space:pre-line;overflow-wrap:anywhere;padding:10px 12px;margin-bottom:14px;background:#fffbef;border-left:4px solid #c8a75f}
 @media(max-width:640px){.grade{grid-template-columns:1fr} main{padding:10px}}
-</style>
+@media(max-width:640px){
+  header div{padding:8px 12px;gap:10px} header img{width:40px;height:40px} h1{font-size:1.15rem}
+  section{padding:12px;margin-bottom:10px}.grade{gap:8px}
+  button,select,input{min-height:44px;font-size:16px} input[type=checkbox]{min-height:20px}
+  .tabela td,.tabela tr,.tabela tbody,.tabela table{display:block}.tabela thead{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+  .tabela tr{border-top:2px solid #c8a75f;padding:6px 0}.tabela td{border:0;padding:3px 0;overflow-wrap:anywhere}
+  #coberturaArquivos,.grupo ul{padding-left:1.2em;overflow-wrap:anywhere}
+}</style>
 </head>
 <body>
 <header><div><img src="./logo.png" alt="M&amp;IC"><h1>Apurador de Renda</h1></div></header>
@@ -36,23 +43,20 @@ th{background:#f4f1e9}td select{min-width:140px}.aviso{color:#824a00}.grupo{bord
     <h2>Documento oficial</h2>
     <label>RG ou CNH <input id="documento" type="file" multiple accept="application/pdf,image/*"></label>
     <label class="opcional">Certidão de casamento (opcional) <input id="certidao" type="file" accept="application/pdf,image/*"></label>
-    <div class="acoes"><button id="lerCertidao" type="button" class="secundario">Ler certidão</button></div>
-    <p id="orientacaoCertidao">Confirme os dados do RG ou da CNH para ler a certidão.</p>
-    <div class="grade">
+    <p id="notaCertidao" role="status"></p>
+    <p id="notaDocumento" role="status"></p><div class="grade">
       <label>Nome completo<input id="titular" autocomplete="off"></label>
       <label>CPF<input id="cpf" inputmode="numeric" autocomplete="off"></label>
       <label>Pai<input id="pai" autocomplete="off"></label>
       <label>Mãe<input id="mae" autocomplete="off"></label>
       <label>Cônjuge<input id="conjuge" autocomplete="off"></label>
     </div>
-    <div class="acoes"><button id="confirmarDocumento" type="button">Confirmar dados do documento</button></div>
   </section>
   <section id="secaoExtratos">
     <h2>Extratos bancários</h2><p id="referencia"></p>
     <label>Anexar extratos bancários (PDF ou imagem) <input id="extratos" type="file" multiple accept="application/pdf,image/*"></label>
     <div class="acoes"><button id="conferir" type="button">Conferir titularidade</button></div>
     <div id="grupos"></div>
-    <button id="confirmarPendencias" type="button" hidden>Confirmar grupos pendentes</button>
   </section>
   <section id="secaoApuracao" hidden>
     <h2>Apuração</h2>
@@ -101,9 +105,7 @@ function diverge(a,b) {
 }
 function controles() {
   for(const campo of document.querySelectorAll("input,select,button")) campo.disabled=ocupado;
-  el("confirmarDocumento").disabled=ocupado||!el("documento").files.length;
-  el("lerCertidao").disabled=ocupado||!pessoa||!el("certidao").files.length;
-  el("orientacaoCertidao").hidden=Boolean(pessoa);
+  el("conferir").hidden=liberado||!pessoa||!el("extratos").files.length;
   el("conferir").disabled=ocupado||!pessoa||!el("extratos").files.length;
   el("apurar").disabled=ocupado||!liberado;
   const emitir=relatorio&&relatorio.linhas.every(t=>t.status!=="REVISAR");
@@ -120,7 +122,7 @@ function limparResultado() {
 }
 function limparExtratos() {
   liberado=false; grupos=[]; identificacoes.clear(); leituras.clear();
-  el("grupos").replaceChildren(); el("confirmarPendencias").hidden=true;
+  el("grupos").replaceChildren();
   el("secaoApuracao").hidden=true; limparResultado();
 }
 function limparPessoa() {
@@ -249,7 +251,8 @@ async function lerDocumento() {
   dados.cpf=candidatos.size===1?[...candidatos][0]:"";
   if(!dados.cpf) falhas.push(candidatos.size?"Há CPFs divergentes. Confira o CPF no documento.":"CPF completo não identificado após a releitura. Confira o campo no documento.");
   for(const campo of campos) if(dados[campo]) el(campo).value=dados[campo];
-  avisar(falhas.length?"Confira os dados extraídos.\n"+falhas.join("\n"):"Documento lido. Confira e confirme os dados.");
+  el("notaDocumento").textContent=falhas.join("\n");
+  avisar(falhas.length?"Confira os dados extraídos.\n"+falhas.join("\n"):"Documento lido.");
 }
 function confirmarDocumento() {
   const titular=el("titular").value.trim().replace(/\s+/g," "),cpf=cpfLimpo(el("cpf").value);
@@ -257,7 +260,7 @@ function confirmarDocumento() {
   if(!normal(titular).includes(" ")||!cpfValido(cpf)) throw Error("Confira o nome completo e o CPF do documento.");
   pessoa={titular,cpf}; el("secaoExtratos").hidden=false;
   el("referencia").textContent="Pessoa analisada · "+titular;
-  avisar("Documento confirmado. Anexe os extratos ou leia a certidão opcional.");
+  avisar("Documento identificado. Anexe os extratos.");
 }
 async function lerCertidao() {
   const {dados,falhas}=await lerIdentificacao([el("certidao").files[0]],pessoa);
@@ -298,7 +301,7 @@ async function identificarExtrato(f) {
   } finally { await pdf?.destroy(); }
 }
 function liberar() {
-  liberado=true; el("secaoApuracao").hidden=false; el("confirmarPendencias").hidden=true;
+  liberado=true; el("secaoApuracao").hidden=false;
   avisar("Titularidade conferida. Selecione a finalidade e apure a renda.");
 }
 function mostrarGrupos() {
@@ -306,7 +309,7 @@ function mostrarGrupos() {
   const nomeOficial=normal(pessoa.titular);
   for(const grupo of grupos) {
     grupo.bloqueado=grupo.registros.some(r=>r.cpfs.some(c=>diverge(pessoa.cpf,c)));
-    const automatico=grupo.registros.every(r=>normal(r.nome)===nomeOficial);
+    const automatico=grupo.registros.every(r=>normal(r.nome)===nomeOficial || (r.cpfs.includes(pessoa.cpf)&&(!normal(r.nome)||nomeOficial===normal(r.nome)||nomeOficial.startsWith(normal(r.nome)+" "))));
     const bloco=document.createElement("div"); bloco.className="grupo";
     const titulo=document.createElement("strong");
     titulo.textContent=grupo.conta?"Santander · agência e conta "+grupo.conta.replace("|"," / "):grupo.registros[0].f.name;
@@ -319,7 +322,7 @@ function mostrarGrupos() {
     bloco.append(titulo,lista);
     if(grupo.bloqueado||automatico) {
       const nota=document.createElement("p");
-      nota.textContent=grupo.bloqueado?"CPF divergente. Retire ou substitua o extrato.":"Nome completo conferido com o documento.";
+      nota.textContent=grupo.bloqueado?"CPF divergente. Retire ou substitua o extrato.":"Titularidade conferida com o documento.";
       bloco.append(nota);
     } else {
       const label=document.createElement("label");
@@ -332,14 +335,14 @@ function mostrarGrupos() {
     painel.append(bloco);
   }
   const bloqueado=grupos.some(g=>g.bloqueado), pendente=grupos.some(g=>g.caixa);
-  el("confirmarPendencias").hidden=bloqueado||!pendente;
+
   if(bloqueado) avisar("Há CPF divergente entre os extratos e o documento.");
   else if(pendente) avisar("Confira apenas os grupos pendentes.");
   else liberar();
 }
 async function conferirExtratos() {
   liberado=false; grupos=[]; el("grupos").replaceChildren();
-  el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=true; limparResultado();
+  el("secaoApuracao").hidden=true; limparResultado();
   const arquivos=Array.from(el("extratos").files), porConta=new Map();
   for(const [i,f] of arquivos.entries()) {
     avisar("Conferindo extrato "+(i+1)+"/"+arquivos.length+" · "+f.name);
@@ -353,11 +356,6 @@ async function conferirExtratos() {
     porConta.get(chave).registros.push(r);
   }
   grupos=[...porConta.values()]; mostrarGrupos();
-}
-function confirmarPendencias() {
-  if(!grupos.length||grupos.some(g=>g.bloqueado)) throw Error("Resolva os extratos divergentes.");
-  if(grupos.some(g=>g.caixa&&!g.caixa.checked)) throw Error("Confira os grupos pendentes.");
-  liberar();
 }
 function validarPagina(j) {
   if(j?.completa!==true) throw Error(j?.observacao||"Página incompleta.");
@@ -390,8 +388,13 @@ function consolidar(arquivos) {
       for(const t of p.transacoes) {
         identificados.add(t.data.slice(0,7));
         const linha={...t,origem:p.origem,motivo:String(t.motivo||"")}; linhas.push(linha);
-        const chaves=["valor:"+t.data+"|"+t.centavos], id=String(t.id_bancario||"").trim();
-        if(id) chaves.push("id:"+id);
+        const remetente=normal(t.remetente||t.pagador||t.origem_pagador||"");
+        const familia=[pessoa?.titular,...familiares.map(c=>el(c).value)].map(normal).filter(Boolean);
+        if(remetente&&familia.includes(remetente)){
+          linha.status="REJEITADO";linha.motivo="Transferência do titular ou familiar excluído.";
+        }
+        const id=String(t.id_bancario||"").trim();
+        const chaves=[id?"id:"+t.data+"|"+t.centavos+"|"+id:"descr:"+t.data+"|"+t.centavos+"|"+t.descricao.trim().toUpperCase()+"|"+remetente];
         for(const chave of chaves) {
           if(!coincidencias.has(chave)) coincidencias.set(chave,[]);
           coincidencias.get(chave).push(linha);
@@ -403,7 +406,28 @@ function consolidar(arquivos) {
   }
   if(!meses.size) throw Error("Nenhum período bancário foi identificado.");
   for(const iguais of coincidencias.values()) {
-    if(iguais.length>1) for(const t of iguais) { t.coincidencia=true; t.status="REVISAR"; }
+    if(iguais.length<2) continue;
+    if(iguais[0].id_bancario){
+      for(const t of iguais.slice(1)){t.status="REJEITADO";t.motivo="Registro já contabilizado no mesmo dia com o mesmo identificador bancário.";}
+    }else if(new Set(iguais.map(t=>t.origem)).size>1){
+      for(const t of iguais) if(t.status!=="REJEITADO"){t.coincidencia=true;t.status="REVISAR";}
+    }
+  }
+  // Recorrência entre dias não é uma segunda via do mesmo crédito.
+  const recorrencias=new Map();
+  for(const t of linhas){
+    const origem=normal(t.remetente||t.pagador||t.descricao);
+    const chave=origem+"|"+t.centavos;
+    if(!recorrencias.has(chave)) recorrencias.set(chave,new Set());
+    recorrencias.get(chave).add(t.data);
+  }
+  for(const t of linhas){
+    const motivo=normal(t.motivo);
+    const apenasRepeticao=/^(?:(?:POSSIVEL |SUSPEITA DE )?(?:DUPLICIDADE|DUPLICATA|REPETICAO)|(?:MESMO VALOR|VALOR REPETIDO)(?: E MESMO (?:TITULAR|REMETENTE|PAGADOR))?)(?: EM (?:DIAS|DATAS) (?:DIFERENTES|DISTINT[AO]S))?$/.test(motivo);
+    const origem=normal(t.remetente||t.pagador||t.descricao);
+    if(t.status==="REVISAR"&&!t.coincidencia&&apenasRepeticao&&recorrencias.get(origem+"|"+t.centavos).size>1){
+      t.status="CONSIDERADO";t.motivo="Crédito recorrente recebido em outra data.";
+    }
   }
   const ordenados=[...meses].sort(),lacunas=[];
   let [ano,mes]=ordenados[0].split("-").map(Number);
@@ -432,7 +456,7 @@ async function apurar() {
         const origem=f.name+" · pág. "+n,chave=JSON.stringify([i,n,referencia]);
         avisar("Arquivo "+(i+1)+"/"+arquivos.length+" · página "+n+"/"+total+"\n"+f.name);
         if(!leituras.has(chave)) {
-          const contexto={...referencia,numeroPagina:n,totalPaginas:total,
+          const contexto={...referencia,diretriz:"Créditos de terceiros identificados contam, inclusive de filhos. Excluir titular, pai, mãe e cônjuge identificados. Mesmo pagador e valor em datas diferentes são créditos distintos. Retorne remetente quando identificado. Reserve REVISAR para dúvida concreta.",numeroPagina:n,totalPaginas:total,
             periodoInformadoNaCapa:String(paginas[0]?.periodo||"").slice(0,200),
             mesesJaIdentificadosNesteArquivo:[...new Set([...(paginas[0]?.meses||[]),...(paginas.at(-1)?.meses||[])])].slice(0,24)};
           try { leituras.set(chave,{...(await analisarPagina(f,pdf,n,contexto)),origem}); }
@@ -497,71 +521,278 @@ function atualizarResumo() {
   el("totais").textContent="Considerado "+moeda(r.aceitos)+" · Rejeitado "+moeda(r.rejeitados)+" · Média mensal "+moeda(r.media);
   controles();
 }
-function gerarPDF() {
-  if(!relatorio) throw Error("Faça a apuração primeiro.");
-  const r=calcular();
-  if(r.pendentes) throw Error("Conclua a revisão das entradas.");
-  if(!window.jspdf?.jsPDF) throw Error("A biblioteca de PDF não carregou.");
-  const doc=new jspdf.jsPDF(),dados=relatorio.referencia;
-  if(typeof doc.autoTable!=="function") throw Error("A biblioteca de tabelas não carregou.");
-  const financiamento=relatorio.finalidade==="financiamento";
-  const estilo={margin:{left:14,right:14,top:30,bottom:16},headStyles:{fillColor:[34,32,29],textColor:[246,223,170]},styles:{font:"helvetica",fontSize:8,cellPadding:2.2},showHead:"everyPage"};
-  doc.autoTable({...estilo,startY:30,head:[["Identificação",financiamento?"Financiamento":"Aluguel"]],body:[
-    ["Titular",dados.titular],["Pai",dados.pai||"Não informado"],["Mãe",dados.mae||"Não informada"],["Cônjuge",dados.conjuge||"Não informado"],
-    ["Meses documentados",String(relatorio.meses.length)],["Lacunas no período",relatorio.lacunas.map(mesBR).join(", ")||"Nenhuma identificada"]
-  ]});
-  doc.autoTable({...estilo,startY:doc.lastAutoTable.finalY+6,head:[["Mês","Entradas consideradas"]],
-    body:[...r.mensal].map(([m,c])=>[mesBR(m),moeda(c)]),
-    foot:[["Total considerado",moeda(r.aceitos)],["Total rejeitado",moeda(r.rejeitados)],["Média por mês documentado",moeda(r.media)]],
-    showFoot:"lastPage",footStyles:{fillColor:[244,239,227],textColor:[35,35,35]},columnStyles:{1:{halign:"right"}}});
-  if(financiamento&&relatorio.linhas.length) {
-    doc.addPage();
-    doc.autoTable({...estilo,startY:30,head:[["Data","Lançamento e origem","Valor","Decisão e motivo"]],
-      body:relatorio.linhas.map(t=>[dataBR(t.data),t.descricao+"\n"+t.origem,moeda(t.centavos),
-        [t.status,t.manual?"Conferência manual":"",t.motivo].filter(Boolean).join("\n")]),
-      columnStyles:{0:{cellWidth:20},2:{cellWidth:25,halign:"right"},3:{cellWidth:48}}});
-  }
-  const total=doc.getNumberOfPages();
-  for(let n=1;n<=total;n++){
-    doc.setPage(n); doc.setFillColor(22,22,22); doc.rect(0,0,210,22,"F");
-    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(225,198,139);
-    doc.text("M&IC | Apuração de renda",14,14);
-    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(90,90,90);
-    doc.text("Página "+n+" de "+total,196,290,{align:"right"});
-  }
-  return {doc,nome:"Apuracao de renda - "+(dados.titular.replace(/[^\p{L}\p{N} -]/gu,"").trim()||"Titular")+".pdf"};
+function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+    function carregarLogoTransparente(url, opacidade = 1.0) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = function() {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i+1], b = data[i+2];
+              if (r < 35 && g < 35 && b < 35) {
+                data[i+3] = 0; 
+              } else if (opacidade < 1.0) {
+                data[i+3] = Math.round(data[i+3] * opacidade);
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            console.warn("Imagem bloqueada pelo navegador.");
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = encodeURI(url);
+      });
+    }
+
+    async function gerarPDF() {
+      const { jsPDF } = window.jspdf; 
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      if(!relatorio) throw Error("Faça a apuração primeiro.");
+      const r=calcular();
+      if(r.pendentes) throw Error("Resolva os lançamentos pendentes.");
+      const resumo={total_entradas_consideradas:r.aceitos/100,total_entradas_descartadas:r.rejeitados/100,quantidade_meses:r.mensal.size,renda_media_mensal:r.media/100};
+      const dadosCliente=relatorio.referencia, modoSelecionado=relatorio.finalidade;
+      const consolidadoMeses=[...r.mensal].map(([m,c])=>({mes_ano:mesBR(m),somatorio_entradas:c/100}));
+      const transacoesDetalhadas=relatorio.linhas.map(t=>({...t,data:dataBR(t.data),valor:t.centavos/100,mes_ano:mesBR(t.data.slice(0,7))}));
+      const titular = dadosCliente.titular || "Não especificado";
+
+      const watermarkBase64 = await carregarLogoTransparente('Marca dagua nova.png', 0.25);
+      const logoBase64 = await carregarLogoTransparente('logo.png', 1.0);
+
+      const desenharCabecalho = () => {
+        doc.setFillColor(18, 19, 21); doc.rect(0, 0, 210, 26, 'F');
+        doc.setFillColor(197, 155, 39); doc.rect(0, 26, 210, 1.2, 'F');
+        if (logoBase64) {
+          try { doc.addImage(logoBase64, 'PNG', 12, 6, 22, 14); } catch(e) {}
+        }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(212, 175, 55);
+        doc.text("LAUDO PERICIAL DE APURAÇÃO DE RENDA BANCÁRIA", 36, 11.5);
+        doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(207, 212, 220);
+        doc.text(`M&IC Corretores de Imóveis — Auditoria para ${modoSelecionado === 'financiamento' ? 'Financiamento Imobiliário' : 'Locação Residencial/Comercial'}`, 36, 17.5);
+        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 162, 19);
+      };
+
+      desenharCabecalho();
+
+      doc.setFillColor(18, 19, 21); doc.rect(11, 33, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 33, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("1. IDENTIFICAÇÃO DO TITULAR E FILTROS DE EXCLUSÃO", 16, 38);
+
+      doc.setDrawColor(224, 224, 224); doc.setFillColor(255, 255, 255); doc.rect(11, 40, 188, 17, 'FD');
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(26, 26, 26);
+      doc.text(`Titular da Conta: ${titular}`, 15, 45);
+      doc.text(`Filiação Registrada: ${dadosCliente.pai || 'N/I'} e ${dadosCliente.mae || 'N/I'}`, 15, 50);
+      doc.text(`Cônjuge / Vínculo Cadastrado: ${dadosCliente.conjuge || 'N/I'}`, 15, 55);
+
+      doc.setFillColor(18, 19, 21); doc.rect(11, 62, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, 62, 2, 7, 'F');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+      doc.text("2. DEMONSTRATIVO CONSOLIDADO POR PERÍODO (MÊS / ANO)", 16, 67);
+
+      doc.autoTable({
+        startY: 70, 
+        head: [['Mês / Ano', 'Somatório das Entradas Consideradas']],
+        body: consolidadoMeses.map(m => {
+          let mes = m.mes_ano || '';
+          if(mes.length === 7 && mes.includes('/20')) mes = mes.replace('/20', '/');
+          return [mes, formatMoeda(m.somatorio_entradas)];
+        }),
+        headStyles: { fillColor: [250, 246, 236], textColor: [115, 87, 14], fontSize: 7.5, fontStyle: 'bold', lineColor: [204, 204, 204], lineWidth: 0.2 },
+        bodyStyles: { fontSize: 7.2, textColor: [26, 26, 26], lineColor: [224, 224, 224], lineWidth: 0.2 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 60 }, 1: { halign: 'right', fontStyle: 'bold', textColor: [40, 167, 69] } },
+        margin: { top: 38, left: 11, right: 11 }, 
+        tableWidth: 188,
+        didDrawPage: function() {
+          if (doc.internal.getNumberOfPages() > 1) {
+            desenharCabecalho();
+          }
+        }
+      });
+
+      let currentY = doc.lastAutoTable.finalY + 5;
+      if (currentY > 265) {
+        doc.addPage();
+        desenharCabecalho();
+        currentY = 35;
+      }
+
+      doc.setFillColor(244, 245, 247); doc.setDrawColor(197, 155, 39); doc.roundedRect(11, currentY, 188, 18, 2, 2, 'FD');
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(18, 19, 21);
+      doc.text(`TOTAL CONSIDERADO: ${formatMoeda(resumo.total_entradas_consideradas)}`, 16, currentY + 7);
+      doc.text(`MÉDIA MENSAL APURADA: ${formatMoeda(resumo.renda_media_mensal)}`, 16, currentY + 13);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
+      doc.text(`Total Descartado (Filtros): ${formatMoeda(resumo.total_entradas_descartadas)}`, 115, currentY + 7);
+      doc.text(`Meses Analisados: ${resumo.quantidade_meses}`, 115, currentY + 13);
+
+      if (modoSelecionado === 'financiamento' && transacoesDetalhadas && transacoesDetalhadas.length > 0) {
+        currentY = currentY + 24;
+        if (currentY > 255) {
+          doc.addPage();
+          desenharCabecalho();
+          currentY = 35;
+        }
+
+        doc.setFillColor(18, 19, 21); doc.rect(11, currentY, 188, 7, 'F'); doc.setFillColor(197, 155, 39); doc.rect(11, currentY, 2, 7, 'F');
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(223, 186, 72);
+        doc.text("3. AUDITORIA DISCRIMINADA DE LANÇAMENTOS (MÊS A MÊS)", 16, currentY + 5);
+
+        const rowsTransacoes = transacoesDetalhadas.map(t => {
+          let mesAno = t.mes_ano || '';
+          if(mesAno.length === 7 && mesAno.includes('/20')) mesAno = mesAno.replace('/20', '/');
+          
+          let descricaoLimpa = t.descricao || '';
+          descricaoLimpa = descricaoLimpa.replace(/Transferência recebida pelo Pix[\s-]*/gi, 'Transf. via PIX - ');
+          descricaoLimpa = descricaoLimpa.replace(/Transferência enviada pelo Pix[\s-]*/gi, 'Transf. enviada PIX - ');
+          descricaoLimpa = descricaoLimpa.replace(/Transferência Recebida[\s-]*/gi, 'Transf. Recebida - ');
+
+          return [
+            t.data || '',
+            mesAno,
+            descricaoLimpa,
+            formatMoeda(t.valor || 0),
+            t.status || '',
+            t.motivo || ''
+          ];
+        });
+
+        doc.autoTable({
+          startY: currentY + 8,
+          head: [['Data', 'Mês/Ano', 'Descrição', 'Valor', 'Status', 'Motivo']],
+          body: rowsTransacoes,
+          headStyles: { fillColor: [18, 19, 21], textColor: [212, 175, 55], fontSize: 6.8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 6.5, lineColor: [224, 224, 224], lineWidth: 0.1 },
+          columnStyles: {
+            0: { cellWidth: 14 },
+            1: { cellWidth: 18, halign: 'center' }, 
+            2: { cellWidth: 'auto' }, 
+            3: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }, 
+            4: { cellWidth: 15, halign: 'center' }, 
+            5: { cellWidth: 40 } 
+          },
+          margin: { top: 38, left: 11, right: 11 },
+          tableWidth: 188,
+          didParseCell: function(data) {
+            if (data.section === 'body') {
+              const status = data.row.raw[4];
+              if (data.column.index === 3) {
+                  data.cell.styles.textColor = status === 'CONSIDERADO' ? [40, 167, 69] : [220, 53, 69];
+              }
+              if (data.column.index === 4) {
+                  data.cell.text = ['']; 
+              }
+            }
+          },
+          didDrawCell: function(data) {
+            if (data.section === 'body' && data.column.index === 4) {
+              const status = data.row.raw[4];
+              if (status === 'CONSIDERADO' || status === 'REJEITADO') {
+                doc.setFillColor(status === 'CONSIDERADO' ? 40 : 220, status === 'CONSIDERADO' ? 167 : 53, status === 'CONSIDERADO' ? 69 : 69);
+                doc.circle(data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, 1.5, 'F');
+              }
+            }
+          },
+          didDrawPage: function() {
+            desenharCabecalho();
+          }
+        });
+        
+        let legendY = doc.lastAutoTable.finalY + 5;
+        if (legendY > 275) {
+          doc.addPage();
+          desenharCabecalho();
+          legendY = 35;
+        }
+        
+        doc.setFillColor(40, 167, 69); 
+        doc.circle(14, legendY, 1.5, 'F');
+        doc.setFontSize(7); 
+        doc.setTextColor(110, 110, 110); 
+        doc.setFont("helvetica", "normal");
+        doc.text("Considerado", 17, legendY + 1);
+        
+        doc.setFillColor(220, 53, 69); 
+        doc.circle(38, legendY, 1.5, 'F');
+        doc.text("Rejeitado", 41, legendY + 1);
+      }
+
+      const totalPaginas = doc.internal.getNumberOfPages();
+      if (watermarkBase64) {
+        for (let p = 1; p <= totalPaginas; p++) {
+          doc.setPage(p);
+          try {
+            doc.addImage(watermarkBase64, 'PNG', 50, 93.5, 110, 110, '', 'FAST', 0);
+          } catch(e) {}
+        }
+      }
+
+      return { doc, nome:"Apuracao de renda - "+titular.replace(/[\\/:*?"<>|]/g,"")+".pdf" };
+    }
+
+    let familiaDoRG={},certidaoAplicada=false;
+function restaurarFamilia(){
+  if(certidaoAplicada) for(const c of familiares) el(c).value=familiaDoRG[c]||"";
+  certidaoAplicada=false;
+}
+async function atualizarCertidao(){
+  restaurarFamilia(); limparResultado();
+  const nota=el("notaCertidao");
+  nota.textContent="";
+  if(!el("certidao").files.length) return;
+  if(!pessoa){nota.textContent="A certidão será lida após identificar o titular do RG ou CNH.";return;}
+  familiaDoRG=Object.fromEntries(familiares.map(c=>[c,el(c).value]));
+  try {await lerCertidao();certidaoAplicada=true;nota.textContent=el("status").textContent;}
+  catch(e){nota.textContent="Certidão pendente · "+e.message;}
+}
+async function usarIdentificacao(){
+  confirmarDocumento();
+  await atualizarCertidao();
+  if(el("extratos").files.length) await conferirExtratos();
 }
 el("documento").addEventListener("change",()=>{
-  limparPessoa();
+  limparPessoa();el("notaDocumento").textContent="";certidaoAplicada=false; familiaDoRG={};el("notaCertidao").textContent="";
+  el("referencia").textContent="";
   for(const campo of campos) el(campo).value="";
-  if(el("documento").files.length) void executar(lerDocumento);
-  else { avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles(); }
+  if(el("documento").files.length) void executar(async()=>{
+    await lerDocumento();
+    if(normal(el("titular").value).includes(" ")&&cpfValido(cpfLimpo(el("cpf").value))) await usarIdentificacao();
+  });
+  else {avisar("Anexe o RG ou a CNH.");controles();}
 });
-for(const id of ["titular","cpf"]) el(id).addEventListener("input",()=>{
-  if(pessoa) { limparPessoa(); avisar("Identificação alterada. Confirme os dados novamente."); }
-  controles();
+for(const id of ["titular","cpf"]) el(id).addEventListener("change",()=>{
+  limparPessoa();restaurarFamilia();el("referencia").textContent="";
+  void executar(usarIdentificacao);
 });
-el("certidao").addEventListener("change",controles);
+el("certidao").addEventListener("change",()=>executar(atualizarCertidao));
 el("extratos").addEventListener("change",()=>{
-  limparExtratos(); avisar(pessoa?"Confira a titularidade dos extratos selecionados.":"Extratos anexados. Confirme o documento para conferir a titularidade."); controles();
+  limparExtratos();controles();
+  if(pessoa&&el("extratos").files.length) void executar(conferirExtratos);
+  else avisar("Anexe o RG ou a CNH e os extratos.");
 });
 el("grupos").addEventListener("change",()=>{
-  if(!liberado) return;
-  liberado=false; el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=false;
-  limparResultado(); controles();
+  if(grupos.length&&grupos.every(g=>!g.bloqueado&&(!g.caixa||g.caixa.checked))) liberar();
+  else {liberado=false;el("secaoApuracao").hidden=true;limparResultado();avisar("Confira apenas os grupos pendentes.");}
+  controles();
 });
 for(const campo of [...familiares,"finalidade"]) el(campo).addEventListener("input",()=>{
   if(relatorio) { limparResultado(); avisar("Dados alterados. Apure a renda novamente."); }
   controles();
 });
-el("confirmarDocumento").onclick=()=>executar(confirmarDocumento);
-el("lerCertidao").onclick=()=>executar(lerCertidao);
 el("conferir").onclick=()=>executar(conferirExtratos);
-el("confirmarPendencias").onclick=()=>executar(confirmarPendencias);
 el("apurar").onclick=()=>executar(apurar);
-el("baixar").onclick=()=>executar(()=>{ const {doc,nome}=gerarPDF(); doc.save(nome); avisar("PDF gerado."); });
+el("baixar").onclick=()=>executar(async()=>{ const {doc,nome}=await gerarPDF(); doc.save(nome); avisar("PDF gerado."); });
 el("compartilhar").onclick=()=>executar(async()=>{
-  const {doc,nome}=gerarPDF();
+  const {doc,nome}=await gerarPDF();
   const arquivo=new File([doc.output("blob")],nome,{type:"application/pdf"});
   if(navigator.canShare?.({files:[arquivo]})) {
     try { await navigator.share({files:[arquivo],title:"Apuração de renda M&IC"}); }
@@ -570,7 +801,7 @@ el("compartilhar").onclick=()=>executar(async()=>{
 });
 el("nova").onclick=()=>{
   if(el("documento").files.length&&!confirm("Encerrar a análise e limpar o progresso?")) return;
-  senha=""; limparPessoa();
+  senha=""; el("notaDocumento").textContent=""; limparPessoa();certidaoAplicada=false;el("referencia").textContent=el("notaCertidao").textContent="";
   for(const id of ["documento","extratos","certidao","finalidade",...campos]) el(id).value="";
   avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles();
   window.scrollTo({top:0,behavior:"smooth"});
