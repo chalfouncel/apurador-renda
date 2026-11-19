@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#151515">
+<meta name="theme-color" content="#121315">
 <title>Apurador de Renda | M&amp;IC</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./logo.png">
@@ -12,80 +12,174 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
-*{box-sizing:border-box} body{margin:0;background:#f5f4f0;color:#242424;font:15px/1.5 system-ui,sans-serif}
-header{background:#151515;color:white;border-bottom:3px solid #c8a75f}
-header div,main{max-width:1000px;margin:auto;padding:18px} header div{display:flex;align-items:center;gap:16px}
-header img{width:64px;height:64px;object-fit:contain} h1,h2,p{margin-top:0} h1{font-size:1.5rem;margin-bottom:0} h2{font-size:1.15rem}
-section{background:white;border:1px solid #dcd8cf;border-radius:12px;padding:18px;margin-bottom:16px}
-label{display:grid;gap:5px;font-weight:600} button,input,select{font:inherit}
-input,select{width:100%;min-width:0;padding:8px;border:1px solid #aaa69d;border-radius:6px;background:white;color:inherit}
-input[type=checkbox]{width:auto} button{border:1px solid #151515;border-radius:7px;padding:9px 15px;background:#151515;color:white;cursor:pointer}
-button.secundario{background:white;color:#151515} :disabled{opacity:.55;cursor:default} [hidden]{display:none!important}
-.grade{display:grid;grid-template-columns:1fr 1fr;gap:12px}.acoes{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
-.tabela{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:.9rem} th,td{text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid #dcd8cf}
-th{background:#f4f1e9}td select{min-width:140px}.aviso{color:#824a00}.grupo{border-top:1px solid #dcd8cf;padding:10px 0;overflow-wrap:anywhere}
-.grupo label{display:flex;align-items:flex-start;gap:8px}.opcional{margin-top:12px}
-#status{white-space:pre-line;overflow-wrap:anywhere;padding:10px 12px;margin-bottom:14px;background:#fffbef;border-left:4px solid #c8a75f}
-@media(max-width:640px){.grade{grid-template-columns:1fr} main{padding:10px}}
-@media(max-width:640px){
-  header div{padding:8px 12px;gap:10px} header img{width:40px;height:40px} h1{font-size:1.15rem}
-  section{padding:12px;margin-bottom:10px}.grade{gap:8px}
-  button,select,input{min-height:44px;font-size:16px} input[type=checkbox]{min-height:20px}
-  .tabela td,.tabela tr,.tabela tbody,.tabela table{display:block}.tabela thead{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
-  .tabela tr{border-top:2px solid #c8a75f;padding:6px 0}.tabela td{border:0;padding:3px 0;overflow-wrap:anywhere}
-  #coberturaArquivos,.grupo ul{padding-left:1.2em;overflow-wrap:anywhere}
-}</style>
+:root {
+    --primary: #121315;
+    --secondary: #1a1c20;
+    --accent: #c59b27;
+    --gold: #d4af37;
+    --gold-light: #dfba48;
+    --silver: #cfd4dc;
+    --highlight: #c59b27;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #e67e22;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --border: #e0e0e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  html, body { overscroll-behavior-y: none; }
+  body { background: var(--bg); color: var(--text); padding-bottom: 20px; }
+  
+  header { 
+    background: linear-gradient(135deg, #0d0e10 0%, #1a1c20 70%, #2b261b 100%); 
+    border-bottom: 3px solid #c59b27; 
+    color: #fff; 
+    padding: 12px 16px; 
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 12px; 
+    text-align: left; 
+  }
+  .app-header-logo {
+    max-height: 46px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 800; color: #d4af37; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); line-height: 1.1; margin-bottom: 2px; }
+  header p { font-size: 0.72rem; opacity: 0.85; line-height: 1.2; }
+
+  .user-bar { display: none; justify-content: space-between; align-items: center; background: #20242a; color: #cfd4dc; padding: 6px 16px; font-size: 0.78rem; border-bottom: 1px solid #333; }
+  .user-bar span { color: #d4af37; font-weight: bold; }
+  .user-bar .time-chip { background: #121315; border: 1px solid #c59b27; color: #dfba48; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; margin-left: 8px; }
+  .btn-logout-link { background: none; border: none; color: #ff6b6b; cursor: pointer; text-decoration: underline; font-size: 0.78rem; }
+
+  .container { max-width: 650px; margin: 10px auto; padding: 0 12px; }
+  .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--border); }
+  .card h2 { font-size: 1rem; color: var(--secondary); margin-bottom: 10px; border-bottom: 2px solid #eef2f5; padding-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+label { display: block; font-size: 0.8rem; font-weight: 700; color: #343a40; margin-bottom: 3px; margin-top: 8px; }
+  input[type="text"], input[type="url"], input[type="date"], input[type="password"], input[type="email"], textarea, select {
+    width: 100%; padding: 10px; border: 1.5px solid #ced4da; border-radius: 6px; font-size: 0.9rem; background: #fff; color: #212529; font-weight: 500;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="url"]:focus { border-color: #007bff; outline: none; }
+  .field-ok { background-color: #e8f5e9 !important; border-color: #28a745 !important; }
+.file-dropzone {
+    border: 1.5px dashed #c59b27; border-radius: 8px; padding: 12px; background: #faf8f2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px;
+  }
+  .file-dropzone svg { width: 28px; height: 28px; fill: #c59b27; flex-shrink: 0; }
+  .file-dropzone-text { display: flex; flex-direction: column; text-align: left; }
+  .file-dropzone-text strong { font-size: 0.9rem; color: #121315; }
+  .file-dropzone-text span { font-size: 0.72rem; color: #888; margin-top: 2px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px 14px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; gap: 8px; margin-top: 10px; text-decoration: none; }
+  .btn-primary { background: linear-gradient(135deg, #c59b27, #dfba48); color: #121315; font-weight: 700; border: 1px solid #b88d1e; text-shadow: 0 0 1px rgba(255,255,255,0.4); }
+.btn-next { background: #203a43; color: #fff; }
+  .btn-share { background: #17a2b8; color: #fff; }
+  .btn-download { background: #28a745; color: #fff; }
+  .btn-maintenance { background: #34495e; color: #fff; font-size: 0.82rem; padding: 10px; margin-top: 14px; border: 1px dashed #c59b27; }
+#entrada {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(4px);
+    z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .auth-box {
+    background: #ffffff; border-radius: 14px; padding: 26px 22px; width: 100%; max-width: 380px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; text-align: center;
+  }
+  .auth-box .login-logo { max-height: 48px; width: auto; margin-bottom: 10px; border-radius: 4px; }
+  .auth-box h2 { font-size: 1.25rem; color: #0f172a; margin-bottom: 6px; }
+  .auth-box p { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; }
+  .auth-box input { margin-bottom: 10px; font-size: 0.9rem; padding: 10px 12px; }
+  .auth-status-msg { font-size: 0.78rem; text-align: center; margin-top: 10px; min-height: 18px; font-weight: 600; }
+  .auth-status-err { color: #dc2626; }
+  .auth-status-ok { color: #16a34a; }
+
+  #barreira {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.96); z-index: 9998; align-items: center; justify-content: center; padding: 16px;
+  }
+  .barrier-box {
+    background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px 22px; width: 100%; max-width: 420px;
+    color: #f8fafc; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+  }
+  .barrier-box h3 { color: #d4af37; font-size: 1.3rem; margin-bottom: 10px; }
+  .barrier-box p { color: #cbd5e1; font-size: 0.88rem; line-height: 1.45; margin-bottom: 20px; }
+[hidden]{display:none!important}
+#entrada,#barreira{overflow:auto;align-items:safe center;display:flex}
+.user-bar{display:flex;gap:10px}.user-bar span{overflow-wrap:anywhere}
+.auth-box label{font-size:0;text-align:left;margin:0}
+.auth-box label:focus-within{color:var(--text)}
+.auth-box .auth-status-msg,#erroLogin{margin:10px 0 0;min-height:18px;font-size:.78rem}
+#formLogin input{display:block}
+.card p,.card ul,.card td{font-size:.85rem;line-height:1.45;overflow-wrap:anywhere}
+.card p:not(:empty),.card ul:not(:empty){margin:8px 0}
+.card ul{padding-left:1.25rem}
+.grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}
+input,select{min-width:0}
+.file-dropzone{flex-direction:column;align-items:stretch;gap:6px}.file-dropzone strong{font-size:.9rem}
+.file-dropzone input{width:100%;font-size:.8rem}.file-dropzone input::file-selector-button{border:1px solid #b88d1e;background:#fff;padding:6px 8px;border-radius:5px;color:#343a40;cursor:pointer}
+#status{white-space:pre-line;overflow-wrap:anywhere;background:#faf8f2;border-left:4px solid var(--accent);padding:10px 12px;margin-bottom:12px;font-size:.85rem}
+.grupo{border-top:1px solid var(--border);padding:8px 0;overflow-wrap:anywhere}.grupo label{display:flex;gap:8px;align-items:center}
+.tabela{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px;border-bottom:1px solid var(--border)}th{background:#eef2f5;font-size:.8rem}
+.aviso{color:#824a00}button:disabled{opacity:.55;cursor:default}
+#sairBarreira{margin-top:12px}#pagar[hidden]{display:none}#erroLogin:empty{display:none}
+@media(max-width:600px){.grade{grid-template-columns:1fr}input[type=email],input[type=password],input[type=text],select{font-size:16px}.tabela table,.tabela tbody,.tabela tr,.tabela td{display:block}.tabela thead{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}.tabela tr{border-top:2px solid var(--accent);padding:6px 0}.tabela td{border:0}.btn{min-height:44px}}
+
+</style>
 </head>
 <body>
-<header><div><img src="./logo.png" alt="M&amp;IC"><h1>Apurador de Renda</h1></div></header>
+
 <main id="entrada">
-  <section style="max-width:380px;margin:24px auto">
-    <h2>Entrar no Apurador</h2>
+  <section class="auth-box"><img class="login-logo" src="./logo.png" alt="M&amp;IC"><h2>Apurador de Renda</h2><p>Acesse com seu e-mail e senha para prosseguir</p>
     <form id="formLogin">
-      <label>E-mail<input type="email" id="loginUsuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
-      <label class="opcional">Senha<input id="loginSenha" name="password" autocomplete="current-password" type="password" required></label>
-      <div class="acoes"><button id="entrar" type="submit">Entrar</button></div>
-      <div class="acoes"><button type="button" class="secundario" id="cadastrar">Criar conta</button><button type="button" class="secundario" id="manutencao">Solicitar código de manutenção</button></div><p id="erroLogin" role="status"></p>
+      <label>E-mail<input type="email" placeholder="E-mail" id="loginUsuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="opcional">Senha<input placeholder="Senha ou código" id="loginSenha" name="password" autocomplete="current-password" type="password" required></label>
+      <div class="acoes"><button class="btn btn-primary" id="entrar" type="submit">Entrar</button></div>
+      <div class="acoes"><button class="btn btn-next" type="button" id="cadastrar">Criar conta</button><button class="btn btn-maintenance" type="button" id="manutencao">Solicitar código de manutenção</button></div><p id="erroLogin" role="status"></p>
     </form>
   </section>
 </main>
-<main id="barreira" hidden><section><h2>Acesso ao Apurador</h2><p id="mensagemBarreira" role="status">Verificando acesso…</p><a hidden id="pagar" target="_blank" rel="noopener" href="https://www.asaas.com/c/uv6kefogcnoxdvkp">Liberar 2 horas por R$ 5,00</a><div class="acoes"><button id="revalidar">Conferir acesso</button><button id="sairBarreira">Sair</button></div></section></main><main id="aplicativo" hidden><p id="contaAtiva"></p>
-  <button id="sairLogin" type="button" class="secundario">Sair</button>
+<main id="barreira" hidden><section class="barrier-box"><h3>Acesso ao Apurador</h3><p id="mensagemBarreira" role="status">Verificando acesso…</p><a class="btn btn-primary" hidden id="pagar" target="_blank" rel="noopener" href="https://www.asaas.com/c/uv6kefogcnoxdvkp">Liberar 2 horas por R$ 5,00</a><div class="acoes"><button class="btn btn-next" id="revalidar">Conferir acesso</button><button class="btn-logout-link" id="sairBarreira">Sair</button></div></section></main><main id="aplicativo" hidden><div class="user-bar"><span id="contaAtiva"></span><button class="btn-logout-link" id="sairLogin" type="button">Sair</button></div><header><img class="app-header-logo" src="./logo.png" alt="M&amp;IC"><div><h1>APURADOR DE RENDA</h1><p>M&amp;IC Corretores de Imóveis</p></div></header><div class="container">
   <p id="status" role="status" aria-live="polite">Anexe o RG ou a CNH para iniciar a leitura.</p>
-  <section>
+  <section class="card">
     <h2>Documento oficial</h2>
-    <label>RG ou CNH <input id="documento" type="file" multiple accept="application/pdf,image/*"></label>
-    <label class="opcional">Certidão de casamento (opcional) <input id="certidao" type="file" accept="application/pdf,image/*"></label>
+    <label class="file-dropzone"><strong>RG ou CNH</strong><input id="documento" type="file" multiple accept="application/pdf,image/*"></label>
+    <label class="file-dropzone"><strong>Certidão de casamento (opcional)</strong><input id="certidao" type="file" accept="application/pdf,image/*"></label>
     <p id="notaCertidao" role="status"></p>
     <p id="notaDocumento" role="status"></p><div class="grade">
-      <label>Nome completo<input id="titular" autocomplete="off"></label>
-      <label>CPF<input id="cpf" inputmode="numeric" autocomplete="off"></label>
-      <label>Pai<input id="pai" autocomplete="off"></label>
-      <label>Mãe<input id="mae" autocomplete="off"></label>
-      <label>Cônjuge<input id="conjuge" autocomplete="off"></label>
+      <label>Nome completo<input id="titular" type="text" autocomplete="off"></label>
+      <label>CPF<input id="cpf" type="text" inputmode="numeric" autocomplete="off"></label>
+      <label>Pai<input id="pai" type="text" autocomplete="off"></label>
+      <label>Mãe<input id="mae" type="text" autocomplete="off"></label>
+      <label>Cônjuge<input id="conjuge" type="text" autocomplete="off"></label>
     </div>
   </section>
-  <section id="secaoExtratos">
+  <section class="card" id="secaoExtratos">
     <h2>Extratos bancários</h2><p id="referencia"></p>
-    <label>Anexar extratos bancários (PDF ou imagem) <input id="extratos" type="file" multiple accept="application/pdf,image/*"></label>
-    <div class="acoes"><button id="conferir" type="button">Conferir titularidade</button></div>
+    <label class="file-dropzone"><strong>Anexar extratos bancários (PDF ou imagem)</strong><input id="extratos" type="file" multiple accept="application/pdf,image/*"></label>
+    <div class="acoes"><button class="btn btn-next" id="conferir" type="button">Conferir titularidade</button></div>
     <div id="grupos"></div>
   </section>
-  <section id="secaoApuracao" hidden>
+  <section class="card" id="secaoApuracao" hidden>
     <h2>Apuração</h2>
     <label>Finalidade <select id="finalidade"><option value="">Selecione</option><option value="aluguel">Aluguel</option><option value="financiamento">Financiamento</option></select></label>
-    <div class="acoes"><button id="apurar" type="button">Ler extratos e apurar renda</button></div>
+    <div class="acoes"><button class="btn btn-primary" id="apurar" type="button">Ler extratos e apurar renda</button></div>
   </section>
-  <section id="revisao" hidden>
+  <section class="card" id="revisao" hidden>
     <h2>Período encontrado e resultado</h2>
     <p id="cobertura"></p><ul id="coberturaArquivos"></ul>
     <p id="lacunas" class="aviso" hidden></p><p id="totais"></p><p id="pendencias"></p>
     <div class="tabela" id="tabelaRevisao" hidden>
       <table><thead><tr><th>Data e origem</th><th>Descrição e motivo</th><th>Crédito</th><th>Decisão</th></tr></thead><tbody id="linhas"></tbody></table>
     </div>
-    <div class="acoes"><button id="baixar" type="button">Baixar PDF</button><button id="compartilhar" type="button" class="secundario">Compartilhar PDF</button></div>
+    <div class="acoes"><button class="btn btn-download" id="baixar" type="button">Baixar PDF</button><button class="btn btn-share" id="compartilhar" type="button">Compartilhar PDF</button></div>
   </section>
-  <button id="nova" type="button" class="secundario">Nova análise</button>
+  <button class="btn btn-next" id="nova" type="button">Nova análise</button></div>
 </main>
 <script>
 "use strict";
