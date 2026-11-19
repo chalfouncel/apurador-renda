@@ -38,6 +38,7 @@ th{background:#f4f1e9}td select{min-width:140px}.aviso{color:#824a00}.grupo{bord
 <body>
 <header><div><img src="./logo.png" alt="M&amp;IC"><h1>Apurador de Renda</h1></div></header>
 <main>
+  <div id="acessoMovel" class="acoes" hidden><button type="button" id="entrarCelular">Entrar com o celular</button><button type="button" class="secundario" id="ativarCelular">Cadastrar chave de acesso</button><button type="button" class="secundario" id="sairCelular" hidden>Sair da sessão</button></div>
   <p id="status" role="status" aria-live="polite">Anexe o RG ou a CNH para iniciar a leitura.</p>
   <section>
     <h2>Documento oficial</h2>
@@ -128,14 +129,58 @@ function limparExtratos() {
 function limparPessoa() {
   pessoa=null; el("secaoExtratos").hidden=false; limparExtratos();
 }
+let acessoAtivo=sessionStorage.getItem("apurador.login")==="1";
+function mostrarAcesso(){
+  const compativel=window.isSecureContext && window.PublicKeyCredential && navigator.credentials;
+  el("acessoMovel").hidden=!compativel;
+  el("entrarCelular").hidden=el("ativarCelular").hidden=acessoAtivo;
+  el("sairCelular").hidden=!acessoAtivo;
+}
+function sessaoLocal(ativa){
+  acessoAtivo=ativa;
+  if(ativa) sessionStorage.setItem("apurador.login","1");
+  else sessionStorage.removeItem("apurador.login");
+  mostrarAcesso();
+}
+const bytes64=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0));
+const base64url=b=>btoa(Array.from(new Uint8Array(b),v=>String.fromCharCode(v)).join("")).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+async function acessoAPI(acao,resposta,chaveSenha){
+  const headers={"Content-Type":"application/json"};
+  if(chaveSenha) headers.Authorization="Bearer "+chaveSenha;
+  const r=await fetch("/api/audit",{method:"POST",credentials:"same-origin",headers,body:JSON.stringify({operacao:"acessoCelular",acao,resposta})});
+  const j=await r.json();
+  if(!r.ok) throw Error(j.error||"Falha no acesso.");
+  return j;
+}
+async function autenticar(cadastro){
+  const s=cadastro?(senha||prompt("Senha atual do Apurador para cadastrar a chave")||""):"";
+  if(cadastro&&!s) return;
+  const opts=await acessoAPI(cadastro?"cadastrar":"entrar",undefined,s);
+  opts.challenge=bytes64(opts.challenge);
+  if(opts.user) opts.user.id=bytes64(opts.user.id);
+  for(const c of [...(opts.allowCredentials||[]),...(opts.excludeCredentials||[])]) c.id=bytes64(c.id);
+  let cred;
+  try{cred=cadastro?await navigator.credentials.create({publicKey:opts}):await navigator.credentials.get({publicKey:opts});}
+  catch(e){throw Error(e.name==="NotAllowedError"?"Desbloqueio cancelado ou chave indisponível.":"Falha ao abrir o desbloqueio do aparelho.");}
+  const a=cred.response;
+  const resposta={clientDataJSON:base64url(a.clientDataJSON)};
+  if(cadastro){resposta.attestationObject=base64url(a.attestationObject);resposta.transports=a.getTransports?.()||[];}
+  else {resposta.authenticatorData=base64url(a.authenticatorData);resposta.signature=base64url(a.signature);if(a.userHandle) resposta.userHandle=base64url(a.userHandle);}
+  await acessoAPI(cadastro?"concluirCadastro":"concluirEntrada",{id:cred.id,rawId:base64url(cred.rawId),type:cred.type,response:resposta,clientExtensionResults:cred.getClientExtensionResults()},s);
+  senha="";sessaoLocal(true);avisar("Acesso liberado. Anexe os documentos.");
+}
+el("ativarCelular").onclick=()=>executar(()=>autenticar(true));
+el("entrarCelular").onclick=()=>executar(()=>autenticar(false));
+el("sairCelular").onclick=()=>executar(async()=>{await acessoAPI("sair");senha="";sessaoLocal(false);avisar("Sessão encerrada.");});
+mostrarAcesso();
 async function api(operacao,partes,referencia={}) {
-  if(!senha) senha=prompt("Senha do apurador")||"";
-  if(!senha) throw Error("Informe a senha para continuar.");
+  if(!acessoAtivo&&!senha) senha=prompt("Senha do apurador")||"";
+  if(!acessoAtivo&&!senha) throw Error("Informe a senha para continuar.");
   const r=await fetch("/api/audit",{
-    method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+senha},
+    method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json",...(senha?{Authorization:"Bearer "+senha}:{})},
     body:JSON.stringify({operacao,...partes,referencia})
   });
-  if(r.status===401) senha="";
+  if(r.status===401){senha="";sessaoLocal(false);}
   const j=await r.json().catch(()=>({}));
   if(!r.ok) throw Object.assign(Error(j.error||"Falha HTTP "+r.status),{http:r.status});
   return j;
