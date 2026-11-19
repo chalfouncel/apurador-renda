@@ -5,100 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#151515">
   <title>Apurador de Renda | M&IC</title>
-
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./logo.png">
-
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
   <style>
     :root {
-      color-scheme: light;
       --preto: #151515;
       --ouro: #c8a75f;
       --borda: #dcd8cf;
       --fundo: #f5f4f0;
       --texto: #242424;
     }
+
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--fundo);
-      color: var(--texto);
-      font: 15px/1.5 system-ui, sans-serif;
-    }
-    header {
-      background: var(--preto);
-      color: white;
-      border-bottom: 3px solid var(--ouro);
-    }
-    header > div, main {
-      max-width: 1000px;
-      margin: auto;
-      padding: 18px;
-    }
+    body { margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.5 system-ui, sans-serif; }
+    header { background: var(--preto); color: white; border-bottom: 3px solid var(--ouro); }
+    header > div, main { max-width: 1000px; margin: auto; padding: 18px; }
     header > div { display: flex; gap: 16px; align-items: center; }
     header img { width: 65px; height: 65px; object-fit: contain; }
     h1 { margin: 0; font-size: 1.5rem; }
     h2 { margin: 0 0 14px; font-size: 1.1rem; }
-    p { margin: 6px 0 14px; }
-    section {
-      background: white;
-      margin: 0 0 16px;
-      padding: 18px;
-      border: 1px solid var(--borda);
-      border-radius: 12px;
-    }
+    p { margin: 8px 0 14px; }
+    section { background: white; margin-bottom: 16px; padding: 18px; border: 1px solid var(--borda); border-radius: 12px; }
     label { display: grid; gap: 5px; font-weight: 600; }
     input, select, button { font: inherit; }
-    input, select {
-      width: 100%;
-      min-width: 0;
-      border: 1px solid #b9b5ac;
-      border-radius: 6px;
-      padding: 8px;
-      background: white;
-      color: var(--texto);
-    }
-    button {
-      border: 1px solid var(--preto);
-      border-radius: 7px;
-      padding: 9px 15px;
-      background: var(--preto);
-      color: white;
-      cursor: pointer;
-    }
+    input, select { width: 100%; min-width: 0; border: 1px solid #b9b5ac; border-radius: 6px; padding: 8px; background: white; color: var(--texto); }
+    input[type="checkbox"] { width: auto; }
+    button { border: 1px solid var(--preto); border-radius: 7px; padding: 9px 15px; background: var(--preto); color: white; cursor: pointer; }
     button.secundario { color: var(--preto); background: white; }
-    button:disabled, input:disabled, select:disabled { opacity: .55; cursor: default; }
-    .grade { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    :disabled { opacity: .55; cursor: default; }
+    [hidden] { display: none !important; }
+    .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .tabela { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--borda); }
-    td { vertical-align: top; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--borda); vertical-align: top; }
     th { background: #f4f1e9; }
-    td select { min-width: 142px; }
+    td select { min-width: 140px; }
     .dinheiro { white-space: nowrap; text-align: right; }
     .aviso { color: #824a00; }
-    #status {
-      white-space: pre-line;
-      overflow-wrap: anywhere;
-      margin-bottom: 14px;
-      border-left: 4px solid var(--ouro);
-      padding: 10px 12px;
-      background: #fffbef;
-    }
-    [hidden] { display: none !important; }
-    @media(max-width: 640px) {
+    .grupo { border-top: 1px solid var(--borda); padding: 10px 0; overflow-wrap: anywhere; }
+    .grupo label { display: flex; align-items: start; gap: 8px; }
+    .grupo ul { margin: 6px 0 0; }
+    #status { white-space: pre-line; overflow-wrap: anywhere; margin-bottom: 14px; border-left: 4px solid var(--ouro); padding: 10px 12px; background: #fffbef; }
+
+    @media (max-width: 640px) {
       .grade { grid-template-columns: 1fr; }
       main { padding: 10px; }
       section { padding: 14px; }
     }
   </style>
 </head>
-
 <body>
 <header>
   <div>
@@ -111,19 +70,37 @@
   <div id="status" role="status" aria-live="polite">Selecione os extratos para iniciar.</div>
 
   <section>
-    <h2>1. Extratos bancários</h2>
+    <h2>Extratos bancários</h2>
     <label>
       Extratos em PDF ou imagem
       <input id="extratos" type="file" multiple accept="application/pdf,image/*">
     </label>
     <div class="acoes">
-      <button id="validar" type="button">Validar titularidade</button>
+      <button id="identificar" type="button">Identificar titular nos extratos</button>
+    </div>
+  </section>
+
+  <section id="conferencia" hidden>
+    <h2>Confirmar titularidade</h2>
+    <div class="grade">
+      <label>
+        Nomes encontrados
+        <select id="candidatos"></select>
+      </label>
+      <label>
+        Nome completo da pessoa analisada
+        <input id="nomeConfirmado" autocomplete="off">
+      </label>
+    </div>
+    <p id="origemCandidato"></p>
+    <div id="grupos"></div>
+    <div class="acoes">
+      <button id="confirmarTitular" type="button">Confirmar titular e extratos</button>
     </div>
   </section>
 
   <section id="cadastro" hidden>
-    <h2>2. Titular e familiares</h2>
-
+    <h2>Titular, familiares e período</h2>
     <label>
       Documento oficial ou certidão de casamento
       <input id="documento" type="file" accept="application/pdf,image/*">
@@ -131,11 +108,9 @@
     <div class="acoes">
       <button id="lerDoc" type="button" class="secundario">Ler documento</button>
     </div>
-
     <br>
-
     <div class="grade">
-      <label>Titular<input id="titular"></label>
+      <label>Titular confirmado<input id="titular" readonly></label>
       <label>CPF de referência<input id="cpf" readonly></label>
       <label>Pai<input id="pai"></label>
       <label>Mãe<input id="mae"></label>
@@ -151,14 +126,13 @@
       <label>Primeiro mês solicitado<input id="inicio" type="month"></label>
       <label>Último mês solicitado<input id="fim" type="month"></label>
     </div>
-
     <div class="acoes">
       <button id="processar" type="button">Apurar renda</button>
     </div>
   </section>
 
   <section id="revisao" hidden>
-    <h2>3. Conferência das entradas</h2>
+    <h2>Conferência das entradas</h2>
     <p id="cobertura"></p>
     <p id="pendencias" class="aviso"></p>
     <div class="tabela">
@@ -177,8 +151,8 @@
   </section>
 
   <section id="resumo" hidden>
-    <h2>4. Resultado</h2>
-    <div id="totais"></div>
+    <h2>Resultado</h2>
+    <p id="totais"></p>
     <div class="acoes">
       <button id="baixar" type="button">Baixar PDF</button>
       <button id="compartilhar" type="button" class="secundario">Compartilhar PDF</button>
@@ -192,39 +166,70 @@
 "use strict";
 
 const el = id => document.getElementById(id);
-const moeda = centavos => (centavos / 100).toLocaleString("pt-BR", {
-  style: "currency", currency: "BRL"
-});
-const mesBR = mes => mes.slice(5, 7) + "/" + mes.slice(0, 4);
-const dataBR = data => data.split("-").reverse().join("/");
-const normal = valor => String(valor || "").normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
-
-const camposPessoa = ["titular", "pai", "mae", "conjuge"];
 const statusValidos = ["CONSIDERADO", "REJEITADO", "REVISAR"];
+const familiares = ["pai", "mae", "conjuge"];
 const identificacoes = new Map();
 const leituras = new Map();
 
 let senha = "";
 let ocupado = false;
-let titularValidado = false;
+let identidade = null;
 let relatorio = null;
+let candidatos = [];
+let grupos = [];
+let marcacoes = [];
 
 function avisar(texto) {
   el("status").textContent = texto;
 }
 
+function normal(valor) {
+  return String(valor || "").normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z -]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cpfLimpo(valor) {
+  const cpf = String(valor || "").replace(/[^\d*xX]/g, "").replace(/[xX]/g, "*");
+  return cpf.length === 11 ? cpf : "";
+}
+
+function compararCPF(a, b) {
+  const esquerda = cpfLimpo(a);
+  const direita = cpfLimpo(b);
+  let comuns = 0;
+
+  if (!esquerda || !direita) return { divergente: false, comuns };
+  for (let i = 0; i < 11; i++) {
+    if (esquerda[i] === "*" || direita[i] === "*") continue;
+    if (esquerda[i] !== direita[i]) return { divergente: true, comuns };
+    comuns++;
+  }
+  return { divergente: false, comuns };
+}
+
+const moeda = valor => (valor / 100).toLocaleString("pt-BR", {
+  style: "currency", currency: "BRL"
+});
+const mesBR = mes => mes.slice(5, 7) + "/" + mes.slice(0, 4);
+const dataBR = data => data.split("-").reverse().join("/");
+
 function atualizarControles() {
-  for (const id of ["extratos", "documento", "titular", "pai", "mae", "conjuge",
-                    "finalidade", "inicio", "fim", "nova"]) {
+  for (const id of ["extratos", "candidatos", "nomeConfirmado", "documento",
+    ...familiares, "inicio", "fim", "finalidade", "nova"]) {
     el(id).disabled = ocupado;
   }
-  el("validar").disabled = ocupado || !el("extratos").files.length;
-  el("lerDoc").disabled = ocupado || !titularValidado || !el("documento").files.length;
-  el("processar").disabled = ocupado || !titularValidado;
-  const pendente = !relatorio || relatorio.linhas.some(t => t.status === "REVISAR");
-  el("baixar").disabled = ocupado || pendente;
-  el("compartilhar").disabled = ocupado || pendente;
+  for (const item of marcacoes) item.caixa.disabled = ocupado;
+  el("identificar").disabled = ocupado || !el("extratos").files.length;
+  el("confirmarTitular").disabled = ocupado || el("conferencia").hidden;
+  el("lerDoc").disabled = ocupado || !identidade || !el("documento").files.length;
+  el("processar").disabled = ocupado || !identidade;
+  const podeEmitir = relatorio && relatorio.linhas.every(t => t.status !== "REVISAR");
+  el("baixar").disabled = ocupado || !podeEmitir;
+  el("compartilhar").disabled = ocupado || !podeEmitir;
 }
 
 async function executar(acao) {
@@ -244,21 +249,33 @@ async function executar(acao) {
 function retirarResultado() {
   relatorio = null;
   el("linhas").replaceChildren();
-  el("totais").replaceChildren();
   el("revisao").hidden = true;
   el("resumo").hidden = true;
+}
+
+function invalidarIdentidade() {
+  identidade = null;
+  el("cadastro").hidden = true;
+  retirarResultado();
   atualizarControles();
 }
 
 function limparSelecao() {
-  titularValidado = false;
   identificacoes.clear();
   leituras.clear();
-  retirarResultado();
-  for (const id of [...camposPessoa, "cpf", "documento", "inicio", "fim", "finalidade"]) {
+  candidatos = [];
+  grupos = [];
+  marcacoes = [];
+  invalidarIdentidade();
+  el("conferencia").hidden = true;
+  el("grupos").replaceChildren();
+
+  for (const id of ["nomeConfirmado", "titular", "cpf", "documento",
+    ...familiares, "inicio", "fim", "finalidade"]) {
     el(id).value = "";
   }
-  el("cadastro").hidden = true;
+
+  atualizarControles();
 }
 
 async function chamarAPI(operacao, partes, referencia = {}) {
@@ -276,7 +293,11 @@ async function chamarAPI(operacao, partes, referencia = {}) {
 
   if (resposta.status === 401) senha = "";
   const json = await resposta.json().catch(() => ({}));
-  if (!resposta.ok) throw Error(json.error || "Falha HTTP " + resposta.status);
+  if (!resposta.ok) {
+    const erro = Error(json.error || "Falha HTTP " + resposta.status);
+    erro.http = resposta.status;
+    throw erro;
+  }
   return json;
 }
 
@@ -301,9 +322,9 @@ async function lerFoto(arquivo) {
   const url = URL.createObjectURL(arquivo);
   try {
     const foto = new Image();
-    await new Promise((ok, falha) => {
-      foto.onload = ok;
-      foto.onerror = () => falha(Error("Imagem ilegível ou formato incompatível."));
+    await new Promise((resolver, rejeitar) => {
+      foto.onload = resolver;
+      foto.onerror = () => rejeitar(Error("Imagem ilegível ou formato incompatível."));
       foto.src = url;
     });
     const escala = Math.min(1, 1800 / Math.max(foto.width, foto.height));
@@ -320,15 +341,31 @@ async function lerFoto(arquivo) {
   }
 }
 
-async function lerPagina(arquivo, pdf, numero, visual = false) {
+function textoPDF(conteudo) {
+  let texto = "";
+  let anterior = null;
+
+  for (const item of conteudo.items) {
+    if (typeof item.str !== "string") continue;
+    const mudouLinha = anterior && (
+      anterior.hasEOL ||
+      Math.abs(anterior.transform[5] - item.transform[5]) > 2
+    );
+    texto += (mudouLinha ? "\n" : " ") + item.str;
+    anterior = item;
+  }
+  return texto.trim();
+}
+
+async function lerPagina(arquivo, pdf, numero, modo = "auto") {
   if (!pdf) return lerFoto(arquivo);
   const pagina = await pdf.getPage(numero);
-  try {
-    const conteudo = await pagina.getTextContent();
-    const texto = conteudo.items
-      .map(item => item.str + (item.hasEOL ? "\n" : " ")).join("");
 
-    if (!visual && texto.length >= 100 && texto.length <= 65000 &&
+  try {
+    const texto = textoPDF(await pagina.getTextContent());
+
+    if (modo === "texto") return { texto };
+    if (modo === "auto" && texto.length >= 100 && texto.length <= 65000 &&
         /\d+[.,]\d{2}\b/.test(texto)) {
       return { texto };
     }
@@ -340,110 +377,398 @@ async function lerPagina(arquivo, pdf, numero, visual = false) {
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
+
     await pagina.render({
       canvasContext: canvas.getContext("2d"),
       viewport,
       background: "white"
     }).promise;
+
     return { imagem: jpeg(canvas), texto: texto.slice(0, 65000) };
   } finally {
     pagina.cleanup();
   }
 }
 
-function conferirPessoa(base, pessoa, origem) {
-  if (!normal(pessoa?.titular)) throw Error("Titular ilegível em " + origem);
-  if (!base) return;
+function saudacaoSantander(texto) {
+  if (!/\bextrato\s+consolidado\s+inteligente\b/i.test(texto) ||
+      !/\bsantander\b/i.test(texto)) return "";
 
-  const cpf = s => String(s || "").replace(/[^\d*xX]/g, "");
-  const a = cpf(base.cpf);
-  const b = cpf(pessoa.cpf);
-  let comuns = 0;
-  if (a.length === 11 && b.length === 11) {
-    for (let i = 0; i < 11; i++) {
-      if (!/\d/.test(a[i]) || !/\d/.test(b[i])) continue;
-      if (a[i] !== b[i]) throw Error("CPF divergente em " + origem);
-      comuns++;
-    }
-  }
+  const nome = texto.match(
+    /\bprezad[ao]\s+([\p{L}]+(?:[ '-][\p{L}]+){0,7})\s*,/iu
+  )?.[1] || "";
 
-  if (comuns >= 6 && normal(base.titular) === normal(pessoa.titular)) return;
-
-  const confirmado = confirm([
-    "Confira a titularidade no original.",
-    origem,
-    "Referência: " + base.titular + " · " + (base.cpf || "CPF ausente"),
-    "Arquivo: " + pessoa.titular + " · " + (pessoa.cpf || "CPF ausente"),
-    "Você confirmou que os documentos pertencem à mesma pessoa?"
-  ].join("\n"));
-
-  if (!confirmado) throw Error("Titularidade pendente em " + origem);
+  return /^(cliente|correntista|titular|senhor|senhora|senhor cliente|senhora cliente)$/i.test(nome)
+    ? "" : nome;
 }
 
-async function validarTitularidade() {
-  const arquivos = Array.from(el("extratos").files);
-  if (!arquivos.length) throw Error("Selecione pelo menos um extrato.");
-  let base = null;
+function contaSantander(texto) {
+  // O cabeçalho é lido antes das movimentações e das tabelas de transferências.
+  const cabecalho = texto.split(
+    /(?:^|\n)\s*(?:movimenta[cç][aã]o|data\s+canal|dep[oó]sitos\s*\/\s*transfer[eê]ncias)\b/i
+  )[0];
 
-  for (const [indice, arquivo] of arquivos.entries()) {
-    avisar(`Titularidade ${indice + 1}/${arquivos.length} · ${arquivo.name}`);
-    let pessoa = identificacoes.get(indice);
-    if (!pessoa) {
-      const pdf = await abrirPDF(arquivo);
-      try {
-        pessoa = await chamarAPI("titular", await lerPagina(arquivo, pdf, 1, true));
-        conferirPessoa(base, pessoa, arquivo.name);
-        identificacoes.set(indice, pessoa);
-      } finally {
-        await pdf?.destroy();
+  const padrao = /^\s*(\d{4})[ \t]+(\d{2}\.\d{6}-\d)\s*$/gm;
+  const contas = Array.from(cabecalho.matchAll(padrao), m => ({
+    agencia: m[1],
+    conta: m[2]
+  }));
+
+  const unicas = new Map(contas.map(c => [c.agencia + "|" + c.conta, c]));
+  return unicas.size === 1 ? unicas.values().next().value : null;
+}
+
+function nomesNasMovimentacoes(texto, primeiroNome) {
+  const nomes = new Map();
+  const linhas = texto.split("\n");
+  const padraoNome =
+    /^[\p{L}][\p{L}'’-]*(?:[ \t]+[\p{L}][\p{L}'’-]*){1,7}$/u;
+
+  for (let i = 0; i < linhas.length; i++) {
+    if (!/\bPIX\s+(ENVIADO|RECEBIDO)\b/i.test(linhas[i])) continue;
+
+    const depoisDoPix = linhas[i].split(/\bPIX\s+(?:ENVIADO|RECEBIDO)\b/i)[1] || "";
+    const nomeNaLinha = depoisDoPix.split(/[ \t]+(?=[-\d])/)[0].trim();
+    const linhaSeguinte = (linhas[i + 1] || "").trim();
+    const possiveis = [nomeNaLinha, linhaSeguinte];
+
+    for (const nome of possiveis) {
+      const chave = normal(nome);
+      if (padraoNome.test(nome) && chave.split(" ")[0] === primeiroNome) {
+        nomes.set(chave, nome);
       }
     }
-    if (!base) base = pessoa;
   }
 
-  if (!titularValidado) {
-    el("titular").value = base.titular;
-    el("cpf").value = base.cpf || "";
+  return [...nomes.values()];
+}
+
+async function identificarArquivo(arquivo) {
+  const pdf = await abrirPDF(arquivo);
+  const achados = [];
+  let saudacao = "";
+  let conta = null;
+  let nomeCabecalho = "";
+  let cpf = "";
+
+  try {
+    const primeira = pdf ? (await lerPagina(arquivo, pdf, 1, "texto")).texto : "";
+    saudacao = saudacaoSantander(primeira);
+
+    if (saudacao) {
+      // Neste layout, agência e conta podem aparecer na página seguinte.
+      for (let n = 1; n <= Math.min(2, pdf.numPages) && !conta; n++) {
+        const texto = n === 1 ? primeira : (await lerPagina(arquivo, pdf, n, "texto")).texto;
+        conta = contaSantander(texto);
+      }
+
+      const primeiro = normal(saudacao).split(" ")[0];
+      const vistos = new Set();
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const texto = n === 1 ? primeira : (await lerPagina(arquivo, pdf, n, "texto")).texto;
+        for (const nome of nomesNasMovimentacoes(texto, primeiro)) {
+          const chave = normal(nome);
+          if (vistos.has(chave)) continue;
+          vistos.add(chave);
+          achados.push({ nome, pagina: n, tipo: "movimentação Pix" });
+        }
+      }
+
+      if (normal(saudacao).includes(" ")) {
+        achados.unshift({ nome: saudacao, pagina: 1, tipo: "saudação do banco" });
+      }
+    } else {
+      const j = await chamarAPI("titular", await lerPagina(arquivo, pdf, 1, "visual"));
+      nomeCabecalho = String(j.titular || "").trim();
+      cpf = cpfLimpo(j.cpf);
+
+      if (normal(nomeCabecalho).includes(" ")) {
+        achados.push({ nome: nomeCabecalho, pagina: 1, tipo: "identificação do extrato" });
+      }
+    }
+
+    return { arquivo, saudacao, conta, nomeCabecalho, cpf, achados };
+  } finally {
+    await pdf?.destroy();
   }
-  titularValidado = true;
+}
+
+function reunirCandidatos(registros) {
+  const porNome = new Map();
+  const prioridade = {
+    "identificação do extrato": 0,
+    "saudação do banco": 1,
+    "movimentação Pix": 2
+  };
+
+  for (const registro of registros) {
+    for (const achado of registro.achados) {
+      const chave = normal(achado.nome);
+      if (!porNome.has(chave)) {
+        porNome.set(chave, { nome: achado.nome, prioridade: 2, origens: [] });
+      }
+      const candidato = porNome.get(chave);
+      candidato.prioridade = Math.min(candidato.prioridade, prioridade[achado.tipo]);
+      candidato.origens.push({ ...achado, arquivo: registro.arquivo.name });
+    }
+  }
+
+  return [...porNome.values()].sort((a, b) => a.prioridade - b.prioridade ||
+    b.origens.length - a.origens.length || a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+function agruparExtratos(registros) {
+  const porConta = new Map();
+
+  for (const [indice, registro] of registros.entries()) {
+    const chave = registro.conta
+      ? `santander|${registro.conta.agencia}|${registro.conta.conta}`
+      : `arquivo|${indice}`;
+
+    if (!porConta.has(chave)) {
+      porConta.set(chave, { conta: registro.conta, registros: [] });
+    }
+    porConta.get(chave).registros.push(registro);
+  }
+
+  return [...porConta.values()];
+}
+
+function mostrarOrigem(candidato) {
+  el("origemCandidato").textContent = candidato
+    ? candidato.origens.map(o => `${o.arquivo}, pág. ${o.pagina} (${o.tipo})`).join(" · ")
+    : "Digite o nome completo conforme o documento oficial.";
+}
+
+function vinculoComNome(registro, nome) {
+  if (!nome) return false;
+  if (registro.nomeCabecalho && normal(registro.nomeCabecalho) === nome) return true;
+
+  const saudacao = normal(registro.saudacao);
+  return saudacao && (saudacao === nome || saudacao === nome.split(" ")[0]);
+}
+
+function obterCPFs(nome) {
+  return grupos.flatMap(g => g.registros)
+    .filter(r => normal(r.nomeCabecalho) === nome && r.cpf)
+    .map(r => r.cpf)
+    .sort((a, b) => b.replace(/\*/g, "").length - a.replace(/\*/g, "").length);
+}
+
+function existeDivergencia(cpfs) {
+  return cpfs.some((cpf, i) =>
+    cpfs.slice(i + 1).some(outro => compararCPF(cpf, outro).divergente)
+  );
+}
+
+function desenharGrupos() {
+  el("grupos").replaceChildren();
+  marcacoes = [];
+
+  const nome = normal(el("nomeConfirmado").value);
+  const cpfs = obterCPFs(nome);
+
+  for (const grupo of grupos) {
+    const bloco = document.createElement("div");
+    bloco.className = "grupo";
+
+    const divergente = grupo.registros.some(r =>
+      r.cpf && cpfs.some(cpf => compararCPF(cpf, r.cpf).divergente)
+    );
+
+    const verificacaoPorCPF = Boolean(cpfs.length) && grupo.registros.every(r =>
+      normal(r.nomeCabecalho) === nome &&
+      compararCPF(cpfs[0], r.cpf).comuns >= 6
+    );
+
+    const nomeDivergente = nome.includes(" ") && grupo.registros.some(r => {
+      const impresso = normal(r.nomeCabecalho || r.saudacao);
+      if (!impresso) return false;
+      return impresso.includes(" ")
+        ? impresso !== nome
+        : impresso !== nome.split(" ")[0];
+    });
+
+    const lista = document.createElement("ul");
+    for (const r of grupo.registros) {
+      const item = document.createElement("li");
+      const impresso = r.nomeCabecalho || r.saudacao;
+      const detalhe = impresso ? ` · nome no extrato: ${impresso}` : " · identificação insuficiente";
+      item.textContent = r.arquivo.name + detalhe + (r.falha ? ` · ${r.falha}` : "");
+      lista.append(item);
+    }
+
+    const titulo = document.createElement("strong");
+    titulo.textContent = grupo.conta
+      ? `Santander · agência ${grupo.conta.agencia} · conta ${grupo.conta.conta}`
+      : grupo.registros[0].arquivo.name;
+    bloco.append(titulo, lista);
+
+    if (divergente || existeDivergencia(cpfs)) {
+      const aviso = document.createElement("p");
+      aviso.className = "aviso";
+      aviso.textContent = "CPF divergente. Confira os anexos antes de continuar.";
+      bloco.append(aviso);
+      marcacoes.push({ grupo, bloqueado: true });
+    } else if (verificacaoPorCPF) {
+      const aviso = document.createElement("p");
+      aviso.textContent = "Nome e dígitos visíveis do CPF conferidos.";
+      bloco.append(aviso);
+      marcacoes.push({ grupo, automatico: true });
+    } else {
+      const label = document.createElement("label");
+      const caixa = document.createElement("input");
+      caixa.type = "checkbox";
+      const frase = document.createElement("span");
+      if (nomeDivergente) {
+        frase.className = "aviso";
+        frase.textContent =
+          "O nome impresso difere do nome informado. Conferi o original e confirmei a titularidade.";
+      } else if (grupo.conta && grupo.registros.every(r => vinculoComNome(r, nome))) {
+        frase.textContent = "Conferi que esta conta e todos os extratos listados pertencem à pessoa informada.";
+      } else {
+        frase.textContent = "Conferi a titularidade no documento original.";
+      }
+      label.append(caixa, frase);
+      bloco.append(label);
+      marcacoes.push({ grupo, caixa });
+    }
+
+    el("grupos").append(bloco);
+  }
+
+  atualizarControles();
+}
+
+async function identificarExtratos() {
+  invalidarIdentidade();
+  el("conferencia").hidden = true;
+
+  const arquivos = Array.from(el("extratos").files);
+  if (!arquivos.length) throw Error("Selecione pelo menos um extrato.");
+
+  const registros = [];
+  for (const [indice, arquivo] of arquivos.entries()) {
+    avisar(`Identificando titularidade ${indice + 1}/${arquivos.length} · ${arquivo.name}`);
+
+    if (!identificacoes.has(indice)) {
+      try {
+        identificacoes.set(indice, await identificarArquivo(arquivo));
+      } catch (erro) {
+        if (erro.http === 401 || erro.message === "Informe a senha para continuar.") throw erro;
+
+        registros.push({
+          arquivo, saudacao: "", conta: null, nomeCabecalho: "",
+          cpf: "", achados: [], falha: erro.message
+        });
+        continue;
+      }
+    }
+
+    registros.push(identificacoes.get(indice));
+  }
+
+  candidatos = reunirCandidatos(registros);
+  grupos = agruparExtratos(registros);
+
+  const lista = el("candidatos");
+  lista.replaceChildren(new Option("Informar o nome manualmente", ""));
+  candidatos.forEach((candidato, i) => {
+    const origem = candidato.prioridade === 2 ? " · pista em Pix" : "";
+    lista.add(new Option(candidato.nome + origem, String(i)));
+  });
+
+  const sugestao = candidatos[0];
+  lista.value = sugestao ? "0" : "";
+  el("nomeConfirmado").value = sugestao?.nome || "";
+  mostrarOrigem(sugestao);
+  el("conferencia").hidden = false;
+  desenharGrupos();
+  avisar("Confira o nome completo e os grupos de extratos. Depois confirme a titularidade.");
+}
+
+function confirmarTitularidade() {
+  const nome = el("nomeConfirmado").value.trim().replace(/\s+/g, " ");
+  const chave = normal(nome);
+
+  if (!chave.includes(" ")) throw Error("Informe o nome completo da pessoa analisada.");
+  if (marcacoes.some(item => item.bloqueado)) {
+    throw Error("Há CPF divergente. Confira quais extratos pertencem ao titular.");
+  }
+  if (marcacoes.some(item => item.caixa && !item.caixa.checked)) {
+    throw Error("Confira e marque os grupos que ainda estão pendentes.");
+  }
+
+  const cpf = obterCPFs(chave)[0] || "";
+  if (normal(el("titular").value) !== chave) {
+    for (const campo of familiares) el(campo).value = "";
+    el("documento").value = "";
+  }
+
+  identidade = { titular: nome, cpf };
+  el("titular").value = nome;
+  el("cpf").value = cpf;
   el("cadastro").hidden = false;
-  avisar("Titularidade conferida. Informe o período solicitado e confira os dados familiares.");
+  retirarResultado();
+  atualizarControles();
+  avisar("Titular e extratos confirmados. Confira os dados familiares e o período da análise.");
 }
 
 async function lerDocumento() {
   const arquivo = el("documento").files[0];
   if (!arquivo) throw Error("Selecione o documento oficial.");
-  const referencia = {
-    titular: el("titular").value.trim(),
-    cpf: el("cpf").value.trim()
-  };
-  const acumulado = {};
-  const pdf = await abrirPDF(arquivo);
 
+  const resultado = {};
+  const pdf = await abrirPDF(arquivo);
   try {
     for (let n = 1; n <= (pdf?.numPages || 1); n++) {
-      avisar("Lendo documento oficial · página " + n);
-      const parte = await chamarAPI(
-        "documento", await lerPagina(arquivo, pdf, n, true), referencia
-      );
-      for (const campo of [...camposPessoa, "cpf"]) {
+      avisar(`Lendo documento oficial · página ${n}`);
+      let parte;
+      try {
+        parte = await chamarAPI("documento", await lerPagina(arquivo, pdf, n, "visual"), identidade);
+      } catch (erro) {
+        if (pdf && pdf.numPages > 1 && /titular não encontrado/i.test(erro.message)) continue;
+        throw erro;
+      }
+
+      for (const campo of ["titular", "cpf", ...familiares]) {
         const valor = String(parte[campo] || "").trim();
         if (!valor) continue;
-        if (acumulado[campo] && normal(acumulado[campo]) !== normal(valor)) {
-          throw Error("O documento apresentou valores divergentes para " + campo +
-            ". Confira o original e preencha os campos manualmente.");
+        if (resultado[campo]) {
+          const diferente = campo === "cpf"
+            ? compararCPF(resultado.cpf, valor).divergente
+            : normal(resultado[campo]) !== normal(valor);
+          if (diferente) throw Error(`Dados conflitantes no documento para o campo ${campo}.`);
         }
-        acumulado[campo] = valor;
+        if (!resultado[campo] || campo === "cpf" &&
+            cpfLimpo(valor).replace(/\*/g, "").length >
+            cpfLimpo(resultado.cpf).replace(/\*/g, "").length) {
+          resultado[campo] = valor;
+        }
       }
     }
   } finally {
     await pdf?.destroy();
   }
 
-  conferirPessoa(referencia, acumulado, arquivo.name);
+  if (!resultado.titular || normal(resultado.titular) !== normal(identidade.titular)) {
+    throw Error("O nome no documento precisa corresponder ao nome completo confirmado.");
+  }
+  if (compararCPF(identidade.cpf, resultado.cpf).divergente) {
+    throw Error("O CPF do documento diverge do CPF de referência.");
+  }
+
+  for (const campo of familiares) {
+    if (resultado[campo]) el(campo).value = resultado[campo];
+  }
+  const cpfDocumento = cpfLimpo(resultado.cpf);
+  if (cpfDocumento.replace(/\*/g, "").length > identidade.cpf.replace(/\*/g, "").length) {
+    identidade.cpf = cpfDocumento;
+    el("cpf").value = cpfDocumento;
+  }
+
   retirarResultado();
-  for (const campo of camposPessoa) el(campo).value = acumulado[campo] || "";
-  avisar("Documento lido. Confira principalmente a filiação e o cônjuge.");
+  avisar("Documento lido. Confira a filiação e o cônjuge antes de apurar.");
 }
 
 function periodoSolicitado() {
@@ -451,13 +776,17 @@ function periodoSolicitado() {
   const fim = el("fim").value;
   if (!inicio || !fim || inicio > fim) throw Error("Confira o primeiro e o último mês.");
 
-  const meses = [];
-  let [ano, mes] = inicio.split("-").map(Number);
+  const [anoInicio, mesInicio] = inicio.split("-").map(Number);
   const [anoFim, mesFim] = fim.split("-").map(Number);
+  const meses = [];
+  let ano = anoInicio;
+  let mes = mesInicio;
+
   while (ano < anoFim || (ano === anoFim && mes <= mesFim)) {
     meses.push(String(ano).padStart(4, "0") + "-" + String(mes).padStart(2, "0"));
     if (++mes === 13) { mes = 1; ano++; }
   }
+
   return meses;
 }
 
@@ -470,7 +799,7 @@ function validarPagina(pagina) {
   if (!Array.isArray(pagina.transacoes)) throw Error("Lista de créditos ausente.");
 
   for (const t of pagina.transacoes) {
-    const data = new Date(t.data + "T12:00:00Z");
+    const data = new Date(t?.data + "T12:00:00Z");
     if (!Number.isFinite(+data) || data.toISOString().slice(0, 10) !== t.data ||
         !Number.isSafeInteger(t.centavos) || t.centavos <= 0 ||
         typeof t.descricao !== "string" || !t.descricao.trim() ||
@@ -482,25 +811,75 @@ function validarPagina(pagina) {
 
 async function analisarPagina(arquivo, pdf, numero, referencia) {
   const partes = await lerPagina(arquivo, pdf, numero);
-  let resposta = await chamarAPI("pagina", partes, referencia);
+  let dados = await chamarAPI("pagina", partes, referencia);
+
   try {
-    validarPagina(resposta);
+    validarPagina(dados);
   } catch (erro) {
     if (!pdf || partes.imagem) throw erro;
-    resposta = await chamarAPI("pagina",
-      await lerPagina(arquivo, pdf, numero, true), referencia);
-    validarPagina(resposta);
+    dados = await chamarAPI("pagina", await lerPagina(arquivo, pdf, numero, "visual"), referencia);
+    validarPagina(dados);
   }
-  return resposta;
+
+  return dados;
+}
+
+function prepararLancamentos(paginas, meses) {
+  const cobertura = new Set();
+  const selecionados = new Set(meses);
+  const pares = new Map();
+  const ids = new Map();
+  const linhas = [];
+  let fora = 0;
+
+  function adicionar(mapa, chave, linha) {
+    if (!mapa.has(chave)) mapa.set(chave, []);
+    mapa.get(chave).push(linha);
+  }
+
+  for (const pagina of paginas) {
+    for (const mes of pagina.meses) cobertura.add(mes);
+    for (const t of pagina.transacoes) {
+      const mes = t.data.slice(0, 7);
+      cobertura.add(mes);
+      if (!selecionados.has(mes)) { fora++; continue; }
+
+      const linha = { ...t, origem: pagina.origem, motivo: String(t.motivo || "") };
+      linhas.push(linha);
+      adicionar(pares, `${t.data}|${t.centavos}`, linha);
+
+      const id = String(t.id_bancario || "").trim();
+      if (id) adicionar(ids, id, linha);
+    }
+  }
+
+  const faltantes = meses.filter(mes => !cobertura.has(mes));
+  if (faltantes.length) {
+    throw Error("Falta cobertura documental para " + faltantes.map(mesBR).join(", ") + ".");
+  }
+
+  for (const mapa of [pares, ids]) {
+    for (const iguais of mapa.values()) {
+      if (iguais.length < 2) continue;
+      for (const linha of iguais) {
+        linha.coincidencia = true;
+        linha.status = "REVISAR";
+      }
+    }
+  }
+
+  linhas.sort((a, b) => a.data.localeCompare(b.data) || a.centavos - b.centavos);
+  return { linhas, fora };
 }
 
 async function apurar() {
-  if (!titularValidado) throw Error("Valide a titularidade.");
-  if (!el("finalidade").value) throw Error("Selecione aluguel ou financiamento.");
+  if (!identidade) throw Error("Confirme a titularidade antes de apurar.");
+  const finalidade = el("finalidade").value;
+  if (!finalidade) throw Error("Selecione aluguel ou financiamento.");
+
   const meses = periodoSolicitado();
-  const referencia = { cpf: el("cpf").value.trim() };
-  for (const campo of camposPessoa) referencia[campo] = el(campo).value.trim();
-  if (!referencia.titular) throw Error("Informe o titular.");
+  const referencia = { ...identidade };
+  for (const campo of familiares) referencia[campo] = el(campo).value.trim();
 
   const arquivos = Array.from(el("extratos").files);
   const paginas = [];
@@ -514,6 +893,7 @@ async function apurar() {
         const origem = `${arquivo.name} · pág. ${numero}`;
         const chave = JSON.stringify([indice, numero, referencia]);
         avisar(`Arquivo ${indice + 1}/${arquivos.length} · página ${numero}/${quantidade}\n${arquivo.name}`);
+
         if (!leituras.has(chave)) {
           try {
             const dados = await analisarPagina(arquivo, pdf, numero, referencia);
@@ -523,6 +903,7 @@ async function apurar() {
               "Mantenha a aba aberta e clique em Apurar renda para retomar.");
           }
         }
+
         paginas.push(leituras.get(chave));
       }
     } finally {
@@ -530,60 +911,9 @@ async function apurar() {
     }
   }
 
-  const cobertos = new Set();
-  const linhas = [];
-  const datasValores = new Map();
-  const idsBancarios = new Map();
-  const selecionados = new Set(meses);
-  let fora = 0;
-
-  function registrar(grupo, chave, linha) {
-    if (!grupo.has(chave)) grupo.set(chave, []);
-    grupo.get(chave).push(linha);
-  }
-
-  for (const pagina of paginas) {
-    for (const mes of pagina.meses) cobertos.add(mes);
-    for (const t of pagina.transacoes) {
-      const mes = t.data.slice(0, 7);
-      cobertos.add(mes);
-      if (!selecionados.has(mes)) { fora++; continue; }
-      const linha = {
-        ...t,
-        origem: pagina.origem,
-        motivo: String(t.motivo || ""),
-        sugestao: t.status,
-        coincidencia: false
-      };
-      linhas.push(linha);
-      registrar(datasValores, `${t.data}|${t.centavos}`, linha);
-      const id = String(t.id_bancario || "").trim();
-      if (id) registrar(idsBancarios, id, linha);
-    }
-  }
-
-  const faltantes = meses.filter(m => !cobertos.has(m));
-  if (faltantes.length) {
-    throw Error("Falta cobertura documental para " + faltantes.map(mesBR).join(", ") +
-      ". Confira o período solicitado e os arquivos anexados.");
-  }
-
-  for (const grupo of [datasValores, idsBancarios]) {
-    for (const iguais of grupo.values()) {
-      if (iguais.length < 2) continue;
-      for (const linha of iguais) {
-        linha.coincidencia = true;
-        linha.status = "REVISAR";
-      }
-    }
-  }
-
-  linhas.sort((a, b) => a.data.localeCompare(b.data) || a.centavos - b.centavos);
-  relatorio = {
-    meses, linhas, referencia, finalidade: el("finalidade").value, fora
-  };
+  relatorio = { ...prepararLancamentos(paginas, meses), meses, referencia, finalidade };
   mostrarRevisao();
-  avisar("Leitura concluída. Confira as entradas e resolva os itens marcados para revisão.");
+  avisar("Leitura concluída. Confira as entradas antes de emitir o PDF.");
 }
 
 function celula(tr, texto) {
@@ -594,56 +924,58 @@ function celula(tr, texto) {
 }
 
 function mostrarRevisao() {
-  const corpo = el("linhas");
-  corpo.replaceChildren();
   const fragmento = document.createDocumentFragment();
 
   for (const t of relatorio.linhas) {
     const tr = document.createElement("tr");
     celula(tr, `${dataBR(t.data)} · ${t.origem}`);
-    const detalhe = [
+    celula(tr, [
       t.descricao,
       t.motivo,
-      t.coincidencia ? "Possível repetição. Confira a origem das duas linhas." : "",
-      t.id_bancario ? "ID: " + t.id_bancario : ""
-    ].filter(Boolean).join(" · ");
-    celula(tr, detalhe);
+      t.coincidencia ? "Possível repetição. Confira as origens." : "",
+      t.id_bancario ? "ID " + t.id_bancario : ""
+    ].filter(Boolean).join(" · "));
     celula(tr, moeda(t.centavos)).className = "dinheiro";
 
-    const select = document.createElement("select");
-    select.setAttribute("aria-label", "Decisão sobre " + t.descricao);
-    for (const status of statusValidos) select.add(new Option(status, status));
-    select.value = t.status;
-    select.addEventListener("change", () => {
-      t.status = select.value;
+    const decisao = document.createElement("select");
+    decisao.setAttribute("aria-label", "Decisão sobre " + t.descricao);
+    for (const status of statusValidos) decisao.add(new Option(status, status));
+    decisao.value = t.status;
+    decisao.addEventListener("change", () => {
+      t.status = decisao.value;
       t.manual = true;
       atualizarResumo();
     });
-    celula(tr, "").append(select);
+    celula(tr, "").append(decisao);
     fragmento.append(tr);
   }
-  corpo.append(fragmento);
 
-  const meses = relatorio.meses;
+  el("linhas").replaceChildren(fragmento);
+
+  const { meses, linhas, fora } = relatorio;
   el("cobertura").textContent =
     `${meses.length} mês(es) · ${mesBR(meses[0])} a ${mesBR(meses[meses.length - 1])}` +
-    ` · ${relatorio.linhas.length} crédito(s) no período` +
-    (relatorio.fora ? ` · ${relatorio.fora} crédito(s) fora do período solicitado` : "");
+    ` · ${linhas.length} crédito(s) no período` +
+    (fora ? ` · ${fora} fora do período solicitado` : "");
   el("revisao").hidden = false;
   el("resumo").hidden = false;
   atualizarResumo();
 }
 
 function calcular() {
-  const mensal = new Map(relatorio.meses.map(m => [m, 0]));
-  let aceitos = 0, rejeitados = 0, pendentes = 0;
+  const mensal = new Map(relatorio.meses.map(mes => [mes, 0]));
+  let aceitos = 0;
+  let rejeitados = 0;
+  let pendentes = 0;
+
   for (const t of relatorio.linhas) {
     if (t.status === "REVISAR") { pendentes++; continue; }
     if (t.status === "REJEITADO") { rejeitados += t.centavos; continue; }
+    const mes = t.data.slice(0, 7);
     aceitos += t.centavos;
-    const m = t.data.slice(0, 7);
-    mensal.set(m, mensal.get(m) + t.centavos);
+    mensal.set(mes, mensal.get(mes) + t.centavos);
   }
+
   return {
     mensal, aceitos, rejeitados, pendentes,
     media: Math.round(aceitos / relatorio.meses.length)
@@ -653,11 +985,10 @@ function calcular() {
 function atualizarResumo() {
   const r = calcular();
   el("pendencias").textContent = r.pendentes
-    ? `${r.pendentes} lançamento(s) aguardando decisão. Valores abaixo são parciais.`
+    ? `${r.pendentes} lançamento(s) aguardando decisão. Os valores abaixo são parciais.`
     : "Conferência sem itens pendentes.";
   el("totais").textContent =
-    `Considerado: ${moeda(r.aceitos)} · Rejeitado: ${moeda(r.rejeitados)} · ` +
-    `Média mensal: ${moeda(r.media)}`;
+    `Considerado: ${moeda(r.aceitos)} · Rejeitado: ${moeda(r.rejeitados)} · Média mensal: ${moeda(r.media)}`;
   atualizarControles();
 }
 
@@ -666,6 +997,7 @@ function gerarPDF() {
   const r = calcular();
   if (r.pendentes) throw Error("Conclua a conferência das entradas.");
   if (!window.jspdf?.jsPDF) throw Error("A biblioteca de PDF não carregou.");
+
   const doc = new window.jspdf.jsPDF();
   if (typeof doc.autoTable !== "function") throw Error("A biblioteca de tabelas não carregou.");
 
@@ -679,7 +1011,8 @@ function gerarPDF() {
   };
 
   doc.autoTable({
-    ...opcoes, startY: 30,
+    ...opcoes,
+    startY: 30,
     head: [["Identificação", financiamento ? "Financiamento" : "Aluguel"]],
     body: [
       ["Titular", pessoa.titular],
@@ -690,9 +1023,10 @@ function gerarPDF() {
   });
 
   doc.autoTable({
-    ...opcoes, startY: doc.lastAutoTable.finalY + 6,
+    ...opcoes,
+    startY: doc.lastAutoTable.finalY + 6,
     head: [["Mês", "Entradas consideradas"]],
-    body: [...r.mensal].map(([m, valor]) => [mesBR(m), moeda(valor)]),
+    body: [...r.mensal].map(([mes, valor]) => [mesBR(mes), moeda(valor)]),
     foot: [
       ["Total considerado", moeda(r.aceitos)],
       ["Total rejeitado", moeda(r.rejeitados)],
@@ -706,7 +1040,8 @@ function gerarPDF() {
   if (financiamento && relatorio.linhas.length) {
     doc.addPage();
     doc.autoTable({
-      ...opcoes, startY: 30,
+      ...opcoes,
+      startY: 30,
       head: [["Data", "Lançamento e origem", "Valor", "Decisão e motivo"]],
       body: relatorio.linhas.map(t => [
         dataBR(t.data),
@@ -719,14 +1054,15 @@ function gerarPDF() {
         ].filter(Boolean).join("\n")
       ]),
       columnStyles: {
-        0: { cellWidth: 20 }, 2: { cellWidth: 25, halign: "right" },
+        0: { cellWidth: 20 },
+        2: { cellWidth: 25, halign: "right" },
         3: { cellWidth: 48 }
       }
     });
   }
 
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
+  const totalPaginas = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPaginas; i++) {
     doc.setPage(i);
     doc.setFillColor(22, 22, 22);
     doc.rect(0, 0, 210, 22, "F");
@@ -737,33 +1073,58 @@ function gerarPDF() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
-    doc.text(`Página ${i} de ${total}`, 196, 290, { align: "right" });
+    doc.text(`Página ${i} de ${totalPaginas}`, 196, 290, { align: "right" });
   }
 
-  const nome = pessoa.titular.replace(/[^\p{L}\p{N} -]/gu, "").trim() || "Titular";
-  return { doc, nome: `Apuracao de renda - ${nome}.pdf` };
+  const titular = pessoa.titular.replace(/[^\p{L}\p{N} -]/gu, "").trim() || "Titular";
+  return { doc, nome: `Apuracao de renda - ${titular}.pdf` };
 }
 
 el("extratos").addEventListener("change", () => {
   limparSelecao();
-  const n = el("extratos").files.length;
-  avisar(n ? `${n} arquivo(s) selecionado(s). Clique em Validar titularidade.`
-           : "Selecione os extratos para iniciar.");
-  atualizarControles();
+  const quantidade = el("extratos").files.length;
+  avisar(quantidade
+    ? `${quantidade} arquivo(s) selecionado(s). Clique em Identificar titular nos extratos.`
+    : "Selecione os extratos para iniciar.");
+});
+
+el("candidatos").addEventListener("change", () => {
+  const valor = el("candidatos").value;
+  const candidato = valor === "" ? null : candidatos[Number(valor)];
+  el("nomeConfirmado").value = candidato?.nome || "";
+  mostrarOrigem(candidato);
+  invalidarIdentidade();
+  desenharGrupos();
+});
+
+el("nomeConfirmado").addEventListener("input", () => {
+  const indice = candidatos.findIndex(c => normal(c.nome) === normal(el("nomeConfirmado").value));
+  el("candidatos").value = indice < 0 ? "" : String(indice);
+  mostrarOrigem(candidatos[indice]);
+  invalidarIdentidade();
+  desenharGrupos();
+});
+
+el("grupos").addEventListener("change", evento => {
+  if (evento.target.matches('input[type="checkbox"]') && identidade) {
+    invalidarIdentidade();
+    avisar("A conferência mudou. Confirme novamente o titular e os extratos.");
+  }
 });
 
 el("documento").addEventListener("change", atualizarControles);
 
-for (const id of [...camposPessoa, "inicio", "fim", "finalidade"]) {
+for (const id of [...familiares, "inicio", "fim", "finalidade"]) {
   el(id).addEventListener("input", () => {
-    if (relatorio) {
-      retirarResultado();
-      avisar("Cadastro ou período alterado. Clique em Apurar renda para atualizar.");
-    }
+    if (!relatorio) return;
+    retirarResultado();
+    atualizarControles();
+    avisar("Cadastro ou período alterado. Clique em Apurar renda para atualizar.");
   });
 }
 
-el("validar").onclick = () => executar(validarTitularidade);
+el("identificar").onclick = () => executar(identificarExtratos);
+el("confirmarTitular").onclick = () => executar(confirmarTitularidade);
 el("lerDoc").onclick = () => executar(lerDocumento);
 el("processar").onclick = () => executar(apurar);
 
@@ -776,26 +1137,28 @@ el("baixar").onclick = () => executar(async () => {
 el("compartilhar").onclick = () => executar(async () => {
   const { doc, nome } = gerarPDF();
   const arquivo = new File([doc.output("blob")], nome, { type: "application/pdf" });
+
   if (navigator.canShare?.({ files: [arquivo] })) {
     try {
       await navigator.share({ files: [arquivo], title: "Apuração de renda M&IC" });
     } catch (erro) {
-      if (erro.name === "AbortError") { avisar("Compartilhamento cancelado."); return; }
-      throw erro;
+      if (erro.name !== "AbortError") throw erro;
+      avisar("Compartilhamento cancelado.");
     }
-  } else {
-    doc.save(nome);
-    avisar("PDF baixado. Você pode anexá-lo no WhatsApp.");
+    return;
   }
+
+  doc.save(nome);
+  avisar("PDF baixado. Você pode anexá-lo no WhatsApp.");
 });
 
 el("nova").onclick = () => {
-  if (el("extratos").files.length && !confirm("Encerrar esta análise e limpar o progresso?")) return;
+  if (el("extratos").files.length &&
+      !confirm("Encerrar esta análise e limpar o progresso?")) return;
   el("extratos").value = "";
   limparSelecao();
   senha = "";
   avisar("Selecione os extratos para iniciar.");
-  atualizarControles();
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
