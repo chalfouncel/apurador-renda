@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -87,473 +86,473 @@ const avisar = s => { el("status").textContent = s; };
 let ocupado=false, senha="", pessoa=null, grupos=[], liberado=false, relatorio=null;
 
 function cpfLimpo(v) {
-const cpf=String(v||"").replace(/[^\dxX]/g,"").replace(/[xX]/g,"");
-return cpf.length===11 ? cpf : "";
+  const cpf=String(v||"").replace(/[^\d*xX]/g,"").replace(/[xX]/g,"*");
+  return cpf.length===11 ? cpf : "";
 }
 function cpfValido(cpf) {
-return /^\d{11}$/.test(cpf) && !/^(\d)\1{10}$/.test(cpf) && [9,10].every(n => {
-const soma=[...cpf.slice(0,n)].reduce((s,d,i)=>s+Number(d)(n+1-i),0);
-return (soma10%11)%10===Number(cpf[n]);
-});
+  return /^\d{11}$/.test(cpf) && !/^(\d)\1{10}$/.test(cpf) && [9,10].every(n => {
+    const soma=[...cpf.slice(0,n)].reduce((s,d,i)=>s+Number(d)*(n+1-i),0);
+    return (soma*10%11)%10===Number(cpf[n]);
+  });
 }
 function diverge(a,b) {
-a=cpfLimpo(a); b=cpfLimpo(b);
-return Boolean(a&&b&&[...a].some((d,i)=>d!==""&&b[i]!==""&&d!==b[i]));
+  a=cpfLimpo(a); b=cpfLimpo(b);
+  return Boolean(a&&b&&[...a].some((d,i)=>d!=="*"&&b[i]!=="*"&&d!==b[i]));
 }
 function controles() {
-for(const campo of document.querySelectorAll("input,select,button")) campo.disabled=ocupado;
-el("confirmarDocumento").disabled=ocupado||!el("documento").files.length;
-el("lerCertidao").disabled=ocupado||!pessoa||!el("certidao").files.length;
-el("orientacaoCertidao").hidden=Boolean(pessoa);
-el("conferir").disabled=ocupado||!pessoa||!el("extratos").files.length;
-el("apurar").disabled=ocupado||!liberado;
-const emitir=relatorio&&relatorio.linhas.every(t=>t.status!=="REVISAR");
-el("baixar").disabled=el("compartilhar").disabled=ocupado||!emitir;
+  for(const campo of document.querySelectorAll("input,select,button")) campo.disabled=ocupado;
+  el("confirmarDocumento").disabled=ocupado||!el("documento").files.length;
+  el("lerCertidao").disabled=ocupado||!pessoa||!el("certidao").files.length;
+  el("orientacaoCertidao").hidden=Boolean(pessoa);
+  el("conferir").disabled=ocupado||!pessoa||!el("extratos").files.length;
+  el("apurar").disabled=ocupado||!liberado;
+  const emitir=relatorio&&relatorio.linhas.every(t=>t.status!=="REVISAR");
+  el("baixar").disabled=el("compartilhar").disabled=ocupado||!emitir;
 }
 async function executar(acao) {
-if(ocupado) return;
-ocupado=true; controles();
-try { await acao(); } catch(e) { avisar(e.message||String(e)); }
-finally { ocupado=false; controles(); }
+  if(ocupado) return;
+  ocupado=true; controles();
+  try { await acao(); } catch(e) { avisar(e.message||String(e)); }
+  finally { ocupado=false; controles(); }
 }
 function limparResultado() {
-relatorio=null; el("revisao").hidden=true; el("linhas").replaceChildren();
+  relatorio=null; el("revisao").hidden=true; el("linhas").replaceChildren();
 }
 function limparExtratos() {
-liberado=false; grupos=[]; identificacoes.clear(); leituras.clear();
-el("grupos").replaceChildren(); el("confirmarPendencias").hidden=true;
-el("secaoApuracao").hidden=true; limparResultado();
+  liberado=false; grupos=[]; identificacoes.clear(); leituras.clear();
+  el("grupos").replaceChildren(); el("confirmarPendencias").hidden=true;
+  el("secaoApuracao").hidden=true; limparResultado();
 }
 function limparPessoa() {
-pessoa=null; el("secaoExtratos").hidden=false; limparExtratos();
+  pessoa=null; el("secaoExtratos").hidden=false; limparExtratos();
 }
 async function api(operacao,partes,referencia={}) {
-if(!senha) senha=prompt("Senha do apurador")||"";
-if(!senha) throw Error("Informe a senha para continuar.");
-const r=await fetch("/api/audit",{
-method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+senha},
-body:JSON.stringify({operacao,...partes,referencia})
-});
-if(r.status===401) senha="";
-const j=await r.json().catch(()=>({}));
-if(!r.ok) throw Object.assign(Error(j.error||"Falha HTTP "+r.status),{http:r.status});
-return j;
+  if(!senha) senha=prompt("Senha do apurador")||"";
+  if(!senha) throw Error("Informe a senha para continuar.");
+  const r=await fetch("/api/audit",{
+    method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+senha},
+    body:JSON.stringify({operacao,...partes,referencia})
+  });
+  if(r.status===401) senha="";
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw Object.assign(Error(j.error||"Falha HTTP "+r.status),{http:r.status});
+  return j;
 }
 const acesso = e => e.http===401||e.message==="Informe a senha para continuar.";
 
 async function abrirPDF(f) {
-if(f.type!=="application/pdf"&&!/.pdf$/i.test(f.name)) return null;
-if(!window.pdfjsLib) throw Error("A biblioteca de PDF não carregou.");
-pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-return pdfjsLib.getDocument({data:await f.arrayBuffer(),isEvalSupported:false}).promise;
+  if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)) return null;
+  if(!window.pdfjsLib) throw Error("A biblioteca de PDF não carregou.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return pdfjsLib.getDocument({data:await f.arrayBuffer(),isEvalSupported:false}).promise;
 }
 function jpeg(canvas) {
-const imagem=canvas.toDataURL("image/jpeg",.78).split(",")[1];
-canvas.width=canvas.height=1;
-if(!imagem||imagem.length>2800000) throw Error("Imagem ilegível ou acima do limite.");
-return imagem;
+  const imagem=canvas.toDataURL("image/jpeg",.78).split(",")[1];
+  canvas.width=canvas.height=1;
+  if(!imagem||imagem.length>2800000) throw Error("Imagem ilegível ou acima do limite.");
+  return imagem;
 }
 async function foto(f) {
-const url=URL.createObjectURL(f);
-try {
-const img=new Image(); img.src=url; await img.decode();
-const escala=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));
-const canvas=document.createElement("canvas");
-canvas.width=Math.max(1,Math.round(img.naturalWidthescala));
-canvas.height=Math.max(1,Math.round(img.naturalHeightescala));
-const ctx=canvas.getContext("2d");
-ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
-ctx.drawImage(img,0,0,canvas.width,canvas.height);
-return {imagem:jpeg(canvas)};
-} finally { URL.revokeObjectURL(url); }
+  const url=URL.createObjectURL(f);
+  try {
+    const img=new Image(); img.src=url; await img.decode();
+    const escala=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*escala));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*escala));
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    return {imagem:jpeg(canvas)};
+  } finally { URL.revokeObjectURL(url); }
 }
 async function pagina(f,pdf,n,visual=false) {
-if(!pdf) return foto(f);
-const p=await pdf.getPage(n);
-try {
-let anterior, texto="";
-for(const item of (await p.getTextContent()).items) {
-if(typeof item.str!=="string") continue;
-const quebra=anterior&&(anterior.hasEOL||Math.abs(anterior.transform[5]-item.transform[5])>2);
-texto+=(quebra?"\n":" ")+item.str;
-anterior=item;
-}
-texto=texto.trim();
-if(!visual) return {texto};
-const base=p.getViewport({scale:1});
-const viewport=p.getViewport({scale:1800/Math.max(base.width,base.height)});
-const canvas=document.createElement("canvas");
-canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height);
-await p.render({canvasContext:canvas.getContext("2d"),viewport,background:"white"}).promise;
-return {texto:texto.slice(0,65000),imagem:jpeg(canvas)};
-} finally { p.cleanup(); }
+  if(!pdf) return foto(f);
+  const p=await pdf.getPage(n);
+  try {
+    let anterior, texto="";
+    for(const item of (await p.getTextContent()).items) {
+      if(typeof item.str!=="string") continue;
+      const quebra=anterior&&(anterior.hasEOL||Math.abs(anterior.transform[5]-item.transform[5])>2);
+      texto+=(quebra?"\n":" ")+item.str;
+      anterior=item;
+    }
+    texto=texto.trim();
+    if(!visual) return {texto};
+    const base=p.getViewport({scale:1});
+    const viewport=p.getViewport({scale:1800/Math.max(base.width,base.height)});
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height);
+    await p.render({canvasContext:canvas.getContext("2d"),viewport,background:"white"}).promise;
+    return {texto:texto.slice(0,65000),imagem:jpeg(canvas)};
+  } finally { p.cleanup(); }
 }
 async function lerIdentificacao(arquivos,referencia) {
-const dados={},falhas=[];
-for(const f of arquivos) {
-const pdf=await abrirPDF(f);
-try {
-for(let n=1;n<=(pdf?.numPages||1);n++) {
-avisar("Lendo "+f.name+" · página "+n);
-let parte;
-try { parte=await api("documento",await pagina(f,pdf,n,true),referencia); }
-catch(e) { if(acesso(e)) throw e; falhas.push(f.name+", pág. "+n+": "+e.message); continue; }
-for(const campo of campos) {
-const valor=campo==="cpf"?cpfLimpo(parte[campo]):String(parte[campo]||"").trim();
-if(!valor) continue;
-const anterior=dados[campo];
-if(anterior&&(campo==="cpf"?diverge(anterior,valor):normal(anterior)!==normal(valor))) {
-throw Error("Dados diferentes no campo "+campo+". Confira o documento.");
-}
-if(!anterior||campo!=="cpf"||valor.replace(/*/g,"").length>anterior.replace(/*/g,"").length) dados[campo]=valor;
-}
-}
-} finally { await pdf?.destroy(); }
-}
-return {dados,falhas};
+  const dados={},falhas=[];
+  for(const f of arquivos) {
+    const pdf=await abrirPDF(f);
+    try {
+      for(let n=1;n<=(pdf?.numPages||1);n++) {
+        avisar("Lendo "+f.name+" · página "+n);
+        let parte;
+        try { parte=await api("documento",await pagina(f,pdf,n,true),referencia); }
+        catch(e) { if(acesso(e)) throw e; falhas.push(f.name+", pág. "+n+": "+e.message); continue; }
+        for(const campo of campos) {
+          const valor=campo==="cpf"?cpfLimpo(parte[campo]):String(parte[campo]||"").trim();
+          if(!valor) continue;
+          const anterior=dados[campo];
+          if(anterior&&(campo==="cpf"?diverge(anterior,valor):normal(anterior)!==normal(valor))) {
+            throw Error("Dados diferentes no campo "+campo+". Confira o documento.");
+          }
+          if(!anterior||campo!=="cpf"||valor.replace(/\*/g,"").length>anterior.replace(/\*/g,"").length) dados[campo]=valor;
+        }
+      }
+    } finally { await pdf?.destroy(); }
+  }
+  return {dados,falhas};
 }
 async function lerDocumento() {
-const arquivos=Array.from(el("documento").files);
-const {dados,falhas}=await lerIdentificacao(arquivos,{});
-const candidatos=new Set();
-if(cpfValido(cpfLimpo(dados.cpf))) candidatos.add(cpfLimpo(dados.cpf));
-for(const arquivo of arquivos){
-const pdf=await abrirPDF(arquivo);
-if(!pdf) continue;
-try {
-for(let n=1;n<=pdf.numPages;n++){
-const {texto}=await pagina(arquivo,pdf,n);
-for(const m of texto.matchAll(/\bC.?\sP.?\sF.?\s*(?)?\s[:/\s-]((?:\d[.\s-]){10}\d)(?!\d)/gi)){
-const cpf=cpfLimpo(m[1]);
-if(cpfValido(cpf)) candidatos.add(cpf);
-}
-}
-} finally { await pdf.destroy(); }
-}
-if(!candidatos.size){
-avisar("Relendo o CPF no documento...");
-for(const arquivo of arquivos){
-const pdf=await abrirPDF(arquivo);
-try{
-for(let n=1;n<=(pdf?.numPages||1);n++){
-try {
-const leitura=await api("documento",await pagina(arquivo,pdf,n,true),{
-titular:dados.titular||"", tarefa:"Releia o campo CPF impresso da pessoa identificada. Extraia todos os onze dígitos visíveis, inclusive zeros iniciais. Nunca estime dígitos."
-});
-const cpf=cpfLimpo(leitura.cpf);
-if(cpfValido(cpf)&&(!leitura.titular||!dados.titular||normal(leitura.titular)===normal(dados.titular))) candidatos.add(cpf);
-} catch(e){ if(acesso(e)) throw e; }
-}
-}finally{await pdf?.destroy();}
-}
-}
-dados.cpf=candidatos.size===1?[...candidatos][0]:"";
-if(!dados.cpf) falhas.push(candidatos.size?"Há CPFs divergentes. Confira o CPF no documento.":"CPF completo não identificado após a releitura. Confira o campo no documento.");
-for(const campo of campos) if(dados[campo]) el(campo).value=dados[campo];
-avisar(falhas.length?"Confira os dados extraídos.\n"+falhas.join("\n"):"Documento lido. Confira e confirme os dados.");
+  const arquivos=Array.from(el("documento").files);
+  const {dados,falhas}=await lerIdentificacao(arquivos,{});
+  const candidatos=new Set();
+  if(cpfValido(cpfLimpo(dados.cpf))) candidatos.add(cpfLimpo(dados.cpf));
+  for(const arquivo of arquivos){
+    const pdf=await abrirPDF(arquivo);
+    if(!pdf) continue;
+    try {
+      for(let n=1;n<=pdf.numPages;n++){
+        const {texto}=await pagina(arquivo,pdf,n);
+        for(const m of texto.matchAll(/\bC\.?\s*P\.?\s*F\.?\s*(?:n[º°o.]*)?\s*[:/\s-]*((?:\d[.\s-]*){10}\d)(?!\d)/gi)){
+          const cpf=cpfLimpo(m[1]);
+          if(cpfValido(cpf)) candidatos.add(cpf);
+        }
+      }
+    } finally { await pdf.destroy(); }
+  }
+  if(!candidatos.size){
+    avisar("Relendo o CPF no documento...");
+    for(const arquivo of arquivos){
+      const pdf=await abrirPDF(arquivo);
+      try{
+        for(let n=1;n<=(pdf?.numPages||1);n++){
+          try {
+            const leitura=await api("documento",await pagina(arquivo,pdf,n,true),{
+              titular:dados.titular||"", tarefa:"Releia o campo CPF impresso da pessoa identificada. Extraia todos os onze dígitos visíveis, inclusive zeros iniciais. Nunca estime dígitos."
+            });
+            const cpf=cpfLimpo(leitura.cpf);
+            if(cpfValido(cpf)&&(!leitura.titular||!dados.titular||normal(leitura.titular)===normal(dados.titular))) candidatos.add(cpf);
+          } catch(e){ if(acesso(e)) throw e; }
+        }
+      }finally{await pdf?.destroy();}
+    }
+  }
+  dados.cpf=candidatos.size===1?[...candidatos][0]:"";
+  if(!dados.cpf) falhas.push(candidatos.size?"Há CPFs divergentes. Confira o CPF no documento.":"CPF completo não identificado após a releitura. Confira o campo no documento.");
+  for(const campo of campos) if(dados[campo]) el(campo).value=dados[campo];
+  avisar(falhas.length?"Confira os dados extraídos.\n"+falhas.join("\n"):"Documento lido. Confira e confirme os dados.");
 }
 function confirmarDocumento() {
-const titular=el("titular").value.trim().replace(/\s+/g," "),cpf=cpfLimpo(el("cpf").value);
-if(!el("documento").files.length) throw Error("Anexe o documento oficial.");
-if(!normal(titular).includes(" ")||!cpfValido(cpf)) throw Error("Confira o nome completo e o CPF do documento.");
-pessoa={titular,cpf}; el("secaoExtratos").hidden=false;
-el("referencia").textContent="Pessoa analisada · "+titular;
-avisar("Documento confirmado. Anexe os extratos ou leia a certidão opcional.");
+  const titular=el("titular").value.trim().replace(/\s+/g," "),cpf=cpfLimpo(el("cpf").value);
+  if(!el("documento").files.length) throw Error("Anexe o documento oficial.");
+  if(!normal(titular).includes(" ")||!cpfValido(cpf)) throw Error("Confira o nome completo e o CPF do documento.");
+  pessoa={titular,cpf}; el("secaoExtratos").hidden=false;
+  el("referencia").textContent="Pessoa analisada · "+titular;
+  avisar("Documento confirmado. Anexe os extratos ou leia a certidão opcional.");
 }
 async function lerCertidao() {
-const {dados,falhas}=await lerIdentificacao([el("certidao").files[0]],pessoa);
-if(normal(dados.titular)!==normal(pessoa.titular)||diverge(pessoa.cpf,dados.cpf)) {
-throw Error(falhas[0]||"A identificação da certidão diverge do documento confirmado.");
-}
-for(const campo of familiares) if(dados[campo]) el(campo).value=dados[campo];
-limparResultado();
-avisar(falhas.length?"Confira os campos preenchidos.\n"+falhas.join("\n"):"Certidão lida. Os campos encontrados foram preenchidos.");
+  const {dados,falhas}=await lerIdentificacao([el("certidao").files[0]],pessoa);
+  if(normal(dados.titular)!==normal(pessoa.titular)||diverge(pessoa.cpf,dados.cpf)) {
+    throw Error(falhas[0]||"A identificação da certidão diverge do documento confirmado.");
+  }
+  for(const campo of familiares) if(dados[campo]) el(campo).value=dados[campo];
+  limparResultado();
+  avisar(falhas.length?"Confira os campos preenchidos.\n"+falhas.join("\n"):"Certidão lida. Os campos encontrados foram preenchidos.");
 }
 function saudacaoSantander(texto) {
-if(!/\bsantander\b/i.test(texto)||!/\bextrato\s+consolidado\s+inteligente\b/i.test(texto)) return "";
-const nome=texto.match(/\bprezad[ao]\s+([\p{L}]+(?:[ '-][\p{L}]+){0,7})\s*,/iu)?.[1]||"";
-return /^(cliente|correntista|titular|senhor|senhora|senhor cliente|senhora cliente)$/i.test(nome)?"":nome;
+  if(!/\bsantander\b/i.test(texto)||!/\bextrato\s+consolidado\s+inteligente\b/i.test(texto)) return "";
+  const nome=texto.match(/\bprezad[ao]\s+([\p{L}]+(?:[ '-][\p{L}]+){0,7})\s*,/iu)?.[1]||"";
+  return /^(cliente|correntista|titular|senhor|senhora|senhor cliente|senhora cliente)$/i.test(nome)?"":nome;
 }
 function contaSantander(texto) {
-const cabecalho=texto.split(/(?:^|\n)\s*(?[aã]o|data\s+canal|dep[oó]sitos\s*/\stransfer[eê]ncias)\b/i)[0];
-const linhas=cabecalho.split("\n").map(l=>l.trim()), contas=new Set();
-for(const [i,l] of linhas.entries()) {
-const juntas=l.match(/^(\d{4})[ \t]+(\d{2}.\d{6}-\d)$/);
-if(juntas) contas.add(juntas[1]+"|"+juntas[2]);
-if(/^\d{4}$/.test(l)&&/^\d{2}.\d{6}-\d$/.test(linhas[i+1]||"")) contas.add(l+"|"+linhas[i+1]);
-}
-return contas.size===1?[...contas][0]:"";
+  const cabecalho=texto.split(/(?:^|\n)\s*(?:movimenta[cç][aã]o|data\s+canal|dep[oó]sitos\s*\/\s*transfer[eê]ncias)\b/i)[0];
+  const linhas=cabecalho.split("\n").map(l=>l.trim()), contas=new Set();
+  for(const [i,l] of linhas.entries()) {
+    const juntas=l.match(/^(\d{4})[ \t]+(\d{2}\.\d{6}-\d)$/);
+    if(juntas) contas.add(juntas[1]+"|"+juntas[2]);
+    if(/^\d{4}$/.test(l)&&/^\d{2}\.\d{6}-\d$/.test(linhas[i+1]||"")) contas.add(l+"|"+linhas[i+1]);
+  }
+  return contas.size===1?[...contas][0]:"";
 }
 async function identificarExtrato(f) {
-const pdf=await abrirPDF(f);
-try {
-const capa=pdf?(await pagina(f,pdf,1)).texto:"";
-const nome=saudacaoSantander(capa);
-if(nome) {
-const segunda=pdf.numPages>1?(await pagina(f,pdf,2)).texto:"";
-const cpfs=[...capa.matchAll(/\bCPF\s[:-]?\s*([\dxX]{3}.?[\dxX]{3}.?[\dxX]{3}-?[\dxX]{2})(?![\d*xX])/gi)].map(m=>cpfLimpo(m[1])).filter(Boolean);
-return {f,nome,cpfs,conta:contaSantander(capa+"\n"+segunda),origem:"saudação do banco"};
-}
-const j=await api("titular",await pagina(f,pdf,1,true),pessoa);
-return {f,nome:String(j.titular||""),cpfs:[cpfLimpo(j.cpf)].filter(Boolean),conta:"",origem:"identificação do extrato"};
-} finally { await pdf?.destroy(); }
+  const pdf=await abrirPDF(f);
+  try {
+    const capa=pdf?(await pagina(f,pdf,1)).texto:"";
+    const nome=saudacaoSantander(capa);
+    if(nome) {
+      const segunda=pdf.numPages>1?(await pagina(f,pdf,2)).texto:"";
+      const cpfs=[...capa.matchAll(/\bCPF\s*[:\-]?\s*([\d*xX]{3}\.?[\d*xX]{3}\.?[\d*xX]{3}-?[\d*xX]{2})(?![\d*xX])/gi)].map(m=>cpfLimpo(m[1])).filter(Boolean);
+      return {f,nome,cpfs,conta:contaSantander(capa+"\n"+segunda),origem:"saudação do banco"};
+    }
+    const j=await api("titular",await pagina(f,pdf,1,true),pessoa);
+    return {f,nome:String(j.titular||""),cpfs:[cpfLimpo(j.cpf)].filter(Boolean),conta:"",origem:"identificação do extrato"};
+  } finally { await pdf?.destroy(); }
 }
 function liberar() {
-liberado=true; el("secaoApuracao").hidden=false; el("confirmarPendencias").hidden=true;
-avisar("Titularidade conferida. Selecione a finalidade e apure a renda.");
+  liberado=true; el("secaoApuracao").hidden=false; el("confirmarPendencias").hidden=true;
+  avisar("Titularidade conferida. Selecione a finalidade e apure a renda.");
 }
 function mostrarGrupos() {
-const painel=el("grupos"); painel.replaceChildren();
-const nomeOficial=normal(pessoa.titular);
-for(const grupo of grupos) {
-grupo.bloqueado=grupo.registros.some(r=>r.cpfs.some(c=>diverge(pessoa.cpf,c)));
-const automatico=grupo.registros.every(r=>normal(r.nome)===nomeOficial);
-const bloco=document.createElement("div"); bloco.className="grupo";
-const titulo=document.createElement("strong");
-titulo.textContent=grupo.conta?"Santander · agência e conta "+grupo.conta.replace("|"," / "):grupo.registros[0].f.name;
-const lista=document.createElement("ul");
-for(const r of grupo.registros) {
-const item=document.createElement("li");
-item.textContent=r.f.name+" · "+(r.nome?r.origem+": "+r.nome:"identificação pendente")+(r.falha?" · "+r.falha:"");
-lista.append(item);
-}
-bloco.append(titulo,lista);
-if(grupo.bloqueado||automatico) {
-const nota=document.createElement("p");
-nota.textContent=grupo.bloqueado?"CPF divergente. Retire ou substitua o extrato.":"Nome completo conferido com o documento.";
-bloco.append(nota);
-} else {
-const label=document.createElement("label");
-grupo.caixa=document.createElement("input"); grupo.caixa.type="checkbox";
-const divergente=grupo.registros.some(r=>r.nome&&normal(r.nome)!==nomeOficial&&normal(r.nome)!==nomeOficial.split(" ")[0]);
-label.append(grupo.caixa,(divergente?"O nome encontrado difere do documento. ":"")+
-(grupo.conta?"Conferi a titularidade da conta e dos extratos listados.":"Conferi a titularidade no extrato original."));
-bloco.append(label);
-}
-painel.append(bloco);
-}
-const bloqueado=grupos.some(g=>g.bloqueado), pendente=grupos.some(g=>g.caixa);
-el("confirmarPendencias").hidden=bloqueado||!pendente;
-if(bloqueado) avisar("Há CPF divergente entre os extratos e o documento.");
-else if(pendente) avisar("Confira apenas os grupos pendentes.");
-else liberar();
+  const painel=el("grupos"); painel.replaceChildren();
+  const nomeOficial=normal(pessoa.titular);
+  for(const grupo of grupos) {
+    grupo.bloqueado=grupo.registros.some(r=>r.cpfs.some(c=>diverge(pessoa.cpf,c)));
+    const automatico=grupo.registros.every(r=>normal(r.nome)===nomeOficial);
+    const bloco=document.createElement("div"); bloco.className="grupo";
+    const titulo=document.createElement("strong");
+    titulo.textContent=grupo.conta?"Santander · agência e conta "+grupo.conta.replace("|"," / "):grupo.registros[0].f.name;
+    const lista=document.createElement("ul");
+    for(const r of grupo.registros) {
+      const item=document.createElement("li");
+      item.textContent=r.f.name+" · "+(r.nome?r.origem+": "+r.nome:"identificação pendente")+(r.falha?" · "+r.falha:"");
+      lista.append(item);
+    }
+    bloco.append(titulo,lista);
+    if(grupo.bloqueado||automatico) {
+      const nota=document.createElement("p");
+      nota.textContent=grupo.bloqueado?"CPF divergente. Retire ou substitua o extrato.":"Nome completo conferido com o documento.";
+      bloco.append(nota);
+    } else {
+      const label=document.createElement("label");
+      grupo.caixa=document.createElement("input"); grupo.caixa.type="checkbox";
+      const divergente=grupo.registros.some(r=>r.nome&&normal(r.nome)!==nomeOficial&&normal(r.nome)!==nomeOficial.split(" ")[0]);
+      label.append(grupo.caixa,(divergente?"O nome encontrado difere do documento. ":"")+
+        (grupo.conta?"Conferi a titularidade da conta e dos extratos listados.":"Conferi a titularidade no extrato original."));
+      bloco.append(label);
+    }
+    painel.append(bloco);
+  }
+  const bloqueado=grupos.some(g=>g.bloqueado), pendente=grupos.some(g=>g.caixa);
+  el("confirmarPendencias").hidden=bloqueado||!pendente;
+  if(bloqueado) avisar("Há CPF divergente entre os extratos e o documento.");
+  else if(pendente) avisar("Confira apenas os grupos pendentes.");
+  else liberar();
 }
 async function conferirExtratos() {
-liberado=false; grupos=[]; el("grupos").replaceChildren();
-el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=true; limparResultado();
-const arquivos=Array.from(el("extratos").files), porConta=new Map();
-for(const [i,f] of arquivos.entries()) {
-avisar("Conferindo extrato "+(i+1)+"/"+arquivos.length+" · "+f.name);
-let r=identificacoes.get(i);
-if(!r) {
-try { r=await identificarExtrato(f); identificacoes.set(i,r); }
-catch(e) { if(acesso(e)) throw e; r={f,nome:"",cpfs:[],conta:"",falha:e.message}; }
-}
-const chave=r.conta?"santander|"+r.conta:"arquivo|"+i;
-if(!porConta.has(chave)) porConta.set(chave,{conta:r.conta,registros:[]});
-porConta.get(chave).registros.push(r);
-}
-grupos=[...porConta.values()]; mostrarGrupos();
+  liberado=false; grupos=[]; el("grupos").replaceChildren();
+  el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=true; limparResultado();
+  const arquivos=Array.from(el("extratos").files), porConta=new Map();
+  for(const [i,f] of arquivos.entries()) {
+    avisar("Conferindo extrato "+(i+1)+"/"+arquivos.length+" · "+f.name);
+    let r=identificacoes.get(i);
+    if(!r) {
+      try { r=await identificarExtrato(f); identificacoes.set(i,r); }
+      catch(e) { if(acesso(e)) throw e; r={f,nome:"",cpfs:[],conta:"",falha:e.message}; }
+    }
+    const chave=r.conta?"santander|"+r.conta:"arquivo|"+i;
+    if(!porConta.has(chave)) porConta.set(chave,{conta:r.conta,registros:[]});
+    porConta.get(chave).registros.push(r);
+  }
+  grupos=[...porConta.values()]; mostrarGrupos();
 }
 function confirmarPendencias() {
-if(!grupos.length||grupos.some(g=>g.bloqueado)) throw Error("Resolva os extratos divergentes.");
-if(grupos.some(g=>g.caixa&&!g.caixa.checked)) throw Error("Confira os grupos pendentes.");
-liberar();
+  if(!grupos.length||grupos.some(g=>g.bloqueado)) throw Error("Resolva os extratos divergentes.");
+  if(grupos.some(g=>g.caixa&&!g.caixa.checked)) throw Error("Confira os grupos pendentes.");
+  liberar();
 }
 function validarPagina(j) {
-if(j?.completa!==true) throw Error(j?.observacao||"Página incompleta.");
-if(!Array.isArray(j.meses)||j.meses.some(m=>typeof m!=="string"||!mesValido.test(m))||!Array.isArray(j.transacoes)) throw Error("Período ou lançamentos inválidos.");
-for(const t of j.transacoes) {
-const d=new Date(t?.data+"T12:00:00Z");
-if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==t.data||!Number.isSafeInteger(t.centavos)||t.centavos<=0||
-typeof t.descricao!=="string"||!t.descricao.trim()||!decisoes.includes(t.status)) throw Error("Há um lançamento com dados inválidos.");
-}
-return j;
+  if(j?.completa!==true) throw Error(j?.observacao||"Página incompleta.");
+  if(!Array.isArray(j.meses)||j.meses.some(m=>typeof m!=="string"||!mesValido.test(m))||!Array.isArray(j.transacoes)) throw Error("Período ou lançamentos inválidos.");
+  for(const t of j.transacoes) {
+    const d=new Date(t?.data+"T12:00:00Z");
+    if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==t.data||!Number.isSafeInteger(t.centavos)||t.centavos<=0||
+        typeof t.descricao!=="string"||!t.descricao.trim()||!decisoes.includes(t.status)) throw Error("Há um lançamento com dados inválidos.");
+  }
+  return j;
 }
 async function analisarPagina(f,pdf,n,referencia) {
-const partes=await pagina(f,pdf,n);
-if(!pdf) return validarPagina(await api("pagina",partes,referencia));
-let erroTexto;
-if(partes.texto.length>=60&&partes.texto.length<=65000) {
-try { return validarPagina(await api("pagina",partes,referencia)); }
-catch(e) { if(acesso(e)) throw e; erroTexto=e; }
-}
-try { return validarPagina(await api("pagina",await pagina(f,pdf,n,true),referencia)); }
-catch(e) { if(acesso(e)||!erroTexto) throw e; throw Error("Texto: "+erroTexto.message+" Imagem: "+e.message); }
+  const partes=await pagina(f,pdf,n);
+  if(!pdf) return validarPagina(await api("pagina",partes,referencia));
+  let erroTexto;
+  if(partes.texto.length>=60&&partes.texto.length<=65000) {
+    try { return validarPagina(await api("pagina",partes,referencia)); }
+    catch(e) { if(acesso(e)) throw e; erroTexto=e; }
+  }
+  try { return validarPagina(await api("pagina",await pagina(f,pdf,n,true),referencia)); }
+  catch(e) { if(acesso(e)||!erroTexto) throw e; throw Error("Texto: "+erroTexto.message+" Imagem: "+e.message); }
 }
 function consolidar(arquivos) {
-const meses=new Set(),linhas=[],coincidencias=new Map(),porArquivo=[];
-for(const a of arquivos) {
-const identificados=new Set(),periodos=new Set();
-for(const p of a.paginas) {
-for(const mes of p.meses) identificados.add(mes);
-if(typeof p.periodo==="string"&&p.periodo.trim()) periodos.add(p.periodo.trim());
-for(const t of p.transacoes) {
-identificados.add(t.data.slice(0,7));
-const linha={...t,origem:p.origem,motivo:String(t.motivo||"")}; linhas.push(linha);
-const chaves=["valor:"+t.data+"|"+t.centavos], id=String(t.id_bancario||"").trim();
-if(id) chaves.push("id:"+id);
-for(const chave of chaves) {
-if(!coincidencias.has(chave)) coincidencias.set(chave,[]);
-coincidencias.get(chave).push(linha);
-}
-}
-}
-for(const mes of identificados) meses.add(mes);
-porArquivo.push({nome:a.nome,quantidade:a.paginas.length,meses:[...identificados].sort(),periodos:[...periodos]});
-}
-if(!meses.size) throw Error("Nenhum período bancário foi identificado.");
-for(const iguais of coincidencias.values()) {
-if(iguais.length>1) for(const t of iguais) { t.coincidencia=true; t.status="REVISAR"; }
-}
-const ordenados=[...meses].sort(),lacunas=[];
-let [ano,mes]=ordenados[0].split("-").map(Number);
-while(true) {
-if(++mes===13) { mes=1; ano++; }
-const chave=String(ano).padStart(4,"0")+"-"+String(mes).padStart(2,"0");
-if(chave>=ordenados.at(-1)||ano>9999) break;
-if(!meses.has(chave)) lacunas.push(chave);
-}
-linhas.sort((a,b)=>a.data.localeCompare(b.data)||a.centavos-b.centavos);
-return {meses:ordenados,lacunas,linhas,porArquivo};
+  const meses=new Set(),linhas=[],coincidencias=new Map(),porArquivo=[];
+  for(const a of arquivos) {
+    const identificados=new Set(),periodos=new Set();
+    for(const p of a.paginas) {
+      for(const mes of p.meses) identificados.add(mes);
+      if(typeof p.periodo==="string"&&p.periodo.trim()) periodos.add(p.periodo.trim());
+      for(const t of p.transacoes) {
+        identificados.add(t.data.slice(0,7));
+        const linha={...t,origem:p.origem,motivo:String(t.motivo||"")}; linhas.push(linha);
+        const chaves=["valor:"+t.data+"|"+t.centavos], id=String(t.id_bancario||"").trim();
+        if(id) chaves.push("id:"+id);
+        for(const chave of chaves) {
+          if(!coincidencias.has(chave)) coincidencias.set(chave,[]);
+          coincidencias.get(chave).push(linha);
+        }
+      }
+    }
+    for(const mes of identificados) meses.add(mes);
+    porArquivo.push({nome:a.nome,quantidade:a.paginas.length,meses:[...identificados].sort(),periodos:[...periodos]});
+  }
+  if(!meses.size) throw Error("Nenhum período bancário foi identificado.");
+  for(const iguais of coincidencias.values()) {
+    if(iguais.length>1) for(const t of iguais) { t.coincidencia=true; t.status="REVISAR"; }
+  }
+  const ordenados=[...meses].sort(),lacunas=[];
+  let [ano,mes]=ordenados[0].split("-").map(Number);
+  while(true) {
+    if(++mes===13) { mes=1; ano++; }
+    const chave=String(ano).padStart(4,"0")+"-"+String(mes).padStart(2,"0");
+    if(chave>=ordenados.at(-1)||ano>9999) break;
+    if(!meses.has(chave)) lacunas.push(chave);
+  }
+  linhas.sort((a,b)=>a.data.localeCompare(b.data)||a.centavos-b.centavos);
+  return {meses:ordenados,lacunas,linhas,porArquivo};
 }
 async function apurar() {
-if(!pessoa||!liberado) throw Error("Confirme o documento e os extratos.");
-const finalidade=el("finalidade").value;
-if(!finalidade) throw Error("Selecione aluguel ou financiamento.");
-const referencia={...pessoa};
-for(const campo of familiares) referencia[campo]=el(campo).value.trim();
-limparResultado();
-const arquivos=Array.from(el("extratos").files),processados=[];
-for(const [i,f] of arquivos.entries()) {
-const pdf=await abrirPDF(f),paginas=[];
-try {
-const total=pdf?.numPages||1;
-for(let n=1;n<=total;n++) {
-const origem=f.name+" · pág. "+n,chave=JSON.stringify([i,n,referencia]);
-avisar("Arquivo "+(i+1)+"/"+arquivos.length+" · página "+n+"/"+total+"\n"+f.name);
-if(!leituras.has(chave)) {
-const contexto={...referencia,numeroPagina:n,totalPaginas:total,
-periodoInformadoNaCapa:String(paginas[0]?.periodo||"").slice(0,200),
-mesesJaIdentificadosNesteArquivo:[...new Set([...(paginas[0]?.meses||[]),...(paginas.at(-1)?.meses||[])])].slice(0,24)};
-try { leituras.set(chave,{...(await analisarPagina(f,pdf,n,contexto)),origem}); }
-catch(e) { throw Error(origem+" · "+e.message+"\nMantenha a aba aberta e clique em Ler extratos e apurar renda para retomar."); }
-}
-paginas.push(leituras.get(chave));
-}
-} finally { await pdf?.destroy(); }
-processados.push({nome:f.name,paginas});
-}
-relatorio={...consolidar(processados),referencia,finalidade};
-mostrarResultado();
-avisar("Leitura concluída. O período foi identificado a partir dos extratos.");
+  if(!pessoa||!liberado) throw Error("Confirme o documento e os extratos.");
+  const finalidade=el("finalidade").value;
+  if(!finalidade) throw Error("Selecione aluguel ou financiamento.");
+  const referencia={...pessoa};
+  for(const campo of familiares) referencia[campo]=el(campo).value.trim();
+  limparResultado();
+  const arquivos=Array.from(el("extratos").files),processados=[];
+  for(const [i,f] of arquivos.entries()) {
+    const pdf=await abrirPDF(f),paginas=[];
+    try {
+      const total=pdf?.numPages||1;
+      for(let n=1;n<=total;n++) {
+        const origem=f.name+" · pág. "+n,chave=JSON.stringify([i,n,referencia]);
+        avisar("Arquivo "+(i+1)+"/"+arquivos.length+" · página "+n+"/"+total+"\n"+f.name);
+        if(!leituras.has(chave)) {
+          const contexto={...referencia,numeroPagina:n,totalPaginas:total,
+            periodoInformadoNaCapa:String(paginas[0]?.periodo||"").slice(0,200),
+            mesesJaIdentificadosNesteArquivo:[...new Set([...(paginas[0]?.meses||[]),...(paginas.at(-1)?.meses||[])])].slice(0,24)};
+          try { leituras.set(chave,{...(await analisarPagina(f,pdf,n,contexto)),origem}); }
+          catch(e) { throw Error(origem+" · "+e.message+"\nMantenha a aba aberta e clique em Ler extratos e apurar renda para retomar."); }
+        }
+        paginas.push(leituras.get(chave));
+      }
+    } finally { await pdf?.destroy(); }
+    processados.push({nome:f.name,paginas});
+  }
+  relatorio={...consolidar(processados),referencia,finalidade};
+  mostrarResultado();
+  avisar("Leitura concluída. O período foi identificado a partir dos extratos.");
 }
 function celula(tr,texto) {
-const td=document.createElement("td"); td.textContent=texto; tr.append(td); return td;
+  const td=document.createElement("td"); td.textContent=texto; tr.append(td); return td;
 }
 function mostrarResultado() {
-const {meses,lacunas,linhas,porArquivo}=relatorio;
-el("cobertura").textContent=mesBR(meses[0])+" a "+mesBR(meses.at(-1))+" · "+meses.length+" mês(es) documentado(s) · "+linhas.length+" crédito(s)";
-el("coberturaArquivos").replaceChildren(...porArquivo.map(a=>{
-const item=document.createElement("li");
-item.textContent=a.nome+" · "+a.quantidade+" página(s) · "+(a.meses.map(mesBR).join(", ")||"período não identificado")+
-(a.periodos.length?" · indicação no extrato: "+a.periodos.join(" | "):"");
-return item;
-}));
-el("lacunas").hidden=!lacunas.length;
-el("lacunas").textContent=lacunas.length?"Meses sem documentação: "+lacunas.map(mesBR).join(", ")+".":"";
-const fragmento=document.createDocumentFragment();
-for(const t of linhas.filter(item=>item.status==="REVISAR")) {
-const tr=document.createElement("tr");
-celula(tr,dataBR(t.data)+" · "+t.origem);
-celula(tr,[t.descricao,t.motivo,t.coincidencia?"Possível repetição. Confira a origem.":"",t.id_bancario?"ID "+t.id_bancario:""].filter(Boolean).join(" · "));
-celula(tr,moeda(t.centavos));
-const select=document.createElement("select");
-select.setAttribute("aria-label","Decisão sobre "+t.descricao);
-for(const status of decisoes) select.add(new Option(status,status));
-select.value=t.status;
-select.addEventListener("change",()=>{
-t.status=select.value; t.manual=true;
-if(t.status!=="REVISAR") tr.remove();
-atualizarResumo();
-});
-celula(tr,"").append(select); fragmento.append(tr);
-}
-el("linhas").replaceChildren(fragmento); el("revisao").hidden=false; atualizarResumo();
+  const {meses,lacunas,linhas,porArquivo}=relatorio;
+  el("cobertura").textContent=mesBR(meses[0])+" a "+mesBR(meses.at(-1))+" · "+meses.length+" mês(es) documentado(s) · "+linhas.length+" crédito(s)";
+  el("coberturaArquivos").replaceChildren(...porArquivo.map(a=>{
+    const item=document.createElement("li");
+    item.textContent=a.nome+" · "+a.quantidade+" página(s) · "+(a.meses.map(mesBR).join(", ")||"período não identificado")+
+      (a.periodos.length?" · indicação no extrato: "+a.periodos.join(" | "):"");
+    return item;
+  }));
+  el("lacunas").hidden=!lacunas.length;
+  el("lacunas").textContent=lacunas.length?"Meses sem documentação: "+lacunas.map(mesBR).join(", ")+".":"";
+  const fragmento=document.createDocumentFragment();
+  for(const t of linhas.filter(item=>item.status==="REVISAR")) {
+    const tr=document.createElement("tr");
+    celula(tr,dataBR(t.data)+" · "+t.origem);
+    celula(tr,[t.descricao,t.motivo,t.coincidencia?"Possível repetição. Confira a origem.":"",t.id_bancario?"ID "+t.id_bancario:""].filter(Boolean).join(" · "));
+    celula(tr,moeda(t.centavos));
+    const select=document.createElement("select");
+    select.setAttribute("aria-label","Decisão sobre "+t.descricao);
+    for(const status of decisoes) select.add(new Option(status,status));
+    select.value=t.status;
+    select.addEventListener("change",()=>{
+      t.status=select.value; t.manual=true;
+      if(t.status!=="REVISAR") tr.remove();
+      atualizarResumo();
+    });
+    celula(tr,"").append(select); fragmento.append(tr);
+  }
+  el("linhas").replaceChildren(fragmento); el("revisao").hidden=false; atualizarResumo();
 }
 function calcular() {
-const mensal=new Map(relatorio.meses.map(m=>[m,0]));
-let aceitos=0,rejeitados=0,pendentes=0;
-for(const t of relatorio.linhas) {
-if(t.status==="REVISAR") { pendentes++; continue; }
-if(t.status==="REJEITADO") { rejeitados+=t.centavos; continue; }
-const m=t.data.slice(0,7); aceitos+=t.centavos; mensal.set(m,mensal.get(m)+t.centavos);
-}
-return {mensal,aceitos,rejeitados,pendentes,media:Math.round(aceitos/mensal.size)};
+  const mensal=new Map(relatorio.meses.map(m=>[m,0]));
+  let aceitos=0,rejeitados=0,pendentes=0;
+  for(const t of relatorio.linhas) {
+    if(t.status==="REVISAR") { pendentes++; continue; }
+    if(t.status==="REJEITADO") { rejeitados+=t.centavos; continue; }
+    const m=t.data.slice(0,7); aceitos+=t.centavos; mensal.set(m,mensal.get(m)+t.centavos);
+  }
+  return {mensal,aceitos,rejeitados,pendentes,media:Math.round(aceitos/mensal.size)};
 }
 function atualizarResumo() {
-const r=calcular();
-el("tabelaRevisao").hidden=r.pendentes===0;
-el("pendencias").textContent=r.pendentes?r.pendentes+" lançamento(s) aguardando revisão. Valores parciais.":"Nenhum lançamento pendente de revisão.";
-el("totais").textContent="Considerado "+moeda(r.aceitos)+" · Rejeitado "+moeda(r.rejeitados)+" · Média mensal "+moeda(r.media);
-controles();
+  const r=calcular();
+  el("tabelaRevisao").hidden=r.pendentes===0;
+  el("pendencias").textContent=r.pendentes?r.pendentes+" lançamento(s) aguardando revisão. Valores parciais.":"Nenhum lançamento pendente de revisão.";
+  el("totais").textContent="Considerado "+moeda(r.aceitos)+" · Rejeitado "+moeda(r.rejeitados)+" · Média mensal "+moeda(r.media);
+  controles();
 }
 function gerarPDF() {
-if(!relatorio) throw Error("Faça a apuração primeiro.");
-const r=calcular();
-if(r.pendentes) throw Error("Conclua a revisão das entradas.");
-if(!window.jspdf?.jsPDF) throw Error("A biblioteca de PDF não carregou.");
-const doc=new jspdf.jsPDF(),dados=relatorio.referencia;
-if(typeof doc.autoTable!=="function") throw Error("A biblioteca de tabelas não carregou.");
-const financiamento=relatorio.finalidade==="financiamento";
-const estilo={margin:{left:14,right:14,top:30,bottom:16},headStyles:{fillColor:[34,32,29],textColor:[246,223,170]},styles:{font:"helvetica",fontSize:8,cellPadding:2.2},showHead:"everyPage"};
-doc.autoTable({...estilo,startY:30,head:[["Identificação",financiamento?"Financiamento":"Aluguel"]],body:[
-["Titular",dados.titular],["Pai",dados.pai||"Não informado"],["Mãe",dados.mae||"Não informada"],["Cônjuge",dados.conjuge||"Não informado"],
-["Meses documentados",String(relatorio.meses.length)],["Lacunas no período",relatorio.lacunas.map(mesBR).join(", ")||"Nenhuma identificada"]
-]});
-doc.autoTable({...estilo,startY:doc.lastAutoTable.finalY+6,head:[["Mês","Entradas consideradas"]],
-body:[...r.mensal].map(([m,c])=>[mesBR(m),moeda(c)]),
-foot:[["Total considerado",moeda(r.aceitos)],["Total rejeitado",moeda(r.rejeitados)],["Média por mês documentado",moeda(r.media)]],
-showFoot:"lastPage",footStyles:{fillColor:[244,239,227],textColor:[35,35,35]},columnStyles:{1:{halign:"right"}}});
-if(financiamento&&relatorio.linhas.length) {
-doc.addPage();
-doc.autoTable({...estilo,startY:30,head:[["Data","Lançamento e origem","Valor","Decisão e motivo"]],
-body:relatorio.linhas.map(t=>[dataBR(t.data),t.descricao+"\n"+t.origem,moeda(t.centavos),
-[t.status,t.manual?"Conferência manual":"",t.motivo].filter(Boolean).join("\n")]),
-columnStyles:{0:{cellWidth:20},2:{cellWidth:25,halign:"right"},3:{cellWidth:48}}});
-}
-const total=doc.getNumberOfPages();
-for(let n=1;n<=total;n++){
-doc.setPage(n); doc.setFillColor(22,22,22); doc.rect(0,0,210,22,"F");
-doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(225,198,139);
-doc.text("M&IC | Apuração de renda",14,14);
-doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(90,90,90);
-doc.text("Página "+n+" de "+total,196,290,{align:"right"});
-}
-return {doc,nome:"Apuracao de renda - "+(dados.titular.replace(/[^\p{L}\p{N} -]/gu,"").trim()||"Titular")+".pdf"};
+  if(!relatorio) throw Error("Faça a apuração primeiro.");
+  const r=calcular();
+  if(r.pendentes) throw Error("Conclua a revisão das entradas.");
+  if(!window.jspdf?.jsPDF) throw Error("A biblioteca de PDF não carregou.");
+  const doc=new jspdf.jsPDF(),dados=relatorio.referencia;
+  if(typeof doc.autoTable!=="function") throw Error("A biblioteca de tabelas não carregou.");
+  const financiamento=relatorio.finalidade==="financiamento";
+  const estilo={margin:{left:14,right:14,top:30,bottom:16},headStyles:{fillColor:[34,32,29],textColor:[246,223,170]},styles:{font:"helvetica",fontSize:8,cellPadding:2.2},showHead:"everyPage"};
+  doc.autoTable({...estilo,startY:30,head:[["Identificação",financiamento?"Financiamento":"Aluguel"]],body:[
+    ["Titular",dados.titular],["Pai",dados.pai||"Não informado"],["Mãe",dados.mae||"Não informada"],["Cônjuge",dados.conjuge||"Não informado"],
+    ["Meses documentados",String(relatorio.meses.length)],["Lacunas no período",relatorio.lacunas.map(mesBR).join(", ")||"Nenhuma identificada"]
+  ]});
+  doc.autoTable({...estilo,startY:doc.lastAutoTable.finalY+6,head:[["Mês","Entradas consideradas"]],
+    body:[...r.mensal].map(([m,c])=>[mesBR(m),moeda(c)]),
+    foot:[["Total considerado",moeda(r.aceitos)],["Total rejeitado",moeda(r.rejeitados)],["Média por mês documentado",moeda(r.media)]],
+    showFoot:"lastPage",footStyles:{fillColor:[244,239,227],textColor:[35,35,35]},columnStyles:{1:{halign:"right"}}});
+  if(financiamento&&relatorio.linhas.length) {
+    doc.addPage();
+    doc.autoTable({...estilo,startY:30,head:[["Data","Lançamento e origem","Valor","Decisão e motivo"]],
+      body:relatorio.linhas.map(t=>[dataBR(t.data),t.descricao+"\n"+t.origem,moeda(t.centavos),
+        [t.status,t.manual?"Conferência manual":"",t.motivo].filter(Boolean).join("\n")]),
+      columnStyles:{0:{cellWidth:20},2:{cellWidth:25,halign:"right"},3:{cellWidth:48}}});
+  }
+  const total=doc.getNumberOfPages();
+  for(let n=1;n<=total;n++){
+    doc.setPage(n); doc.setFillColor(22,22,22); doc.rect(0,0,210,22,"F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(225,198,139);
+    doc.text("M&IC | Apuração de renda",14,14);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(90,90,90);
+    doc.text("Página "+n+" de "+total,196,290,{align:"right"});
+  }
+  return {doc,nome:"Apuracao de renda - "+(dados.titular.replace(/[^\p{L}\p{N} -]/gu,"").trim()||"Titular")+".pdf"};
 }
 el("documento").addEventListener("change",()=>{
-limparPessoa();
-for(const campo of campos) el(campo).value="";
-if(el("documento").files.length) void executar(lerDocumento);
-else { avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles(); }
+  limparPessoa();
+  for(const campo of campos) el(campo).value="";
+  if(el("documento").files.length) void executar(lerDocumento);
+  else { avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles(); }
 });
 for(const id of ["titular","cpf"]) el(id).addEventListener("input",()=>{
-if(pessoa) { limparPessoa(); avisar("Identificação alterada. Confirme os dados novamente."); }
-controles();
+  if(pessoa) { limparPessoa(); avisar("Identificação alterada. Confirme os dados novamente."); }
+  controles();
 });
 el("certidao").addEventListener("change",controles);
 el("extratos").addEventListener("change",()=>{
-limparExtratos(); avisar(pessoa?"Confira a titularidade dos extratos selecionados.":"Extratos anexados. Confirme o documento para conferir a titularidade."); controles();
+  limparExtratos(); avisar(pessoa?"Confira a titularidade dos extratos selecionados.":"Extratos anexados. Confirme o documento para conferir a titularidade."); controles();
 });
 el("grupos").addEventListener("change",()=>{
-if(!liberado) return;
-liberado=false; el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=false;
-limparResultado(); controles();
+  if(!liberado) return;
+  liberado=false; el("secaoApuracao").hidden=true; el("confirmarPendencias").hidden=false;
+  limparResultado(); controles();
 });
 for(const campo of [...familiares,"finalidade"]) el(campo).addEventListener("input",()=>{
-if(relatorio) { limparResultado(); avisar("Dados alterados. Apure a renda novamente."); }
-controles();
+  if(relatorio) { limparResultado(); avisar("Dados alterados. Apure a renda novamente."); }
+  controles();
 });
 el("confirmarDocumento").onclick=()=>executar(confirmarDocumento);
 el("lerCertidao").onclick=()=>executar(lerCertidao);
@@ -562,25 +561,24 @@ el("confirmarPendencias").onclick=()=>executar(confirmarPendencias);
 el("apurar").onclick=()=>executar(apurar);
 el("baixar").onclick=()=>executar(()=>{ const {doc,nome}=gerarPDF(); doc.save(nome); avisar("PDF gerado."); });
 el("compartilhar").onclick=()=>executar(async()=>{
-const {doc,nome}=gerarPDF();
-const arquivo=new File([doc.output("blob")],nome,{type:"application/pdf"});
-if(navigator.canShare?.({files:[arquivo]})) {
-try { await navigator.share({files:[arquivo],title:"Apuração de renda M&IC"}); }
-catch(e) { if(e.name!=="AbortError") throw e; avisar("Compartilhamento cancelado."); }
-} else { doc.save(nome); avisar("PDF baixado. Você pode anexá-lo no WhatsApp."); }
+  const {doc,nome}=gerarPDF();
+  const arquivo=new File([doc.output("blob")],nome,{type:"application/pdf"});
+  if(navigator.canShare?.({files:[arquivo]})) {
+    try { await navigator.share({files:[arquivo],title:"Apuração de renda M&IC"}); }
+    catch(e) { if(e.name!=="AbortError") throw e; avisar("Compartilhamento cancelado."); }
+  } else { doc.save(nome); avisar("PDF baixado. Você pode anexá-lo no WhatsApp."); }
 });
 el("nova").onclick=()=>{
-if(el("documento").files.length&&!confirm("Encerrar a análise e limpar o progresso?")) return;
-senha=""; limparPessoa();
-for(const id of ["documento","extratos","certidao","finalidade",...campos]) el(id).value="";
-avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles();
-window.scrollTo({top:0,behavior:"smooth"});
+  if(el("documento").files.length&&!confirm("Encerrar a análise e limpar o progresso?")) return;
+  senha=""; limparPessoa();
+  for(const id of ["documento","extratos","certidao","finalidade",...campos]) el(id).value="";
+  avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles();
+  window.scrollTo({top:0,behavior:"smooth"});
 };
 if("serviceWorker" in navigator&&location.protocol==="https:") window.addEventListener("load",()=>{
-navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  navigator.serviceWorker.register("./sw.js").catch(()=>{});
 });
 controles();
 </script>
-
 </body>
 </html>
