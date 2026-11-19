@@ -108,7 +108,7 @@ function controles() {
   el("conferir").hidden=liberado||!pessoa||!el("extratos").files.length;
   el("conferir").disabled=ocupado||!pessoa||!el("extratos").files.length;
   el("apurar").disabled=ocupado||!liberado;
-  const emitir=relatorio&&relatorio.linhas.every(t=>t.status!=="REVISAR");
+  const emitir=relatorio&&relatorio.banco!==null&&relatorio.linhas.every(t=>t.status!=="REVISAR");
   el("baixar").disabled=el("compartilhar").disabled=ocupado||!emitir;
 }
 async function executar(acao) {
@@ -440,6 +440,89 @@ function consolidar(arquivos) {
   linhas.sort((a,b)=>a.data.localeCompare(b.data)||a.centavos-b.centavos);
   return {meses:ordenados,lacunas,linhas,porArquivo};
 }
+
+function centavosBR(valor) {
+  const limpo=valor.replace(/\s/g,"").replace(/^R\$/,"");
+  if(!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d{2}$/.test(limpo)) throw Error("Valor monetário ilegível: "+valor);
+  const centavos=Number(limpo.replace(/[.,]/g,""));
+  if(!Number.isSafeInteger(centavos)) throw Error("Valor acima da precisão suportada.");
+  return centavos;
+}
+function somaExata(a,b){
+  const resultado=a+b;
+  if(!Number.isSafeInteger(resultado)) throw Error("Soma fora da faixa segura.");
+  return resultado;
+}
+function classificarCredito(descricao,ref){
+  const d=normal(descricao);
+  if(d.startsWith("PIX RECEBIDO ")){
+    const remetente=normal(descricao.replace(/^pix recebido\s*/i,""));
+    if([ref.titular,ref.pai,ref.mae,ref.conjuge].map(normal).includes(remetente))
+      return {status:"REJEITADO",motivo:"Titular ou familiar identificado.",remetente};
+    if(remetente.includes(" ")&&!descricao.includes("..."))
+      return {status:"CONSIDERADO",motivo:"Pix recebido de terceiro identificado.",remetente};
+  }
+  if(/^(DINHEIRO RETIRADO |REEMBOLSO DE |RENDIMENTOS$|DEPOSITO DO VALOR SOLICITADO EMPRESTIMOS$)/.test(d))
+    return {status:"REJEITADO",motivo:"Reserva própria, reembolso, rendimento financeiro ou empréstimo."};
+  return {status:"REVISAR",motivo:"A descrição não comprova a origem do crédito."};
+}
+function tabelaDoBanco(items,ref){
+  const celulas=items.filter(i=>i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]}));
+  const grupos=[];
+  for(const c of celulas.sort((a,b)=>b.y-a.y||a.x-b.x)){
+    let g=grupos.at(-1);
+    if(!g||Math.abs(g.y-c.y)>2){g={y:c.y,partes:[]};grupos.push(g);}
+    g.partes.push(c);
+  }
+  const linhas=grupos.map(g=>({...g,t:g.partes.sort((a,b)=>a.x-b.x).map(c=>c.s).join(" ")}));
+  const cab=linhas.find(g=>/Data\s+Descri[çc][aã]o\s+ID da opera[çc][aã]o\s+Valor\s+Saldo/i.test(g.t));
+  const inicio=linhas.find(g=>/^\d{2}-\d{2}-\d{4}\b/.test(g.t));
+  const id=inicio?.partes.find(c=>/^\d{9,}$/.test(c.s));
+  const colId=cab?.partes.find(c=>/^ID\b/i.test(c.s))||id;
+  const colDesc=cab?.partes.find(c=>/^Descri/i.test(c.s))||
+    (inicio&&colId&&{x:inicio.partes[0].x+Math.max(4,(colId.x-inicio.partes[0].x)*0.15)});
+  if(!colId||!colDesc) throw Error("Colunas bancárias ilegíveis.");
+  const registros=[],descricoes=[];
+  for(const l of linhas.filter(g=>!cab||g.y<cab.y)){
+    if(/Data de gera[çc][aã]o/i.test(l.t)) break;
+    const m=l.t.match(/^(\d{2})-(\d{2})-(\d{4})\s+.*?(\d{9,})\s+R\$\s*(-?[\d.]+,\d{2})\s+R\$\s*(-?[\d.]+,\d{2})$/);
+    if(m) registros.push({y:l.y,data:m[3]+"-"+m[2]+"-"+m[1],id_bancario:m[4],valor:centavosBR(m[5]),saldo:centavosBR(m[6]),partes:[]});
+    else if(/^\d{2}-\d{2}-\d{4}\b/.test(l.t)||/R\$\s*-?[\d.]+,\d{2}/.test(l.t)) throw Error("Linha com data ou valor incompleto.");
+    const descricao=l.partes.filter(c=>c.x>=colDesc.x-3&&c.x<colId.x-3).map(c=>c.s).join(" ");
+    if(descricao) descricoes.push({y:l.y,descricao});
+  }
+  for(const d of descricoes){
+    const r=registros.reduce((best,r)=>!best||Math.abs(r.y-d.y)<Math.abs(best.y-d.y)?r:best,null);
+    if(r) r.partes.push(d.descricao);
+  }
+  const transacoes=[];
+  for(const r of registros){
+    if(r.valor<=0) continue;
+    const descricao=r.partes.join(" ");
+    if(!descricao) throw Error("Crédito sem descrição identificável.");
+    transacoes.push({data:r.data,id_bancario:r.id_bancario,centavos:r.valor,descricao,...classificarCredito(descricao,ref)});
+  }
+  return validarPagina({completa:true,meses:[...new Set(registros.map(r=>r.data.slice(0,7)))],transacoes,movimentos:registros.map(({valor,saldo})=>({valor,saldo}))});
+}
+function totalImpresso(texto){
+  const achados=[...texto.matchAll(/\b(?:total (?:de |das )?entradas|entradas)\s*:\s*R\$\s*([\d.]+,\d{2})/gi)];
+  return achados.map(m=>centavosBR(m[1]));
+}
+function conferirArquivo(nome,paginas,totais,saldoInicial,saldoFinal){
+  const entradas=paginas.flatMap(p=>p.transacoes).reduce((s,t)=>somaExata(s,t.centavos),0);
+  if(totais.length!==1) return null;
+  if(saldoInicial!==null){
+    let saldo=saldoInicial;
+    for(const p of paginas) for(const r of p.movimentos){
+      saldo=somaExata(saldo,r.valor);
+      if(saldo!==r.saldo) throw Error(p.origem+" · Saldo após o lançamento diverge. PDF bloqueado.");
+    }
+    if(saldo!==saldoFinal) throw Error(nome+" · Saldo final divergente.");
+  }
+  if(entradas!==totais[0]) throw Error(nome+" · Banco "+moeda(totais[0])+"; créditos lidos "+moeda(entradas)+"; diferença "+moeda(totais[0]-entradas)+". PDF bloqueado.");
+  return entradas;
+}
+
 async function apurar() {
   if(!pessoa||!liberado) throw Error("Confirme o documento e os extratos.");
   const finalidade=el("finalidade").value;
@@ -449,25 +532,56 @@ async function apurar() {
   limparResultado();
   const arquivos=Array.from(el("extratos").files),processados=[];
   for(const [i,f] of arquivos.entries()) {
-    const pdf=await abrirPDF(f),paginas=[];
+    const pdf=await abrirPDF(f),paginas=[],totais=[];
+
     try {
       const total=pdf?.numPages||1;
+      const capa=pdf?(await pagina(f,pdf,1)).texto:"";
+      const tabular=/ID\s+da\s+opera[çc][aã]o/i.test(capa)&&/detalhe\s+dos\s+movimentos/i.test(capa);
+      const saldoImpresso=rotulo=>{
+        const m=capa.match(new RegExp(rotulo+"\\s*:\\s*R\\$\\s*(-?[\\d.]+,\\d{2})","i"));
+        if(!m) throw Error(f.name+" · "+rotulo+" ilegível.");
+        return centavosBR(m[1]);
+      };
       for(let n=1;n<=total;n++) {
+        const txt=n===1?capa:(await pagina(f,pdf,n)).texto;
+        totais.push(...totalImpresso(txt));
         const origem=f.name+" · pág. "+n,chave=JSON.stringify([i,n,referencia]);
         avisar("Arquivo "+(i+1)+"/"+arquivos.length+" · página "+n+"/"+total+"\n"+f.name);
         if(!leituras.has(chave)) {
           const contexto={...referencia,diretriz:"Créditos de terceiros identificados contam, inclusive de filhos. Excluir titular, pai, mãe e cônjuge identificados. Mesmo pagador e valor em datas diferentes são créditos distintos. Retorne remetente quando identificado. Reserve REVISAR para dúvida concreta.",numeroPagina:n,totalPaginas:total,
             periodoInformadoNaCapa:String(paginas[0]?.periodo||"").slice(0,200),
             mesesJaIdentificadosNesteArquivo:[...new Set([...(paginas[0]?.meses||[]),...(paginas.at(-1)?.meses||[])])].slice(0,24)};
-          try { leituras.set(chave,{...(await analisarPagina(f,pdf,n,contexto)),origem}); }
+          try {
+            let leitura;
+            if(tabular){
+              const pg=await pdf.getPage(n);
+              try {leitura=tabelaDoBanco((await pg.getTextContent()).items,referencia);}
+              finally {pg.cleanup();}
+            }else leitura=await analisarPagina(f,pdf,n,contexto);
+            leituras.set(chave,{...leitura,origem});
+          }
           catch(e) { throw Error(origem+" · "+e.message+"\nMantenha a aba aberta e clique em Ler extratos e apurar renda para retomar."); }
         }
         paginas.push(leituras.get(chave));
       }
-    } finally { await pdf?.destroy(); }
-    processados.push({nome:f.name,paginas});
+      const entradas=conferirArquivo(f.name,paginas,totais,tabular?saldoImpresso("Saldo inicial"):null,tabular?saldoImpresso("Saldo final"):null);
+      processados.push({nome:f.name,paginas,entradas});
+    } catch(e){
+      if(paginas.length===(pdf?.numPages||1)) for(let n=1;n<=paginas.length;n++) leituras.delete(JSON.stringify([i,n,referencia]));
+      throw e;
+    } finally {await pdf?.destroy();}
   }
-  relatorio={...consolidar(processados),referencia,finalidade};
+  const ids=new Set();
+  for(const a of processados){
+    for(const t of a.paginas.flatMap(p=>p.transacoes)){
+      if(!t.id_bancario) continue;
+      const id=[t.data,t.id_bancario,t.centavos].join("|");
+      if(ids.has(id)) throw Error(a.nome+" · Operação bancária repetida em "+dataBR(t.data)+". Confira se os extratos se sobrepõem. PDF bloqueado.");
+      ids.add(id);
+    }
+  }
+  relatorio={...consolidar(processados),referencia,finalidade,semTotal:processados.filter(a=>a.entradas===null).map(a=>a.nome),banco:processados.some(a=>a.entradas===null)?null:processados.reduce((s,a)=>somaExata(s,a.entradas),0)};
   mostrarResultado();
   avisar("Leitura concluída. O período foi identificado a partir dos extratos.");
 }
@@ -506,19 +620,20 @@ function mostrarResultado() {
 }
 function calcular() {
   const mensal=new Map(relatorio.meses.map(m=>[m,0]));
-  let aceitos=0,rejeitados=0,pendentes=0;
+  let aceitos=0,rejeitados=0,pendentes=0,valorPendente=0;
   for(const t of relatorio.linhas) {
-    if(t.status==="REVISAR") { pendentes++; continue; }
-    if(t.status==="REJEITADO") { rejeitados+=t.centavos; continue; }
-    const m=t.data.slice(0,7); aceitos+=t.centavos; mensal.set(m,mensal.get(m)+t.centavos);
+    if(t.status==="REVISAR") { pendentes++; valorPendente=somaExata(valorPendente,t.centavos); continue; }
+    if(t.status==="REJEITADO") { rejeitados=somaExata(rejeitados,t.centavos); continue; }
+    const m=t.data.slice(0,7); aceitos=somaExata(aceitos,t.centavos); mensal.set(m,somaExata(mensal.get(m),t.centavos));
   }
-  return {mensal,aceitos,rejeitados,pendentes,media:Math.round(aceitos/mensal.size)};
+  if(relatorio.banco!==null&&somaExata(somaExata(aceitos,rejeitados),valorPendente)!==relatorio.banco) throw Error("Conciliação divergente. Emissão bloqueada.");
+  return {mensal,aceitos,rejeitados,pendentes,valorPendente,media:Math.round(aceitos/mensal.size)};
 }
 function atualizarResumo() {
   const r=calcular();
   el("tabelaRevisao").hidden=r.pendentes===0;
   el("pendencias").textContent=r.pendentes?r.pendentes+" lançamento(s) aguardando revisão. Valores parciais.":"Nenhum lançamento pendente de revisão.";
-  el("totais").textContent="Considerado "+moeda(r.aceitos)+" · Rejeitado "+moeda(r.rejeitados)+" · Média mensal "+moeda(r.media);
+  el("totais").textContent=(relatorio.banco===null?"Prévia. PDF bloqueado: total bancário não verificável em "+relatorio.semTotal.join(", "):"Entradas no banco "+moeda(relatorio.banco))+" · Pendente "+moeda(r.valorPendente)+" · Considerado "+moeda(r.aceitos)+" · Rejeitado "+moeda(r.rejeitados)+" · Média mensal "+moeda(r.media);
   controles();
 }
 function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -561,6 +676,7 @@ function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { 
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       if(!relatorio) throw Error("Faça a apuração primeiro.");
       const r=calcular();
+      if(relatorio.banco===null) throw Error("Total bancário não verificável. PDF bloqueado.");
       if(r.pendentes) throw Error("Resolva os lançamentos pendentes.");
       const resumo={total_entradas_consideradas:r.aceitos/100,total_entradas_descartadas:r.rejeitados/100,quantidade_meses:r.mensal.size,renda_media_mensal:r.media/100};
       const dadosCliente=relatorio.referencia, modoSelecionado=relatorio.finalidade;
