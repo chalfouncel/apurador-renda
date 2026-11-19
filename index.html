@@ -7,6 +7,7 @@
 <title>Apurador de Renda | M&amp;IC</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./logo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -37,8 +38,19 @@ th{background:#f4f1e9}td select{min-width:140px}.aviso{color:#824a00}.grupo{bord
 </head>
 <body>
 <header><div><img src="./logo.png" alt="M&amp;IC"><h1>Apurador de Renda</h1></div></header>
-<main>
-  <div id="acessoMovel" class="acoes" hidden><button type="button" id="entrarCelular">Entrar com o celular</button><button type="button" class="secundario" id="ativarCelular">Cadastrar chave de acesso</button><button type="button" class="secundario" id="sairCelular" hidden>Sair da sessão</button></div>
+<main id="entrada">
+  <section style="max-width:380px;margin:24px auto">
+    <h2>Entrar no Apurador</h2>
+    <form id="formLogin">
+      <label>E-mail<input type="email" id="loginUsuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="opcional">Senha<input id="loginSenha" name="password" autocomplete="current-password" type="password" required></label>
+      <div class="acoes"><button id="entrar" type="submit">Entrar</button></div>
+      <div class="acoes"><button type="button" class="secundario" id="cadastrar">Criar conta</button><button type="button" class="secundario" id="manutencao">Solicitar código de manutenção</button></div><p id="erroLogin" role="status"></p>
+    </form>
+  </section>
+</main>
+<main id="barreira" hidden><section><h2>Acesso ao Apurador</h2><p id="mensagemBarreira" role="status">Verificando acesso…</p><a hidden id="pagar" target="_blank" rel="noopener" href="https://www.asaas.com/c/uv6kefogcnoxdvkp">Liberar 2 horas por R$ 5,00</a><div class="acoes"><button id="revalidar">Conferir acesso</button><button id="sairBarreira">Sair</button></div></section></main><main id="aplicativo" hidden><p id="contaAtiva"></p>
+  <button id="sairLogin" type="button" class="secundario">Sair</button>
   <p id="status" role="status" aria-live="polite">Anexe o RG ou a CNH para iniciar a leitura.</p>
   <section>
     <h2>Documento oficial</h2>
@@ -88,7 +100,7 @@ const moeda = c => (c/100).toLocaleString("pt-BR",{style:"currency",currency:"BR
 const mesBR = m => m.slice(5)+"/"+m.slice(0,4);
 const dataBR = d => d.split("-").reverse().join("/");
 const avisar = s => { el("status").textContent = s; };
-let ocupado=false, senha="", pessoa=null, grupos=[], liberado=false, relatorio=null;
+let ocupado=false, pessoa=null, grupos=[], liberado=false, relatorio=null;
 
 function cpfLimpo(v) {
   const cpf=String(v||"").replace(/[^\d*xX]/g,"").replace(/[xX]/g,"*");
@@ -129,63 +141,86 @@ function limparExtratos() {
 function limparPessoa() {
   pessoa=null; el("secaoExtratos").hidden=false; limparExtratos();
 }
-let acessoAtivo=sessionStorage.getItem("apurador.login")==="1";
-function mostrarAcesso(){
-  const compativel=window.isSecureContext && window.PublicKeyCredential && navigator.credentials;
-  el("acessoMovel").hidden=!compativel;
-  el("entrarCelular").hidden=el("ativarCelular").hidden=acessoAtivo;
-  el("sairCelular").hidden=!acessoAtivo;
+const cliente=window.supabase?.createClient('https://uztsmkhlvoemjbbyebcr.supabase.co','sb_publishable_nmolEh_G5_hKcfdgy2Xpeg_s4T6ePAz');
+let sessaoUid="", versaoAcesso=0, timerAcesso;
+function tela(id){
+  for(const nome of ["entrada","barreira","aplicativo"]) el(nome).hidden=nome!==id;
 }
-function sessaoLocal(ativa){
-  acessoAtivo=ativa;
-  if(ativa) sessionStorage.setItem("apurador.login","1");
-  else sessionStorage.removeItem("apurador.login");
-  mostrarAcesso();
+async function statusConta(){
+  const versao=++versaoAcesso;
+  clearTimeout(timerAcesso);
+  try{
+    const {data:{session}}=await cliente.auth.getSession();
+    if(versao!==versaoAcesso)return;
+    if(!session){if(sessaoUid){location.reload();return;}tela("entrada");return;}
+    if(sessaoUid && sessaoUid!==session.user.id){location.reload();return;}
+    sessaoUid=session.user.id;
+    const r=await fetch("/api/audit",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({operacao:"acesso"})});
+    const j=await r.json();
+    if(versao!==versaoAcesso)return;
+    if(r.status===401){await cliente.auth.signOut({scope:"local"});location.reload();return;}
+    if(!r.ok){
+      tela("barreira");el("mensagemBarreira").textContent=j.error||"Não foi possível conferir o acesso.";
+      el("pagar").hidden=r.status!==403||j.manutencao===true;
+      return;
+    }
+    el("contaAtiva").textContent=session.user.email+" · "+(j.vip?"Acesso VIP":"Acesso até "+new Date(j.expira).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+    tela("aplicativo");
+    if(!j.vip)timerAcesso=setTimeout(()=>{tela("barreira");el("pagar").hidden=true;void statusConta();},Math.min(2147483647,Math.max(0,Date.parse(j.expira)-Date.now())));
+  }catch{
+    if(versao!==versaoAcesso)return;
+    tela(sessaoUid?"barreira":"entrada");el("pagar").hidden=true;
+    el("mensagemBarreira").textContent=el("erroLogin").textContent="Não foi possível verificar o acesso. Tente novamente.";
+  }
 }
-const bytes64=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0));
-const base64url=b=>btoa(Array.from(new Uint8Array(b),v=>String.fromCharCode(v)).join("")).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
-async function acessoAPI(acao,resposta,chaveSenha){
-  const headers={"Content-Type":"application/json"};
-  if(chaveSenha) headers.Authorization="Bearer "+chaveSenha;
-  const r=await fetch("/api/audit",{method:"POST",credentials:"same-origin",headers,body:JSON.stringify({operacao:"acessoCelular",acao,resposta})});
-  const j=await r.json();
-  if(!r.ok) throw Error(j.error||"Falha no acesso.");
-  return j;
+async function credenciais(cadastro){
+  const email=el("loginUsuario").value.trim(),password=el("loginSenha").value;
+  if(!el("formLogin").reportValidity())return;
+  const botao=el(cadastro?"cadastrar":"entrar");botao.disabled=true;
+  try{
+    const args={email,password};
+    const {data,error}=cadastro?await cliente.auth.signUp(args):await cliente.auth.signInWithPassword(args);
+    if(error)throw error;
+    el("loginSenha").value="";
+    if(data.session)await statusConta();else el("erroLogin").textContent="Confira seu e-mail para confirmar a conta.";
+  }catch(e){el("erroLogin").textContent=e.message||"Falha ao entrar.";}finally{botao.disabled=false;}
 }
-async function autenticar(cadastro){
-  const s=cadastro?(senha||prompt("Senha atual do Apurador para cadastrar a chave")||""):"";
-  if(cadastro&&!s) return;
-  const opts=await acessoAPI(cadastro?"cadastrar":"entrar",undefined,s);
-  opts.challenge=bytes64(opts.challenge);
-  if(opts.user) opts.user.id=bytes64(opts.user.id);
-  for(const c of [...(opts.allowCredentials||[]),...(opts.excludeCredentials||[])]) c.id=bytes64(c.id);
-  let cred;
-  try{cred=cadastro?await navigator.credentials.create({publicKey:opts}):await navigator.credentials.get({publicKey:opts});}
-  catch(e){throw Error(e.name==="NotAllowedError"?"Desbloqueio cancelado ou chave indisponível.":"Falha ao abrir o desbloqueio do aparelho.");}
-  const a=cred.response;
-  const resposta={clientDataJSON:base64url(a.clientDataJSON)};
-  if(cadastro){resposta.attestationObject=base64url(a.attestationObject);resposta.transports=a.getTransports?.()||[];}
-  else {resposta.authenticatorData=base64url(a.authenticatorData);resposta.signature=base64url(a.signature);if(a.userHandle) resposta.userHandle=base64url(a.userHandle);}
-  await acessoAPI(cadastro?"concluirCadastro":"concluirEntrada",{id:cred.id,rawId:base64url(cred.rawId),type:cred.type,response:resposta,clientExtensionResults:cred.getClientExtensionResults()},s);
-  senha="";sessaoLocal(true);avisar("Acesso liberado. Anexe os documentos.");
+el("formLogin").onsubmit=e=>{e.preventDefault();void credenciais(false);};
+el("cadastrar").onclick=()=>credenciais(true);
+el("manutencao").onclick=async()=>{
+  el("manutencao").disabled=true;
+  try{
+    el("loginUsuario").value="manutencao@vistoriafacil.com";el("loginSenha").value="";
+    const r=await fetch("/api/manutencao-otp",{method:"POST"}),j=await r.json();
+    if(!r.ok||!j.success)throw Error(j.error||"Falha ao solicitar o código.");
+    el("erroLogin").textContent="Código enviado ao e-mail de manutenção. Digite-o no campo senha.";
+  }catch(e){el("erroLogin").textContent=e.message;}finally{el("manutencao").disabled=false;}
+};
+el("revalidar").onclick=statusConta;
+el("sairLogin").onclick=el("sairBarreira").onclick=async()=>{
+  const {error}=await cliente.auth.signOut({scope:"local"});
+  if(error){alert("Falha ao encerrar a sessão. Tente novamente.");return;}
+  location.reload();
+};
+if(cliente)cliente.auth.onAuthStateChange(()=>{setTimeout(statusConta,0);});
+else el("erroLogin").textContent="O Supabase não carregou. Atualize a página.";
+async function tokenAtual(){
+  const {data:{session}}=await cliente.auth.getSession();
+  if(!session)throw Object.assign(Error("Entre novamente."),{http:401});
+  return "Bearer "+session.access_token;
 }
-el("ativarCelular").onclick=()=>executar(()=>autenticar(true));
-el("entrarCelular").onclick=()=>executar(()=>autenticar(false));
-el("sairCelular").onclick=()=>executar(async()=>{await acessoAPI("sair");senha="";sessaoLocal(false);avisar("Sessão encerrada.");});
-mostrarAcesso();
 async function api(operacao,partes,referencia={}) {
-  if(!acessoAtivo&&!senha) senha=prompt("Senha do apurador")||"";
-  if(!acessoAtivo&&!senha) throw Error("Informe a senha para continuar.");
+  const autorizacao=await tokenAtual();
   const r=await fetch("/api/audit",{
-    method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json",...(senha?{Authorization:"Bearer "+senha}:{})},
+    method:"POST",headers:{"Content-Type":"application/json",Authorization:autorizacao},
     body:JSON.stringify({operacao,...partes,referencia})
   });
-  if(r.status===401){senha="";sessaoLocal(false);}
+  if(r.status===401||r.status===403) await statusConta();
   const j=await r.json().catch(()=>({}));
   if(!r.ok) throw Object.assign(Error(j.error||"Falha HTTP "+r.status),{http:r.status});
   return j;
 }
-const acesso = e => e.http===401||e.message==="Informe a senha para continuar.";
+const acesso = e => e.http===403||e.http===401||e.message==="Informe a senha para continuar.";
 
 async function abrirPDF(f) {
   if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)) return null;
@@ -569,6 +604,7 @@ function conferirArquivo(nome,paginas,totais,saldoInicial,saldoFinal){
 }
 
 async function apurar() {
+  await api("acesso",{});
   if(!pessoa||!liberado) throw Error("Confirme o documento e os extratos.");
   const finalidade=el("finalidade").value;
   if(!finalidade) throw Error("Selecione aluguel ou financiamento.");
@@ -717,6 +753,7 @@ function formatMoeda(val) { return (Number(val) || 0).toLocaleString('pt-BR', { 
     }
 
     async function gerarPDF() {
+  await api("acesso",{});
       const { jsPDF } = window.jspdf; 
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       if(!relatorio) throw Error("Faça a apuração primeiro.");
@@ -962,7 +999,7 @@ el("compartilhar").onclick=()=>executar(async()=>{
 });
 el("nova").onclick=()=>{
   if(el("documento").files.length&&!confirm("Encerrar a análise e limpar o progresso?")) return;
-  senha=""; el("notaDocumento").textContent=""; limparPessoa();certidaoAplicada=false;el("referencia").textContent=el("notaCertidao").textContent="";
+  el("notaDocumento").textContent=""; limparPessoa();certidaoAplicada=false;el("referencia").textContent=el("notaCertidao").textContent="";
   for(const id of ["documento","extratos","certidao","finalidade",...campos]) el(id).value="";
   avisar("Anexe o RG ou a CNH para iniciar a leitura."); controles();
   window.scrollTo({top:0,behavior:"smooth"});
